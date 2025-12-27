@@ -161,11 +161,9 @@ export default function Payment() {
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('payment-screenshots')
-        .getPublicUrl(fileName);
-
-      setScreenshotUrl(publicUrl);
+      // Store the file path instead of public URL for private bucket
+      // Admins will generate signed URLs when reviewing payments
+      setScreenshotUrl(fileName);
       toast({ title: 'Screenshot uploaded successfully' });
     } catch (error: any) {
       toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
