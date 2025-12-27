@@ -27,8 +27,10 @@ import {
   Camera,
   Loader2,
   QrCode,
-  Bell
+  Bell,
+  Layout
 } from 'lucide-react';
+import CustomSectionsEditor from '@/components/CustomSectionsEditor';
 
 // Import template images
 import freelancerImg from '@/assets/templates/freelancer.png';
@@ -121,6 +123,7 @@ export default function VCardEditor() {
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [currentVcardId, setCurrentVcardId] = useState<string | null>(id || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const isEditing = !!id;
@@ -320,20 +323,28 @@ export default function VCardEditor() {
           description: 'Card updated successfully',
         });
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('vcards')
           .insert({
             ...formData,
             user_id: user?.id,
             slug: generateSlug(formData.name),
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
         
+        // Set the vcard ID for custom sections editor
+        if (data) {
+          setCurrentVcardId(data.id);
+        }
+        
         toast({
           title: 'Success',
-          description: 'Card created successfully',
+          description: 'Card created successfully. You can now add custom sections.',
         });
+        return; // Don't navigate away yet, let user add custom sections
       }
       
       navigate('/dashboard');
@@ -823,6 +834,17 @@ export default function VCardEditor() {
                 ))}
               </div>
             </div>
+
+            {/* Custom Sections - Only show when editing or after card is created */}
+            {currentVcardId && (
+              <div className="bg-card rounded-2xl p-6 border border-border">
+                <div className="flex items-center gap-2 mb-6">
+                  <Layout size={20} className="text-primary" />
+                  <h2 className="text-lg font-bold text-foreground">Landing Page Sections</h2>
+                </div>
+                <CustomSectionsEditor vcardId={currentVcardId} />
+              </div>
+            )}
 
             {/* Submit Button */}
             <div className="flex justify-end gap-4">

@@ -9,14 +9,12 @@ import {
   ArrowLeft, 
   Search, 
   Package, 
-  Clock, 
-  CheckCircle, 
-  XCircle,
-  Truck,
   CreditCard,
   MapPin,
-  Loader2
+  Loader2,
+  Truck
 } from 'lucide-react';
+import OrderTimeline from '@/components/OrderTimeline';
 import logo from '@/assets/logo.png';
 
 interface OrderDetails {
@@ -29,6 +27,7 @@ interface OrderDetails {
   total_amount: number;
   payment_method: string;
   status: string;
+  shipping_status: string | null;
   shipping_address: string;
   shipping_city: string;
   admin_notes: string | null;
@@ -74,38 +73,6 @@ export default function TrackOrder() {
       toast({ title: 'Error searching for order', variant: 'destructive' });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getStatusInfo = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return {
-          icon: CheckCircle,
-          color: 'text-green-600',
-          bgColor: 'bg-green-100',
-          borderColor: 'border-green-200',
-          label: 'Approved',
-          description: 'Your payment has been verified! You can now register with your email.',
-        };
-      case 'rejected':
-        return {
-          icon: XCircle,
-          color: 'text-red-600',
-          bgColor: 'bg-red-100',
-          borderColor: 'border-red-200',
-          label: 'Rejected',
-          description: 'Your payment could not be verified. Please contact support.',
-        };
-      default:
-        return {
-          icon: Clock,
-          color: 'text-yellow-600',
-          bgColor: 'bg-yellow-100',
-          borderColor: 'border-yellow-200',
-          label: 'Pending',
-          description: 'Your payment is being reviewed. This usually takes 1-24 hours.',
-        };
     }
   };
 
@@ -178,38 +145,21 @@ export default function TrackOrder() {
           >
             {order ? (
               <div className="space-y-6">
-                {/* Status Card */}
-                {(() => {
-                  const statusInfo = getStatusInfo(order.status);
-                  const StatusIcon = statusInfo.icon;
-                  return (
-                    <div className={`${statusInfo.bgColor} ${statusInfo.borderColor} border rounded-2xl p-6`}>
-                      <div className="flex items-center gap-3 mb-3">
-                        <StatusIcon size={28} className={statusInfo.color} />
-                        <div>
-                          <h3 className={`text-lg font-bold ${statusInfo.color}`}>
-                            Order {statusInfo.label}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(order.created_at).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                      <p className="text-foreground">{statusInfo.description}</p>
-                      {order.admin_notes && order.status === 'rejected' && (
-                        <p className="mt-3 text-sm bg-card/50 p-3 rounded-lg">
-                          <strong>Note:</strong> {order.admin_notes}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })()}
+                {/* Order Timeline */}
+                <OrderTimeline 
+                  status={order.status} 
+                  shippingStatus={order.shipping_status}
+                  createdAt={order.created_at}
+                />
+
+                {/* Admin Notes for rejected orders */}
+                {order.admin_notes && order.status === 'rejected' && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                    <p className="text-sm text-red-800">
+                      <strong>Note from admin:</strong> {order.admin_notes}
+                    </p>
+                  </div>
+                )}
 
                 {/* Order Details */}
                 <div className="bg-card rounded-2xl border border-border overflow-hidden">
