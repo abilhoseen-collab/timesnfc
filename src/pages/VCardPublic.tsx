@@ -100,6 +100,19 @@ export default function VCardPublic() {
         referrer: document.referrer || null,
         user_agent: navigator.userAgent,
       });
+
+      // Send notification (fire and forget)
+      sendNotification(data.id, 'view');
+    }
+  };
+
+  const sendNotification = async (vcardId: string, eventType: 'view' | 'link_click', linkName?: string) => {
+    try {
+      await supabase.functions.invoke('send-notification', {
+        body: { vcard_id: vcardId, event_type: eventType, link_name: linkName },
+      });
+    } catch (error) {
+      console.log('Notification skipped:', error);
     }
   };
 
@@ -111,6 +124,9 @@ export default function VCardPublic() {
         link_name: linkName,
         user_agent: navigator.userAgent,
       });
+
+      // Send notification (fire and forget)
+      sendNotification(vcard.id, 'link_click', linkName);
     }
   };
 
