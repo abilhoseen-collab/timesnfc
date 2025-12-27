@@ -16,7 +16,7 @@ import {
   Shield,
   Users,
   CreditCard,
-  AlertTriangle
+  Package
 } from 'lucide-react';
 import {
   Dialog,
@@ -53,16 +53,51 @@ interface Subscription {
   } | null;
 }
 
+interface NFCGuestOrder {
+  id: string;
+  email: string;
+  phone: string;
+  full_name: string;
+  shipping_address: string;
+  shipping_city: string;
+  product_name: string;
+  product_type: string;
+  price: number;
+  quantity: number;
+  total_amount: number;
+  payment_method: string;
+  transaction_id: string | null;
+  sender_number: string | null;
+  bank_name: string | null;
+  account_holder_name: string | null;
+  payment_screenshot_url: string | null;
+  status: string;
+  admin_notes: string | null;
+  created_at: string;
+}
+
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Tab management
+  const [activeTab, setActiveTab] = useState<'subscriptions' | 'nfc-orders'>('subscriptions');
+
+  // Subscriptions state
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [subsLoading, setSubsLoading] = useState(true);
   const [selectedSub, setSelectedSub] = useState<Subscription | null>(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showSubsModal, setShowSubsModal] = useState(false);
+
+  // NFC Orders state
+  const [nfcOrders, setNfcOrders] = useState<NFCGuestOrder[]>([]);
+  const [nfcLoading, setNfcLoading] = useState(true);
+  const [selectedNfc, setSelectedNfc] = useState<NFCGuestOrder | null>(null);
+  const [showNfcModal, setShowNfcModal] = useState(false);
+
+  // Shared state
   const [showImageModal, setShowImageModal] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -86,20 +121,20 @@ export default function Admin() {
 
   useEffect(() => {
     if (isAdmin) {
-      fetchSubscriptions();
+      if (activeTab === 'subscriptions') {
+        fetchSubscriptions();
+      } else {
+        fetchNfcOrders();
+      }
     }
-  }, [isAdmin, filter]);
+  }, [isAdmin, filter, activeTab]);
 
   const fetchSubscriptions = async () => {
-    setLoading(true);
+    setSubsLoading(true);
     
-    // First fetch subscriptions with packages
     let query = supabase
       .from('subscriptions')
-      .select(`
-        *,
-        packages:package_id (name, duration_days)
-      `)
+      .select(`*, packages:package_id (name, duration_days)`)
       .order('created_at', { ascending: false });
 
     if (filter !== 'all') {
@@ -109,18 +144,16 @@ export default function Admin() {
     const { data: subsData, error: subsError } = await query;
 
     if (subsError || !subsData) {
-      setLoading(false);
+      setSubsLoading(false);
       return;
     }
 
-    // Fetch profiles for all unique user_ids
     const userIds = [...new Set(subsData.map(s => s.user_id))];
     const { data: profilesData } = await supabase
       .from('profiles')
       .select('id, full_name, email')
       .in('id', userIds);
 
-    // Merge profiles into subscriptions
     const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
     const enrichedSubs = subsData.map(sub => ({
       ...sub,
@@ -128,13 +161,33 @@ export default function Admin() {
     }));
 
     setSubscriptions(enrichedSubs as Subscription[]);
-    setLoading(false);
+    setSubsLoading(false);
+  };
+
+  const fetchNfcOrders = async () => {
+    setNfcLoading(true);
+    
+    let query = supabase
+      .from('nfc_guest_orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (filter !== 'all') {
+      query = query.eq('status', filter);
+    }
+
+    const { data, error } = await query;
+
+    if (!error && data) {
+      setNfcOrders(data as NFCGuestOrder[]);
+    }
+    setNfcLoading(false);
   };
 
   const getSignedImageUrl = async (filePath: string) => {
     const { data, error } = await supabase.storage
       .from('payment-screenshots')
-      .createSignedUrl(filePath, 3600); // 1 hour expiry
+      .createSignedUrl(filePath, 3600);
 
     if (error) {
       toast({ title: 'Failed to load image', variant: 'destructive' });
@@ -170,13 +223,12 @@ export default function Admin() {
           adminNotes: adminNotes || undefined,
         },
       });
-      console.log('Payment notification sent');
     } catch (error) {
       console.error('Failed to send notification:', error);
     }
   };
 
-  const handleApprove = async (sub: Subscription) => {
+  const handleApproveSub = async (sub: Subscription) => {
     setProcessing(true);
     
     const expiresAt = new Date();
@@ -196,16 +248,15 @@ export default function Admin() {
     if (error) {
       toast({ title: 'Failed to approve', variant: 'destructive' });
     } else {
-      // Send email notification
       await sendPaymentNotification('approved', sub, expiresAtISO);
       toast({ title: 'Subscription approved!' });
-      setShowDetailsModal(false);
+      setShowSubsModal(false);
       fetchSubscriptions();
     }
     setProcessing(false);
   };
 
-  const handleReject = async (sub: Subscription) => {
+  const handleRejectSub = async (sub: Subscription) => {
     if (!adminNotes.trim()) {
       toast({ title: 'Please provide a reason for rejection', variant: 'destructive' });
       return;
@@ -223,19 +274,101 @@ export default function Admin() {
     if (error) {
       toast({ title: 'Failed to reject', variant: 'destructive' });
     } else {
-      // Send email notification
       await sendPaymentNotification('rejected', sub);
       toast({ title: 'Subscription rejected' });
-      setShowDetailsModal(false);
+      setShowSubsModal(false);
       fetchSubscriptions();
     }
     setProcessing(false);
   };
 
-  const openDetails = (sub: Subscription) => {
+  const handleApproveNfc = async (order: NFCGuestOrder) => {
+    setProcessing(true);
+
+    const { error } = await supabase
+      .from('nfc_guest_orders')
+      .update({
+        status: 'approved',
+        admin_notes: adminNotes || null,
+      })
+      .eq('id', order.id);
+
+    if (error) {
+      toast({ title: 'Failed to approve', variant: 'destructive' });
+    } else {
+      // Send notification email
+      try {
+        await supabase.functions.invoke('send-payment-notification', {
+          body: {
+            type: 'approved',
+            userEmail: order.email,
+            userName: order.full_name,
+            packageName: order.product_name,
+            amount: order.total_amount,
+            adminNotes: adminNotes || undefined,
+            isNfcOrder: true,
+          },
+        });
+      } catch (e) {
+        console.error('Notification failed:', e);
+      }
+      toast({ title: 'NFC Order approved! User can now register.' });
+      setShowNfcModal(false);
+      fetchNfcOrders();
+    }
+    setProcessing(false);
+  };
+
+  const handleRejectNfc = async (order: NFCGuestOrder) => {
+    if (!adminNotes.trim()) {
+      toast({ title: 'Please provide a reason for rejection', variant: 'destructive' });
+      return;
+    }
+
+    setProcessing(true);
+    const { error } = await supabase
+      .from('nfc_guest_orders')
+      .update({
+        status: 'rejected',
+        admin_notes: adminNotes,
+      })
+      .eq('id', order.id);
+
+    if (error) {
+      toast({ title: 'Failed to reject', variant: 'destructive' });
+    } else {
+      try {
+        await supabase.functions.invoke('send-payment-notification', {
+          body: {
+            type: 'rejected',
+            userEmail: order.email,
+            userName: order.full_name,
+            packageName: order.product_name,
+            amount: order.total_amount,
+            adminNotes: adminNotes,
+            isNfcOrder: true,
+          },
+        });
+      } catch (e) {
+        console.error('Notification failed:', e);
+      }
+      toast({ title: 'NFC Order rejected' });
+      setShowNfcModal(false);
+      fetchNfcOrders();
+    }
+    setProcessing(false);
+  };
+
+  const openSubDetails = (sub: Subscription) => {
     setSelectedSub(sub);
     setAdminNotes(sub.admin_notes || '');
-    setShowDetailsModal(true);
+    setShowSubsModal(true);
+  };
+
+  const openNfcDetails = (order: NFCGuestOrder) => {
+    setSelectedNfc(order);
+    setAdminNotes(order.admin_notes || '');
+    setShowNfcModal(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -249,14 +382,24 @@ export default function Admin() {
     }
   };
 
-  const stats = {
+  const subsStats = {
     total: subscriptions.length,
     pending: subscriptions.filter(s => s.status === 'pending').length,
     approved: subscriptions.filter(s => s.status === 'approved').length,
     rejected: subscriptions.filter(s => s.status === 'rejected').length,
   };
 
-  if (authLoading || adminLoading || (loading && subscriptions.length === 0)) {
+  const nfcStats = {
+    total: nfcOrders.length,
+    pending: nfcOrders.filter(s => s.status === 'pending').length,
+    approved: nfcOrders.filter(s => s.status === 'approved').length,
+    rejected: nfcOrders.filter(s => s.status === 'rejected').length,
+  };
+
+  const stats = activeTab === 'subscriptions' ? subsStats : nfcStats;
+  const loading = activeTab === 'subscriptions' ? subsLoading : nfcLoading;
+
+  if (authLoading || adminLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -272,7 +415,7 @@ export default function Admin() {
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-background to-orange-50/30">
       {/* Header */}
       <header className="bg-card/95 backdrop-blur-lg border-b border-border sticky top-0 z-50">
-        <div className="container-custom flex items-center justify-between h-16">
+        <div className="container mx-auto px-4 flex items-center justify-between h-16">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/dashboard')}
@@ -282,7 +425,7 @@ export default function Admin() {
               Dashboard
             </button>
           </div>
-          <img src={logo} alt="Logo" className="h-10" onClick={() => navigate('/')} />
+          <img src={logo} alt="Logo" className="h-10 cursor-pointer" onClick={() => navigate('/')} />
           <div className="flex items-center gap-2 text-primary">
             <Shield size={20} />
             <span className="font-semibold">Admin Panel</span>
@@ -290,13 +433,36 @@ export default function Admin() {
         </div>
       </header>
 
-      <main className="container-custom py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+      <main className="container mx-auto px-4 py-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-3xl font-bold text-foreground mb-2">Payment Verification</h1>
-          <p className="text-muted-foreground mb-8">Review and approve pending subscription payments</p>
+          <p className="text-muted-foreground mb-6">Review and approve pending payments</p>
+
+          {/* Main Tabs */}
+          <div className="flex gap-4 mb-8">
+            <button
+              onClick={() => { setActiveTab('subscriptions'); setFilter('pending'); }}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
+                activeTab === 'subscriptions'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-card border border-border text-foreground hover:bg-accent'
+              }`}
+            >
+              <CreditCard size={18} />
+              Subscriptions
+            </button>
+            <button
+              onClick={() => { setActiveTab('nfc-orders'); setFilter('pending'); }}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
+                activeTab === 'nfc-orders'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-card border border-border text-foreground hover:bg-accent'
+              }`}
+            >
+              <Package size={18} />
+              NFC Orders
+            </button>
+          </div>
 
           {/* Stats */}
           <div className="grid sm:grid-cols-4 gap-4 mb-8">
@@ -363,69 +529,119 @@ export default function Admin() {
             ))}
           </div>
 
-          {/* Subscriptions Table */}
+          {/* Content */}
           <div className="bg-card rounded-2xl border border-border overflow-hidden">
             {loading ? (
               <div className="p-8 text-center">
                 <Loader2 className="animate-spin mx-auto mb-2" />
                 <p className="text-muted-foreground">Loading...</p>
               </div>
-            ) : subscriptions.length === 0 ? (
-              <div className="p-8 text-center">
-                <Users size={48} className="mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground">No subscriptions found</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-muted/50 border-b border-border">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">User</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Package</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Amount</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Method</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {subscriptions.map((sub) => (
-                      <tr key={sub.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3">
-                          <div>
-                            <p className="font-medium text-foreground">{sub.user_profile?.full_name || 'Unknown'}</p>
-                            <p className="text-xs text-muted-foreground">{sub.user_profile?.email || ''}</p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-foreground">{sub.packages?.name || 'N/A'}</td>
-                        <td className="px-4 py-3 font-medium text-foreground">৳{sub.amount}</td>
-                        <td className="px-4 py-3 text-foreground capitalize">{sub.payment_method}</td>
-                        <td className="px-4 py-3">{getStatusBadge(sub.status)}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">
-                          {new Date(sub.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Button size="sm" variant="outline" onClick={() => openDetails(sub)}>
-                            <Eye size={14} className="mr-1" />
-                            View
-                          </Button>
-                        </td>
+            ) : activeTab === 'subscriptions' ? (
+              subscriptions.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Users size={48} className="mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground">No subscriptions found</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-muted/50 border-b border-border">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">User</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Package</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Amount</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Method</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Date</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {subscriptions.map((sub) => (
+                        <tr key={sub.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3">
+                            <div>
+                              <p className="font-medium text-foreground">{sub.user_profile?.full_name || 'Unknown'}</p>
+                              <p className="text-xs text-muted-foreground">{sub.user_profile?.email || ''}</p>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-foreground">{sub.packages?.name || 'N/A'}</td>
+                          <td className="px-4 py-3 font-medium text-foreground">৳{sub.amount}</td>
+                          <td className="px-4 py-3 text-foreground capitalize">{sub.payment_method}</td>
+                          <td className="px-4 py-3">{getStatusBadge(sub.status)}</td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            {new Date(sub.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Button size="sm" variant="outline" onClick={() => openSubDetails(sub)}>
+                              <Eye size={14} className="mr-1" />
+                              View
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            ) : (
+              nfcOrders.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Package size={48} className="mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground">No NFC orders found</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-muted/50 border-b border-border">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Customer</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Product</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Amount</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Method</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Date</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {nfcOrders.map((order) => (
+                        <tr key={order.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3">
+                            <div>
+                              <p className="font-medium text-foreground">{order.full_name}</p>
+                              <p className="text-xs text-muted-foreground">{order.email}</p>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-foreground">{order.product_name}</td>
+                          <td className="px-4 py-3 font-medium text-foreground">৳{order.total_amount}</td>
+                          <td className="px-4 py-3 text-foreground capitalize">{order.payment_method}</td>
+                          <td className="px-4 py-3">{getStatusBadge(order.status)}</td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            {new Date(order.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Button size="sm" variant="outline" onClick={() => openNfcDetails(order)}>
+                              <Eye size={14} className="mr-1" />
+                              View
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
             )}
           </div>
         </motion.div>
       </main>
 
-      {/* Details Modal */}
-      <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
+      {/* Subscription Details Modal */}
+      <Dialog open={showSubsModal} onOpenChange={setShowSubsModal}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Payment Details</DialogTitle>
+            <DialogTitle>Subscription Payment Details</DialogTitle>
           </DialogHeader>
           {selectedSub && (
             <div className="space-y-4">
@@ -458,30 +674,13 @@ export default function Admin() {
                     <p className="font-medium">{selectedSub.sender_number}</p>
                   </div>
                 )}
-                {selectedSub.bank_name && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">Bank Name</p>
-                    <p className="font-medium">{selectedSub.bank_name}</p>
-                  </div>
-                )}
-                {selectedSub.account_holder_name && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">Account Holder</p>
-                    <p className="font-medium">{selectedSub.account_holder_name}</p>
-                  </div>
-                )}
               </div>
 
               {selectedSub.payment_screenshot_url && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Payment Screenshot</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => viewScreenshot(selectedSub.payment_screenshot_url!)}
-                  >
-                    <Eye size={14} className="mr-1" />
-                    View Screenshot
+                  <Button variant="outline" size="sm" onClick={() => viewScreenshot(selectedSub.payment_screenshot_url!)}>
+                    <Eye size={14} className="mr-1" /> View Screenshot
                   </Button>
                 </div>
               )}
@@ -500,7 +699,7 @@ export default function Admin() {
                 <div className="flex gap-3">
                   <Button 
                     className="flex-1 bg-green-600 hover:bg-green-700"
-                    onClick={() => handleApprove(selectedSub)}
+                    onClick={() => handleApproveSub(selectedSub)}
                     disabled={processing}
                   >
                     {processing ? <Loader2 className="animate-spin mr-2" size={16} /> : <CheckCircle size={16} className="mr-2" />}
@@ -509,7 +708,7 @@ export default function Admin() {
                   <Button 
                     variant="destructive"
                     className="flex-1"
-                    onClick={() => handleReject(selectedSub)}
+                    onClick={() => handleRejectSub(selectedSub)}
                     disabled={processing}
                   >
                     {processing ? <Loader2 className="animate-spin mr-2" size={16} /> : <XCircle size={16} className="mr-2" />}
@@ -535,6 +734,117 @@ export default function Admin() {
                   )}
                   {selectedSub.admin_notes && (
                     <p className="text-sm mt-2">{selectedSub.admin_notes}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* NFC Order Details Modal */}
+      <Dialog open={showNfcModal} onOpenChange={setShowNfcModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>NFC Order Details</DialogTitle>
+          </DialogHeader>
+          {selectedNfc && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Customer Name</p>
+                  <p className="font-medium">{selectedNfc.full_name}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Email</p>
+                  <p className="font-medium">{selectedNfc.email}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Phone</p>
+                  <p className="font-medium">{selectedNfc.phone}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Product</p>
+                  <p className="font-medium">{selectedNfc.product_name}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Quantity</p>
+                  <p className="font-medium">{selectedNfc.quantity}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Amount</p>
+                  <p className="font-medium text-lg">৳{selectedNfc.total_amount}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Payment Method</p>
+                  <p className="font-medium capitalize">{selectedNfc.payment_method}</p>
+                </div>
+                {selectedNfc.transaction_id && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Transaction ID</p>
+                    <p className="font-medium font-mono">{selectedNfc.transaction_id}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-muted/50 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground mb-1">Shipping Address</p>
+                <p className="text-sm">{selectedNfc.shipping_address}, {selectedNfc.shipping_city}</p>
+              </div>
+
+              {selectedNfc.payment_screenshot_url && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Payment Screenshot</p>
+                  <Button variant="outline" size="sm" onClick={() => viewScreenshot(selectedNfc.payment_screenshot_url!)}>
+                    <Eye size={14} className="mr-1" /> View Screenshot
+                  </Button>
+                </div>
+              )}
+
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Admin Notes</p>
+                <Textarea
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  placeholder="Add notes about this order..."
+                  rows={3}
+                />
+              </div>
+
+              {selectedNfc.status === 'pending' && (
+                <div className="flex gap-3">
+                  <Button 
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                    onClick={() => handleApproveNfc(selectedNfc)}
+                    disabled={processing}
+                  >
+                    {processing ? <Loader2 className="animate-spin mr-2" size={16} /> : <CheckCircle size={16} className="mr-2" />}
+                    Approve
+                  </Button>
+                  <Button 
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={() => handleRejectNfc(selectedNfc)}
+                    disabled={processing}
+                  >
+                    {processing ? <Loader2 className="animate-spin mr-2" size={16} /> : <XCircle size={16} className="mr-2" />}
+                    Reject
+                  </Button>
+                </div>
+              )}
+
+              {selectedNfc.status !== 'pending' && (
+                <div className="p-4 bg-muted rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    {selectedNfc.status === 'approved' ? (
+                      <CheckCircle size={16} className="text-green-600" />
+                    ) : (
+                      <XCircle size={16} className="text-red-600" />
+                    )}
+                    <span className="font-medium capitalize">{selectedNfc.status}</span>
+                  </div>
+                  {selectedNfc.admin_notes && (
+                    <p className="text-sm mt-2">{selectedNfc.admin_notes}</p>
                   )}
                 </div>
               )}

@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Lock, User, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Mail, Lock, User, ArrowLeft, Eye, EyeOff, Clock, CheckCircle, XCircle } from 'lucide-react';
 import logo from '@/assets/logo.png';
 
 const signUpSchema = z.object({
@@ -20,7 +21,14 @@ const signInSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+interface NFCOrderStatus {
+  status: 'pending' | 'approved' | 'rejected';
+  product_name: string;
+  admin_notes?: string;
+}
+
 export default function Auth() {
+  const [searchParams] = useSearchParams();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,10 +36,65 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [nfcOrderStatus, setNfcOrderStatus] = useState<NFCOrderStatus | null>(null);
+  const [checkingOrder, setCheckingOrder] = useState(false);
   
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Check for prefilled email from NFC payment
+  useEffect(() => {
+    const emailParam = searchParams.get('email');
+    const pendingType = searchParams.get('pending');
+    
+    if (emailParam) {
+      setEmail(emailParam);
+      setIsSignUp(true);
+    }
+    
+    if (pendingType === 'nfc' && emailParam) {
+      checkNfcOrderStatus(emailParam);
+    }
+  }, [searchParams]);
+
+  // Check NFC order status when email changes during signup
+  useEffect(() => {
+    if (isSignUp && email && email.includes('@')) {
+      const debounceTimer = setTimeout(() => {
+        checkNfcOrderStatus(email);
+      }, 500);
+      return () => clearTimeout(debounceTimer);
+    } else {
+      setNfcOrderStatus(null);
+    }
+  }, [email, isSignUp]);
+
+  const checkNfcOrderStatus = async (emailToCheck: string) => {
+    setCheckingOrder(true);
+    try {
+      const { data, error } = await supabase
+        .from('nfc_guest_orders')
+        .select('status, product_name, admin_notes')
+        .eq('email', emailToCheck.toLowerCase().trim())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && data) {
+        setNfcOrderStatus({
+          status: data.status as 'pending' | 'approved' | 'rejected',
+          product_name: data.product_name,
+          admin_notes: data.admin_notes || undefined,
+        });
+      } else {
+        setNfcOrderStatus(null);
+      }
+    } catch (e) {
+      console.error('Error checking NFC order:', e);
+    }
+    setCheckingOrder(false);
+  };
 
   useEffect(() => {
     if (user) {
@@ -46,6 +109,28 @@ export default function Auth() {
 
     try {
       if (isSignUp) {
+        // Check if NFC order is pending
+        if (nfcOrderStatus && nfcOrderStatus.status === 'pending') {
+          toast({
+            title: 'Payment Pending',
+            description: 'Your NFC card payment is still being verified. Please wait for admin approval before registering.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+
+        // Check if NFC order was rejected
+        if (nfcOrderStatus && nfcOrderStatus.status === 'rejected') {
+          toast({
+            title: 'Payment Rejected',
+            description: nfcOrderStatus.admin_notes || 'Your payment was rejected. Please contact support.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+
         const result = signUpSchema.safeParse({ fullName, email, password });
         if (!result.success) {
           const fieldErrors: { [key: string]: string } = {};
@@ -121,6 +206,76 @@ export default function Auth() {
     }
   };
 
+  const renderOrderStatus = () => {
+    if (!isSignUp || !nfcOrderStatus) return null;
+
+    if (nfcOrderStatus.status === 'pending') {
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4"
+        >
+          <div className="flex items-start gap-3">
+            <Clock size={20} className="text-yellow-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-yellow-800">Payment Pending</p>
+              <p className="text-sm text-yellow-700 mt-1">
+                Your <strong>{nfcOrderStatus.product_name}</strong> payment is being verified. 
+                You'll be able to register once an admin approves your payment.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
+
+    if (nfcOrderStatus.status === 'approved') {
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4"
+        >
+          <div className="flex items-start gap-3">
+            <CheckCircle size={20} className="text-green-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-green-800">Payment Approved!</p>
+              <p className="text-sm text-green-700 mt-1">
+                Your <strong>{nfcOrderStatus.product_name}</strong> payment has been approved. 
+                You can now create your account below.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
+
+    if (nfcOrderStatus.status === 'rejected') {
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4"
+        >
+          <div className="flex items-start gap-3">
+            <XCircle size={20} className="text-red-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-red-800">Payment Rejected</p>
+              <p className="text-sm text-red-700 mt-1">
+                {nfcOrderStatus.admin_notes || 'Your payment was rejected. Please contact support for assistance.'}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
+
+    return null;
+  };
+
+  const isSignUpDisabled = isSignUp && nfcOrderStatus && nfcOrderStatus.status !== 'approved' && nfcOrderStatus.status !== undefined;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-background to-orange-50/30 flex items-center justify-center p-4">
       <motion.div
@@ -152,6 +307,9 @@ export default function Auth() {
                 : 'Sign in to manage your cards'}
             </p>
           </div>
+
+          {/* NFC Order Status Banner */}
+          {renderOrderStatus()}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -189,6 +347,11 @@ export default function Auth() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10 bg-background"
                 />
+                {checkingOrder && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                  </div>
+                )}
               </div>
               {errors.email && (
                 <p className="text-destructive text-sm mt-1">{errors.email}</p>
@@ -226,7 +389,7 @@ export default function Auth() {
               variant="secondary"
               size="lg"
               className="w-full font-semibold"
-              disabled={loading}
+              disabled={loading || (isSignUpDisabled as boolean)}
             >
               {loading ? 'Please wait...' : isSignUp ? 'Create Account' : 'Sign In'}
             </Button>
@@ -241,6 +404,7 @@ export default function Auth() {
                 onClick={() => {
                   setIsSignUp(!isSignUp);
                   setErrors({});
+                  setNfcOrderStatus(null);
                 }}
                 className="text-primary font-medium ml-2 hover:underline"
               >
