@@ -1,5 +1,21 @@
 import { useState, useRef } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable as useSortableItem,
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,6 +37,7 @@ import {
   X,
   Loader2,
   Upload,
+  Move,
 } from 'lucide-react';
 import type { CustomSection, SectionType } from './CustomSectionsEditor';
 
@@ -30,11 +47,66 @@ interface SortableSectionProps {
   onDelete: (id: string) => void;
 }
 
+interface SortableImageProps {
+  id: string;
+  url: string;
+  index: number;
+  onRemove: (index: number) => void;
+}
+
+function SortableImage({ id, url, index, onRemove }: SortableImageProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortableItem({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`relative aspect-square rounded-lg overflow-hidden group ${
+        isDragging ? 'ring-2 ring-primary shadow-lg' : ''
+      }`}
+    >
+      <img src={url} alt="" className="w-full h-full object-cover" />
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
+      <button
+        {...attributes}
+        {...listeners}
+        className="absolute top-2 left-2 p-1.5 bg-white/90 text-gray-700 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+      >
+        <Move size={12} />
+      </button>
+      <button
+        onClick={() => onRemove(index)}
+        className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <X size={12} />
+      </button>
+    </div>
+  );
+}
+
 export function SortableSection({ section, onUpdate, onDelete }: SortableSectionProps) {
   const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(true);
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const imageSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   const {
     attributes,
@@ -108,6 +180,17 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
     const images = [...(section.content.images || [])];
     images.splice(index, 1);
     handleContentChange('images', images);
+  };
+
+  const handleImageDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const images = [...(section.content.images || [])];
+      const oldIndex = images.findIndex((_, i) => `img-${i}` === active.id);
+      const newIndex = images.findIndex((_, i) => `img-${i}` === over.id);
+      const reordered = arrayMove(images, oldIndex, newIndex);
+      handleContentChange('images', reordered);
+    }
   };
 
   const addService = () => {
@@ -230,34 +313,45 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
               {/* Image Gallery */}
               {section.section_type === 'image_gallery' && (
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Images</label>
-                  <div className="grid grid-cols-3 gap-3 mb-3">
-                    {(section.content.images || []).map((url: string, index: number) => (
-                      <div key={index} className="relative aspect-square rounded-lg overflow-hidden group">
-                        <img src={url} alt="" className="w-full h-full object-cover" />
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Images <span className="text-muted-foreground font-normal">(drag to reorder)</span>
+                  </label>
+                  <DndContext
+                    sensors={imageSensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleImageDragEnd}
+                  >
+                    <SortableContext
+                      items={(section.content.images || []).map((_: string, i: number) => `img-${i}`)}
+                      strategy={rectSortingStrategy}
+                    >
+                      <div className="grid grid-cols-3 gap-3 mb-3">
+                        {(section.content.images || []).map((url: string, index: number) => (
+                          <SortableImage
+                            key={`img-${index}`}
+                            id={`img-${index}`}
+                            url={url}
+                            index={index}
+                            onRemove={removeImage}
+                          />
+                        ))}
                         <button
-                          onClick={() => removeImage(index)}
-                          className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadingImage}
+                          className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-2 transition-colors"
                         >
-                          <X size={12} />
+                          {uploadingImage ? (
+                            <Loader2 size={20} className="animate-spin text-muted-foreground" />
+                          ) : (
+                            <>
+                              <Upload size={20} className="text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">Upload</span>
+                            </>
+                          )}
                         </button>
                       </div>
-                    ))}
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingImage}
-                      className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-2 transition-colors"
-                    >
-                      {uploadingImage ? (
-                        <Loader2 size={20} className="animate-spin text-muted-foreground" />
-                      ) : (
-                        <>
-                          <Upload size={20} className="text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">Upload</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
+                    </SortableContext>
+                  </DndContext>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -266,7 +360,7 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                     onChange={handleImageUpload}
                     className="hidden"
                   />
-                  <p className="text-xs text-muted-foreground">Max 5MB per image. JPG, PNG, GIF supported.</p>
+                  <p className="text-xs text-muted-foreground">Max 5MB per image. Drag images to reorder.</p>
                 </div>
               )}
 
