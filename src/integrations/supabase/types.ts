@@ -63,6 +63,7 @@ export type Database = {
           sender_number: string | null
           shipping_address: string
           shipping_city: string
+          shipping_status: string | null
           status: string | null
           total_amount: number
           transaction_id: string | null
@@ -86,6 +87,7 @@ export type Database = {
           sender_number?: string | null
           shipping_address: string
           shipping_city: string
+          shipping_status?: string | null
           status?: string | null
           total_amount: number
           transaction_id?: string | null
@@ -109,6 +111,7 @@ export type Database = {
           sender_number?: string | null
           shipping_address?: string
           shipping_city?: string
+          shipping_status?: string | null
           status?: string | null
           total_amount?: number
           transaction_id?: string | null
@@ -163,6 +166,7 @@ export type Database = {
           shipping_city: string
           shipping_name: string
           shipping_phone: string
+          shipping_status: string | null
           status: string | null
           total_amount: number
           updated_at: string
@@ -176,6 +180,7 @@ export type Database = {
           shipping_city: string
           shipping_name: string
           shipping_phone: string
+          shipping_status?: string | null
           status?: string | null
           total_amount: number
           updated_at?: string
@@ -189,6 +194,7 @@ export type Database = {
           shipping_city?: string
           shipping_name?: string
           shipping_phone?: string
+          shipping_status?: string | null
           status?: string | null
           total_amount?: number
           updated_at?: string
@@ -376,6 +382,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "vcard_analytics_vcard_id_fkey"
+            columns: ["vcard_id"]
+            isOneToOne: false
+            referencedRelation: "vcards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vcard_custom_sections: {
+        Row: {
+          content: Json
+          created_at: string
+          id: string
+          is_visible: boolean
+          section_type: string
+          sort_order: number
+          title: string | null
+          updated_at: string
+          vcard_id: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          section_type: string
+          sort_order?: number
+          title?: string | null
+          updated_at?: string
+          vcard_id: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          section_type?: string
+          sort_order?: number
+          title?: string | null
+          updated_at?: string
+          vcard_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vcard_custom_sections_vcard_id_fkey"
             columns: ["vcard_id"]
             isOneToOne: false
             referencedRelation: "vcards"
