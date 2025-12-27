@@ -18,7 +18,8 @@ import {
   User,
   FileText,
   Image,
-  ShoppingBag
+  ShoppingBag,
+  Video
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -153,6 +154,51 @@ export default function VCardPublic() {
       // Send notification (fire and forget)
       sendNotification(vcard.id, 'link_click', linkName);
     }
+  };
+
+  // Helper function to render video embeds
+  const renderVideoEmbed = (url: string) => {
+    if (!url) return null;
+    
+    // YouTube
+    const youtubeMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    if (youtubeMatch) {
+      return (
+        <iframe
+          src={`https://www.youtube.com/embed/${youtubeMatch[1]}`}
+          className="w-full h-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          title="YouTube video"
+        />
+      );
+    }
+    
+    // Vimeo
+    const vimeoMatch = url.match(/vimeo\.com\/(?:.*\/)?(\d+)/);
+    if (vimeoMatch) {
+      return (
+        <iframe
+          src={`https://player.vimeo.com/video/${vimeoMatch[1]}`}
+          className="w-full h-full"
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowFullScreen
+          title="Vimeo video"
+        />
+      );
+    }
+    
+    // Direct video link
+    if (url.match(/\.(mp4|webm|ogg)$/i)) {
+      return (
+        <video controls className="w-full h-full">
+          <source src={url} />
+          Your browser does not support the video tag.
+        </video>
+      );
+    }
+    
+    return null;
   };
 
   const handleShare = async () => {
@@ -378,7 +424,10 @@ END:VCARD`;
                     <h3 className={`text-lg font-bold ${style.text} mb-4 flex items-center gap-2`}>
                       {section.section_type === 'text' && <FileText size={18} />}
                       {section.section_type === 'gallery' && <Image size={18} />}
+                      {section.section_type === 'image_gallery' && <Image size={18} />}
                       {section.section_type === 'products' && <ShoppingBag size={18} />}
+                      {section.section_type === 'service_card' && <ShoppingBag size={18} />}
+                      {section.section_type === 'video' && <Video size={18} />}
                       {section.title}
                     </h3>
                   )}
@@ -433,6 +482,13 @@ END:VCARD`;
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Video Section */}
+                  {section.section_type === 'video' && section.content?.video_url && (
+                    <div className="aspect-video rounded-xl overflow-hidden bg-gray-100">
+                      {renderVideoEmbed(section.content.video_url)}
                     </div>
                   )}
                 </div>
