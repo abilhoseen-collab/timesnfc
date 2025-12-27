@@ -1,0 +1,521 @@
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { 
+  ArrowLeft, 
+  Save, 
+  User, 
+  Briefcase, 
+  Building, 
+  Mail, 
+  Phone, 
+  Globe,
+  MapPin,
+  Linkedin,
+  Twitter,
+  Facebook,
+  Instagram,
+  Youtube,
+  Github,
+  Eye
+} from 'lucide-react';
+
+// Import template images
+import freelancerImg from '@/assets/templates/freelancer.png';
+import doctorImg from '@/assets/templates/doctor.png';
+import restaurantImg from '@/assets/templates/restaurant.png';
+import realestateImg from '@/assets/templates/realestate.png';
+import fitnessImg from '@/assets/templates/fitness.png';
+import photographyImg from '@/assets/templates/photography.png';
+import lawfirmImg from '@/assets/templates/lawfirm.png';
+import cafeImg from '@/assets/templates/cafe.png';
+import salonImg from '@/assets/templates/salon.png';
+import constructionImg from '@/assets/templates/construction.png';
+import eventplannerImg from '@/assets/templates/eventplanner.png';
+import techStartupImg from '@/assets/templates/tech-startup.png';
+
+const templates = [
+  { id: 'freelancer', name: 'Freelancer', image: freelancerImg },
+  { id: 'doctor', name: 'Doctor', image: doctorImg },
+  { id: 'restaurant', name: 'Restaurant', image: restaurantImg },
+  { id: 'realestate', name: 'Real Estate', image: realestateImg },
+  { id: 'fitness', name: 'Fitness', image: fitnessImg },
+  { id: 'photography', name: 'Photography', image: photographyImg },
+  { id: 'lawfirm', name: 'Law Firm', image: lawfirmImg },
+  { id: 'cafe', name: 'Cafe', image: cafeImg },
+  { id: 'salon', name: 'Salon', image: salonImg },
+  { id: 'construction', name: 'Construction', image: constructionImg },
+  { id: 'eventplanner', name: 'Event Planner', image: eventplannerImg },
+  { id: 'tech-startup', name: 'Tech Startup', image: techStartupImg },
+];
+
+interface FormData {
+  name: string;
+  job_title: string;
+  company: string;
+  email: string;
+  phone: string;
+  website: string;
+  address: string;
+  bio: string;
+  template: string;
+  linkedin_url: string;
+  twitter_url: string;
+  facebook_url: string;
+  instagram_url: string;
+  youtube_url: string;
+  github_url: string;
+  is_active: boolean;
+}
+
+const initialFormData: FormData = {
+  name: '',
+  job_title: '',
+  company: '',
+  email: '',
+  phone: '',
+  website: '',
+  address: '',
+  bio: '',
+  template: 'freelancer',
+  linkedin_url: '',
+  twitter_url: '',
+  facebook_url: '',
+  instagram_url: '',
+  youtube_url: '',
+  github_url: '',
+  is_active: true,
+};
+
+export default function VCardEditor() {
+  const { id } = useParams();
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const isEditing = !!id;
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    if (id && user) {
+      fetchVCard();
+    }
+  }, [id, user]);
+
+  const fetchVCard = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('vcards')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', user?.id)
+      .single();
+
+    if (error || !data) {
+      toast({
+        title: 'Error',
+        description: 'Card not found',
+        variant: 'destructive',
+      });
+      navigate('/dashboard');
+    } else {
+      setFormData({
+        name: data.name || '',
+        job_title: data.job_title || '',
+        company: data.company || '',
+        email: data.email || '',
+        phone: data.phone || '',
+        website: data.website || '',
+        address: data.address || '',
+        bio: data.bio || '',
+        template: data.template || 'freelancer',
+        linkedin_url: data.linkedin_url || '',
+        twitter_url: data.twitter_url || '',
+        facebook_url: data.facebook_url || '',
+        instagram_url: data.instagram_url || '',
+        youtube_url: data.youtube_url || '',
+        github_url: data.github_url || '',
+        is_active: data.is_active ?? true,
+      });
+    }
+    setLoading(false);
+  };
+
+  const handleChange = (field: keyof FormData, value: string | boolean) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') + 
+      '-' + 
+      Math.random().toString(36).substring(2, 8);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Name is required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      if (isEditing) {
+        const { error } = await supabase
+          .from('vcards')
+          .update(formData)
+          .eq('id', id)
+          .eq('user_id', user?.id);
+
+        if (error) throw error;
+        
+        toast({
+          title: 'Success',
+          description: 'Card updated successfully',
+        });
+      } else {
+        const { error } = await supabase
+          .from('vcards')
+          .insert({
+            ...formData,
+            user_id: user?.id,
+            slug: generateSlug(formData.name),
+          });
+
+        if (error) throw error;
+        
+        toast({
+          title: 'Success',
+          description: 'Card created successfully',
+        });
+      }
+      
+      navigate('/dashboard');
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to save card',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-background to-orange-50/30">
+      {/* Header */}
+      <header className="bg-card/95 backdrop-blur-lg border-b border-border sticky top-0 z-50">
+        <div className="container-custom flex items-center justify-between h-16">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft size={20} />
+            Back to Dashboard
+          </button>
+          <Button 
+            variant="secondary" 
+            onClick={handleSubmit}
+            disabled={saving}
+            className="font-semibold"
+          >
+            <Save size={18} className="mr-2" />
+            {saving ? 'Saving...' : isEditing ? 'Update Card' : 'Create Card'}
+          </Button>
+        </div>
+      </header>
+
+      <main className="container-custom py-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-4xl mx-auto"
+        >
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            {isEditing ? 'Edit Business Card' : 'Create New Business Card'}
+          </h1>
+          <p className="text-muted-foreground mb-8">
+            Fill in your information to create a professional digital business card
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Basic Info */}
+            <div className="bg-card rounded-2xl p-6 border border-border">
+              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <User size={20} className="text-primary" />
+                Basic Information
+              </h2>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Full Name *
+                  </label>
+                  <Input
+                    placeholder="John Doe"
+                    value={formData.name}
+                    onChange={(e) => handleChange('name', e.target.value)}
+                    className="bg-background"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Job Title
+                  </label>
+                  <div className="relative">
+                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                    <Input
+                      placeholder="Senior Developer"
+                      value={formData.job_title}
+                      onChange={(e) => handleChange('job_title', e.target.value)}
+                      className="pl-10 bg-background"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Company
+                  </label>
+                  <div className="relative">
+                    <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                    <Input
+                      placeholder="Tech Solutions Inc."
+                      value={formData.company}
+                      onChange={(e) => handleChange('company', e.target.value)}
+                      className="pl-10 bg-background"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                    <Input
+                      type="email"
+                      placeholder="john@example.com"
+                      value={formData.email}
+                      onChange={(e) => handleChange('email', e.target.value)}
+                      className="pl-10 bg-background"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Phone
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                    <Input
+                      placeholder="+880 1XXX-XXXXXX"
+                      value={formData.phone}
+                      onChange={(e) => handleChange('phone', e.target.value)}
+                      className="pl-10 bg-background"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Website
+                  </label>
+                  <div className="relative">
+                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                    <Input
+                      placeholder="https://example.com"
+                      value={formData.website}
+                      onChange={(e) => handleChange('website', e.target.value)}
+                      className="pl-10 bg-background"
+                    />
+                  </div>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Address
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-3 text-muted-foreground" size={16} />
+                    <Input
+                      placeholder="123 Business Street, Dhaka, Bangladesh"
+                      value={formData.address}
+                      onChange={(e) => handleChange('address', e.target.value)}
+                      className="pl-10 bg-background"
+                    />
+                  </div>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Bio
+                  </label>
+                  <Textarea
+                    placeholder="A brief description about yourself or your business..."
+                    value={formData.bio}
+                    onChange={(e) => handleChange('bio', e.target.value)}
+                    className="bg-background resize-none"
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Social Links */}
+            <div className="bg-card rounded-2xl p-6 border border-border">
+              <h2 className="text-lg font-bold text-foreground mb-4">
+                Social Links
+              </h2>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="relative">
+                  <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                  <Input
+                    placeholder="LinkedIn URL"
+                    value={formData.linkedin_url}
+                    onChange={(e) => handleChange('linkedin_url', e.target.value)}
+                    className="pl-10 bg-background"
+                  />
+                </div>
+                <div className="relative">
+                  <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                  <Input
+                    placeholder="Twitter URL"
+                    value={formData.twitter_url}
+                    onChange={(e) => handleChange('twitter_url', e.target.value)}
+                    className="pl-10 bg-background"
+                  />
+                </div>
+                <div className="relative">
+                  <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                  <Input
+                    placeholder="Facebook URL"
+                    value={formData.facebook_url}
+                    onChange={(e) => handleChange('facebook_url', e.target.value)}
+                    className="pl-10 bg-background"
+                  />
+                </div>
+                <div className="relative">
+                  <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                  <Input
+                    placeholder="Instagram URL"
+                    value={formData.instagram_url}
+                    onChange={(e) => handleChange('instagram_url', e.target.value)}
+                    className="pl-10 bg-background"
+                  />
+                </div>
+                <div className="relative">
+                  <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                  <Input
+                    placeholder="YouTube URL"
+                    value={formData.youtube_url}
+                    onChange={(e) => handleChange('youtube_url', e.target.value)}
+                    className="pl-10 bg-background"
+                  />
+                </div>
+                <div className="relative">
+                  <Github className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                  <Input
+                    placeholder="GitHub URL"
+                    value={formData.github_url}
+                    onChange={(e) => handleChange('github_url', e.target.value)}
+                    className="pl-10 bg-background"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Template Selection */}
+            <div className="bg-card rounded-2xl p-6 border border-border">
+              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <Eye size={20} className="text-primary" />
+                Choose Template
+              </h2>
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+                {templates.map((template) => (
+                  <motion.button
+                    key={template.id}
+                    type="button"
+                    onClick={() => handleChange('template', template.id)}
+                    className={`relative aspect-[3/4] rounded-xl overflow-hidden border-2 transition-all ${
+                      formData.template === template.id
+                        ? 'border-primary ring-2 ring-primary/30'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <img
+                      src={template.image}
+                      alt={template.name}
+                      className="w-full h-full object-cover object-top"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-foreground/80 to-transparent p-2">
+                      <span className="text-xs font-medium text-primary-foreground">
+                        {template.name}
+                      </span>
+                    </div>
+                    {formData.template === template.id && (
+                      <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex justify-end gap-4">
+              <Button 
+                type="button"
+                variant="outline" 
+                onClick={() => navigate('/dashboard')}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit"
+                variant="secondary" 
+                disabled={saving}
+                className="font-semibold"
+              >
+                <Save size={18} className="mr-2" />
+                {saving ? 'Saving...' : isEditing ? 'Update Card' : 'Create Card'}
+              </Button>
+            </div>
+          </form>
+        </motion.div>
+      </main>
+    </div>
+  );
+}
