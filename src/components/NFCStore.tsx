@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { CreditCard, Sparkles, Crown } from "lucide-react";
 import { motion } from "framer-motion";
+import { useCart } from "@/hooks/useCart";
 
 const nfcCards = [
   {
@@ -54,6 +55,16 @@ const cardVariants = {
 };
 
 export function NFCStore() {
+  const { addToCart } = useCart();
+
+  const handleAddToCart = (card: typeof nfcCards[0]) => {
+    const price = parseFloat(card.price.replace(/[৳,]/g, ''));
+    addToCart({
+      product_name: `${card.name} NFC Card`,
+      product_type: card.name.toLowerCase(),
+      price,
+    });
+  };
   return (
     <section id="nfc-store" className="section-padding bg-background">
       <div className="container-custom">
@@ -188,8 +199,9 @@ export function NFCStore() {
                     className="w-full font-semibold"
                     variant={card.popular ? "secondary" : "outline"}
                     size="lg"
+                    onClick={() => handleAddToCart(card)}
                   >
-                    Order Now
+                    Add to Cart
                   </Button>
                 </motion.div>
               </div>

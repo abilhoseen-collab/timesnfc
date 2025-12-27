@@ -14,7 +14,256 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cart_items: {
+        Row: {
+          created_at: string
+          id: string
+          price: number
+          product_name: string
+          product_type: string
+          quantity: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          price: number
+          product_name: string
+          product_type: string
+          quantity?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          price?: number
+          product_name?: string
+          product_type?: string
+          quantity?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          price: number
+          product_name: string
+          product_type: string
+          quantity: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          price: number
+          product_name: string
+          product_type: string
+          quantity: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          price?: number
+          product_name?: string
+          product_type?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          id: string
+          payment_method: string | null
+          shipping_address: string
+          shipping_city: string
+          shipping_name: string
+          shipping_phone: string
+          status: string | null
+          total_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          payment_method?: string | null
+          shipping_address: string
+          shipping_city: string
+          shipping_name: string
+          shipping_phone: string
+          status?: string | null
+          total_amount: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payment_method?: string | null
+          shipping_address?: string
+          shipping_city?: string
+          shipping_name?: string
+          shipping_phone?: string
+          status?: string | null
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      vcard_analytics: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          link_name: string | null
+          referrer: string | null
+          user_agent: string | null
+          vcard_id: string
+          visitor_ip: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          link_name?: string | null
+          referrer?: string | null
+          user_agent?: string | null
+          vcard_id: string
+          visitor_ip?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          link_name?: string | null
+          referrer?: string | null
+          user_agent?: string | null
+          vcard_id?: string
+          visitor_ip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vcard_analytics_vcard_id_fkey"
+            columns: ["vcard_id"]
+            isOneToOne: false
+            referencedRelation: "vcards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vcards: {
+        Row: {
+          address: string | null
+          bio: string | null
+          company: string | null
+          created_at: string
+          email: string | null
+          facebook_url: string | null
+          github_url: string | null
+          id: string
+          instagram_url: string | null
+          is_active: boolean | null
+          job_title: string | null
+          linkedin_url: string | null
+          name: string
+          phone: string | null
+          slug: string | null
+          template: string | null
+          twitter_url: string | null
+          updated_at: string
+          user_id: string
+          website: string | null
+          youtube_url: string | null
+        }
+        Insert: {
+          address?: string | null
+          bio?: string | null
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          facebook_url?: string | null
+          github_url?: string | null
+          id?: string
+          instagram_url?: string | null
+          is_active?: boolean | null
+          job_title?: string | null
+          linkedin_url?: string | null
+          name: string
+          phone?: string | null
+          slug?: string | null
+          template?: string | null
+          twitter_url?: string | null
+          updated_at?: string
+          user_id: string
+          website?: string | null
+          youtube_url?: string | null
+        }
+        Update: {
+          address?: string | null
+          bio?: string | null
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          facebook_url?: string | null
+          github_url?: string | null
+          id?: string
+          instagram_url?: string | null
+          is_active?: boolean | null
+          job_title?: string | null
+          linkedin_url?: string | null
+          name?: string
+          phone?: string | null
+          slug?: string | null
+          template?: string | null
+          twitter_url?: string | null
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+          youtube_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
