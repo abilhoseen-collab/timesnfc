@@ -15,7 +15,10 @@ import {
   Github,
   Download,
   Share2,
-  User
+  User,
+  FileText,
+  Image,
+  ShoppingBag
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -40,6 +43,15 @@ interface VCard {
   photo_url: string | null;
 }
 
+interface CustomSection {
+  id: string;
+  section_type: string;
+  title: string | null;
+  content: any;
+  sort_order: number;
+  is_visible: boolean;
+}
+
 const templateStyles: Record<string, { bg: string; accent: string; text: string }> = {
   freelancer: { bg: 'from-blue-600 to-indigo-700', accent: 'bg-blue-500', text: 'text-blue-600' },
   doctor: { bg: 'from-teal-500 to-cyan-600', accent: 'bg-teal-500', text: 'text-teal-600' },
@@ -59,6 +71,7 @@ export default function VCardPublic() {
   const { slug } = useParams();
   const { toast } = useToast();
   const [vcard, setVcard] = useState<VCard | null>(null);
+  const [customSections, setCustomSections] = useState<CustomSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -81,6 +94,17 @@ export default function VCardPublic() {
       setNotFound(true);
     } else {
       setVcard(data);
+      // Fetch custom sections
+      const { data: sectionsData } = await supabase
+        .from('vcard_custom_sections')
+        .select('*')
+        .eq('vcard_id', data.id)
+        .eq('is_visible', true)
+        .order('sort_order', { ascending: true });
+      
+      if (sectionsData) {
+        setCustomSections(sectionsData);
+      }
     }
     setLoading(false);
   };
@@ -334,6 +358,70 @@ END:VCARD`;
                   </a>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Custom Sections */}
+          {customSections.length > 0 && (
+            <div className="px-6 pb-6 space-y-6">
+              {customSections.map((section) => (
+                <div key={section.id} className="border-t border-gray-100 pt-6">
+                  {section.title && (
+                    <h3 className={`text-lg font-bold ${style.text} mb-4 flex items-center gap-2`}>
+                      {section.section_type === 'text' && <FileText size={18} />}
+                      {section.section_type === 'gallery' && <Image size={18} />}
+                      {section.section_type === 'products' && <ShoppingBag size={18} />}
+                      {section.title}
+                    </h3>
+                  )}
+                  
+                  {/* Text Section */}
+                  {section.section_type === 'text' && section.content?.text && (
+                    <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
+                      {section.content.text}
+                    </p>
+                  )}
+
+                  {/* Gallery Section */}
+                  {section.section_type === 'gallery' && section.content?.images && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {(section.content.images as string[]).map((img, idx) => (
+                        <div key={idx} className="aspect-square rounded-xl overflow-hidden bg-gray-100">
+                          <img 
+                            src={img} 
+                            alt={`Gallery ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Products/Services Section */}
+                  {section.section_type === 'products' && section.content?.items && (
+                    <div className="space-y-3">
+                      {(section.content.items as { name: string; price: string; description?: string }[]).map((item, idx) => (
+                        <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                          <div className={`w-10 h-10 rounded-lg ${style.accent} flex items-center justify-center flex-shrink-0`}>
+                            <ShoppingBag size={16} className="text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="font-medium text-gray-900">{item.name}</p>
+                              {item.price && (
+                                <span className={`${style.text} font-bold text-sm`}>{item.price}</span>
+                              )}
+                            </div>
+                            {item.description && (
+                              <p className="text-xs text-gray-500 mt-1">{item.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
 
