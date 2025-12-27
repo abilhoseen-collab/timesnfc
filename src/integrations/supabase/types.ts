@@ -208,6 +208,7 @@ export type Database = {
           linkedin_url: string | null
           name: string
           phone: string | null
+          photo_url: string | null
           slug: string | null
           template: string | null
           twitter_url: string | null
@@ -231,6 +232,7 @@ export type Database = {
           linkedin_url?: string | null
           name: string
           phone?: string | null
+          photo_url?: string | null
           slug?: string | null
           template?: string | null
           twitter_url?: string | null
@@ -254,6 +256,7 @@ export type Database = {
           linkedin_url?: string | null
           name?: string
           phone?: string | null
+          photo_url?: string | null
           slug?: string | null
           template?: string | null
           twitter_url?: string | null
