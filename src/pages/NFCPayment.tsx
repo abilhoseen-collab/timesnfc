@@ -17,6 +17,7 @@ import {
   Package
 } from 'lucide-react';
 import { z } from 'zod';
+import { getUserFriendlyError } from '@/lib/errorHandler';
 import logo from '@/assets/logo.png';
 
 const paymentMethods = [
@@ -58,15 +59,15 @@ const paymentMethods = [
 ];
 
 const guestOrderSchema = z.object({
-  full_name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email'),
-  phone: z.string().min(11, 'Phone must be at least 11 digits'),
-  shipping_address: z.string().min(10, 'Please enter your full address'),
-  shipping_city: z.string().min(2, 'Please enter your city'),
-  transaction_id: z.string().min(4, 'Transaction ID must be at least 4 characters'),
-  sender_number: z.string().optional(),
-  bank_name: z.string().optional(),
-  account_holder_name: z.string().optional(),
+  full_name: z.string().min(2, 'Name must be at least 2 characters').max(255, 'Name is too long'),
+  email: z.string().email('Please enter a valid email').max(255, 'Email is too long'),
+  phone: z.string().min(11, 'Phone must be at least 11 digits').max(20, 'Phone number is too long').regex(/^[0-9+\-\s]+$/, 'Invalid phone format'),
+  shipping_address: z.string().min(10, 'Please enter your full address').max(500, 'Address is too long'),
+  shipping_city: z.string().min(2, 'Please enter your city').max(100, 'City name is too long'),
+  transaction_id: z.string().min(4, 'Transaction ID must be at least 4 characters').max(50, 'Transaction ID is too long'),
+  sender_number: z.string().max(20, 'Sender number is too long').optional(),
+  bank_name: z.string().max(100, 'Bank name is too long').optional(),
+  account_holder_name: z.string().max(255, 'Account holder name is too long').optional(),
 });
 
 interface NFCCard {
@@ -210,7 +211,7 @@ export default function NFCPayment() {
     } catch (error: any) {
       toast({
         title: 'Submission failed',
-        description: error.message,
+        description: getUserFriendlyError(error),
         variant: 'destructive',
       });
     } finally {

@@ -9,6 +9,41 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Rate limiting configuration
+const MAX_NOTIFICATIONS_PER_HOUR = 10;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour in milliseconds
+
+// In-memory rate limiting (resets on function restart, but provides basic protection)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(vcardId: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const entry = rateLimitMap.get(vcardId);
+  
+  if (!entry || now > entry.resetAt) {
+    // Reset or create new entry
+    rateLimitMap.set(vcardId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: MAX_NOTIFICATIONS_PER_HOUR - 1 };
+  }
+  
+  if (entry.count >= MAX_NOTIFICATIONS_PER_HOUR) {
+    return { allowed: false, remaining: 0 };
+  }
+  
+  entry.count++;
+  return { allowed: true, remaining: MAX_NOTIFICATIONS_PER_HOUR - entry.count };
+}
+
+// Clean up old entries periodically (prevent memory leak)
+function cleanupRateLimitMap() {
+  const now = Date.now();
+  for (const [key, value] of rateLimitMap.entries()) {
+    if (now > value.resetAt) {
+      rateLimitMap.delete(key);
+    }
+  }
+}
+
 interface NotificationRequest {
   vcard_id: string;
   event_type: "view" | "link_click";
@@ -24,7 +59,44 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { vcard_id, event_type, link_name }: NotificationRequest = await req.json();
 
-    console.log(`Processing notification for vcard: ${vcard_id}, event: ${event_type}`);
+    // Input validation
+    if (!vcard_id || typeof vcard_id !== 'string' || vcard_id.length > 50) {
+      console.log("Invalid vcard_id provided");
+      return new Response(JSON.stringify({ error: "Invalid request" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    if (!event_type || !["view", "link_click"].includes(event_type)) {
+      console.log("Invalid event_type provided");
+      return new Response(JSON.stringify({ error: "Invalid request" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Check rate limit
+    const rateLimitResult = checkRateLimit(vcard_id);
+    if (!rateLimitResult.allowed) {
+      console.log(`Rate limit exceeded for vcard: ${vcard_id}`);
+      return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
+        status: 429,
+        headers: { 
+          "Content-Type": "application/json",
+          "X-RateLimit-Remaining": "0",
+          "Retry-After": "3600",
+          ...corsHeaders 
+        },
+      });
+    }
+
+    console.log(`Processing notification for vcard: ${vcard_id}, event: ${event_type}, remaining: ${rateLimitResult.remaining}`);
+
+    // Cleanup old rate limit entries periodically
+    if (Math.random() < 0.1) { // 10% chance to cleanup on each request
+      cleanupRateLimitMap();
+    }
 
     // Create Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -59,6 +131,11 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
+    // Sanitize link_name to prevent injection
+    const sanitizedLinkName = link_name 
+      ? link_name.replace(/[<>'"&]/g, '').substring(0, 100)
+      : 'a link';
+
     // Send email notification
     const subject =
       event_type === "view"
@@ -68,7 +145,7 @@ const handler = async (req: Request): Promise<Response> => {
     const eventDescription =
       event_type === "view"
         ? "Your digital business card was just viewed!"
-        : `Someone clicked the "${link_name || "a link"}" on your digital business card!`;
+        : `Someone clicked the "${sanitizedLinkName}" on your digital business card!`;
 
     const emailResponse = await resend.emails.send({
       from: "Notifications <onboarding@resend.dev>",
@@ -119,13 +196,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Email sent successfully:", emailResponse);
 
-    return new Response(JSON.stringify({ success: true, emailResponse }), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
+      headers: { 
+        "Content-Type": "application/json",
+        "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+        ...corsHeaders 
+      },
     });
   } catch (error: any) {
     console.error("Error in send-notification function:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: "An error occurred processing your request" }), {
       status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });

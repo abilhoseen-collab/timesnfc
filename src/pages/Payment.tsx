@@ -17,6 +17,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { z } from 'zod';
+import { getUserFriendlyError } from '@/lib/errorHandler';
 import logo from '@/assets/logo.png';
 
 interface Package {
@@ -215,7 +216,7 @@ export default function Payment() {
     } catch (error: any) {
       toast({
         title: 'Submission failed',
-        description: error.message,
+        description: getUserFriendlyError(error),
         variant: 'destructive',
       });
     } finally {
