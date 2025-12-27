@@ -1,4 +1,5 @@
 import { QrCode, Nfc, BarChart3, Zap, Users, Shield } from "lucide-react";
+import { motion } from "framer-motion";
 
 const features = [
   {
@@ -33,12 +34,38 @@ const features = [
   },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5 },
+  },
+};
+
 export function Features() {
   return (
     <section id="features" className="section-padding bg-card">
       <div className="container-custom">
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <motion.div 
+          className="text-center max-w-2xl mx-auto mb-16"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6 }}
+        >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
             Powerful Features for{" "}
             <span className="gradient-text">Modern Networking</span>
@@ -46,20 +73,30 @@ export function Features() {
           <p className="text-lg text-muted-foreground">
             Everything you need to create, share, and manage your digital business presence.
           </p>
-        </div>
+        </motion.div>
         
         {/* Features Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-          {features.map((feature, index) => (
-            <div
+        <motion.div 
+          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8"
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+        >
+          {features.map((feature) => (
+            <motion.div
               key={feature.title}
+              variants={itemVariants}
               className="group relative p-6 lg:p-8 bg-background rounded-2xl border border-border hover:border-primary/30 hover:shadow-xl transition-all duration-300"
-              style={{ animationDelay: `${index * 100}ms` }}
+              whileHover={{ y: -8, transition: { duration: 0.3 } }}
             >
               {/* Icon */}
-              <div className="w-14 h-14 rounded-xl bg-accent flex items-center justify-center text-primary mb-5 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+              <motion.div 
+                className="w-14 h-14 rounded-xl bg-accent flex items-center justify-center text-primary mb-5 group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                whileHover={{ rotate: 10, scale: 1.1 }}
+              >
                 <feature.icon size={28} />
-              </div>
+              </motion.div>
               
               {/* Content */}
               <h3 className="text-xl font-bold text-foreground mb-3">
@@ -70,14 +107,24 @@ export function Features() {
               </p>
               
               {/* Hover accent */}
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-secondary rounded-b-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
+              <motion.div 
+                className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-secondary rounded-b-2xl"
+                initial={{ scaleX: 0 }}
+                whileHover={{ scaleX: 1 }}
+                transition={{ duration: 0.3 }}
+              />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
         
         {/* Why Choose Section */}
         <div className="mt-20 grid lg:grid-cols-2 gap-12 items-center">
-          <div>
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6 }}
+          >
             <h3 className="text-2xl sm:text-3xl font-bold text-foreground mb-6">
               Why Choose vCard?
             </h3>
@@ -87,48 +134,80 @@ export function Features() {
             
             <div className="space-y-4">
               {[
-                { stat: "10K+", label: "Active Users" },
-                { stat: "99%", label: "Satisfaction Rate" },
-              ].map((item) => (
-                <div key={item.label} className="flex items-center gap-4">
+                { stat: "10K+", label: "Active Users", width: "85%" },
+                { stat: "99%", label: "Satisfaction Rate", width: "99%" },
+              ].map((item, index) => (
+                <motion.div 
+                  key={item.label} 
+                  className="flex items-center gap-4"
+                  initial={{ opacity: 0, x: -30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.2 + index * 0.1, duration: 0.5 }}
+                >
                   <div className="w-16 text-right">
                     <span className="text-2xl font-bold text-primary">{item.stat}</span>
                   </div>
                   <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
+                    <motion.div 
                       className="h-full gradient-teal rounded-full"
-                      style={{ width: item.stat.includes("10") ? "85%" : "99%" }}
+                      initial={{ width: 0 }}
+                      whileInView={{ width: item.width }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.4 + index * 0.1, duration: 1, ease: "easeOut" }}
                     />
                   </div>
                   <span className="text-sm text-muted-foreground w-32">{item.label}</span>
-                </div>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
           
-          <div className="relative">
-            <div className="glass-card rounded-3xl p-8 lg:p-10">
+          <motion.div 
+            className="relative"
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6 }}
+          >
+            <motion.div 
+              className="glass-card rounded-3xl p-8 lg:p-10"
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.3 }}
+            >
               <div className="text-center">
-                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary to-teal-400 flex items-center justify-center">
+                <motion.div 
+                  className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary to-teal-400 flex items-center justify-center"
+                  animate={{ rotate: [0, 5, -5, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                >
                   <Shield size={40} className="text-primary-foreground" />
-                </div>
+                </motion.div>
                 <h4 className="text-xl font-bold text-foreground mb-3">Trusted by Industry Leaders</h4>
                 <p className="text-muted-foreground mb-6">
                   Join the growing community of professionals who trust our platform for their digital networking needs.
                 </p>
                 <div className="flex justify-center gap-6">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-primary">10K+</div>
-                    <div className="text-xs text-muted-foreground">Active Users</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-secondary">99%</div>
-                    <div className="text-xs text-muted-foreground">Satisfaction</div>
-                  </div>
+                  {[
+                    { value: "10K+", label: "Active Users", color: "text-primary" },
+                    { value: "99%", label: "Satisfaction", color: "text-secondary" },
+                  ].map((stat, index) => (
+                    <motion.div 
+                      key={stat.label}
+                      className="text-center"
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.3 + index * 0.1, duration: 0.5, type: "spring" }}
+                    >
+                      <div className={`text-3xl font-bold ${stat.color}`}>{stat.value}</div>
+                      <div className="text-xs text-muted-foreground">{stat.label}</div>
+                    </motion.div>
+                  ))}
                 </div>
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       </div>
     </section>
