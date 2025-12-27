@@ -41,6 +41,7 @@ interface VCard {
   youtube_url: string | null;
   github_url: string | null;
   photo_url: string | null;
+  cover_image_url: string | null;
 }
 
 interface CustomSection {
@@ -229,8 +230,15 @@ END:VCARD`;
         animate={{ opacity: 1, y: 0 }}
         className="max-w-md mx-auto"
       >
-        {/* Header with gradient */}
-        <div className={`bg-gradient-to-br ${style.bg} pt-12 pb-20 px-6 text-white relative`}>
+        {/* Header with gradient or cover image */}
+        <div 
+          className={`${vcard.cover_image_url ? '' : `bg-gradient-to-br ${style.bg}`} pt-12 pb-20 px-6 text-white relative`}
+          style={vcard.cover_image_url ? {
+            backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.5)), url(${vcard.cover_image_url})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          } : undefined}
+        >
           <div className="absolute top-4 right-4 flex gap-2">
             <Button
               size="icon"
