@@ -12,6 +12,7 @@ import VCardEditor from "./pages/VCardEditor";
 import VCardPublic from "./pages/VCardPublic";
 import Cart from "./pages/Cart";
 import Orders from "./pages/Orders";
+import Payment from "./pages/Payment";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/c/:slug" element={<VCardPublic />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/orders" element={<Orders />} />
+              <Route path="/payment" element={<Payment />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
