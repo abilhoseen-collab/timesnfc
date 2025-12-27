@@ -151,18 +151,44 @@ export default function Admin() {
     }
   };
 
+  const sendPaymentNotification = async (
+    type: 'approved' | 'rejected',
+    sub: Subscription,
+    expiresAt?: string
+  ) => {
+    if (!sub.user_profile?.email) return;
+
+    try {
+      await supabase.functions.invoke('send-payment-notification', {
+        body: {
+          type,
+          userEmail: sub.user_profile.email,
+          userName: sub.user_profile.full_name || 'Valued Customer',
+          packageName: sub.packages?.name || 'Premium',
+          amount: sub.amount,
+          expiresAt,
+          adminNotes: adminNotes || undefined,
+        },
+      });
+      console.log('Payment notification sent');
+    } catch (error) {
+      console.error('Failed to send notification:', error);
+    }
+  };
+
   const handleApprove = async (sub: Subscription) => {
     setProcessing(true);
     
     const expiresAt = new Date();
     const durationDays = sub.packages?.duration_days || 30;
     expiresAt.setDate(expiresAt.getDate() + durationDays);
+    const expiresAtISO = expiresAt.toISOString();
 
     const { error } = await supabase
       .from('subscriptions')
       .update({
         status: 'approved',
-        expires_at: expiresAt.toISOString(),
+        expires_at: expiresAtISO,
         admin_notes: adminNotes || null,
       })
       .eq('id', sub.id);
@@ -170,6 +196,8 @@ export default function Admin() {
     if (error) {
       toast({ title: 'Failed to approve', variant: 'destructive' });
     } else {
+      // Send email notification
+      await sendPaymentNotification('approved', sub, expiresAtISO);
       toast({ title: 'Subscription approved!' });
       setShowDetailsModal(false);
       fetchSubscriptions();
@@ -195,6 +223,8 @@ export default function Admin() {
     if (error) {
       toast({ title: 'Failed to reject', variant: 'destructive' });
     } else {
+      // Send email notification
+      await sendPaymentNotification('rejected', sub);
       toast({ title: 'Subscription rejected' });
       setShowDetailsModal(false);
       fetchSubscriptions();
