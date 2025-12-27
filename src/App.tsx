@@ -14,6 +14,8 @@ import VCardPublic from "./pages/VCardPublic";
 import Cart from "./pages/Cart";
 import Orders from "./pages/Orders";
 import Payment from "./pages/Payment";
+import TemplatePreview from "./pages/TemplatePreview";
+import NFCPayment from "./pages/NFCPayment";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +39,8 @@ const App = () => (
               <Route path="/cart" element={<Cart />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/payment" element={<Payment />} />
+              <Route path="/template/:templateId" element={<TemplatePreview />} />
+              <Route path="/nfc-payment" element={<NFCPayment />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
