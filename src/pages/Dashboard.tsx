@@ -44,6 +44,7 @@ interface VCard {
   created_at: string;
   qr_foreground_color: string | null;
   qr_background_color: string | null;
+  qr_logo_url: string | null;
 }
 
 interface AnalyticsEvent {
@@ -488,7 +489,7 @@ export default function Dashboard() {
                           setShowQRModal(true);
                         }}
                       >
-                        <div className="p-3 bg-white rounded-xl shadow-sm border border-border">
+                        <div className="p-3 bg-white rounded-xl shadow-sm border border-border relative">
                           <QRCodeSVG 
                             id={`qr-${card.id}`}
                             value={getCardUrl(card.slug)} 
@@ -496,6 +497,12 @@ export default function Dashboard() {
                             level="M"
                             fgColor={card.qr_foreground_color || '#000000'}
                             bgColor={card.qr_background_color || '#FFFFFF'}
+                            imageSettings={card.qr_logo_url ? {
+                              src: card.qr_logo_url,
+                              height: 20,
+                              width: 20,
+                              excavate: true,
+                            } : undefined}
                           />
                         </div>
                       </div>
@@ -580,6 +587,12 @@ export default function Dashboard() {
                   includeMargin
                   fgColor={selectedCard.qr_foreground_color || '#000000'}
                   bgColor={selectedCard.qr_background_color || '#FFFFFF'}
+                  imageSettings={selectedCard.qr_logo_url ? {
+                    src: selectedCard.qr_logo_url,
+                    height: 50,
+                    width: 50,
+                    excavate: true,
+                  } : undefined}
                 />
               </div>
               <p className="text-sm text-muted-foreground text-center mb-4">

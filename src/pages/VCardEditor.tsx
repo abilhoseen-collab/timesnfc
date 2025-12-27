@@ -79,6 +79,7 @@ interface FormData {
   photo_url: string;
   qr_foreground_color: string;
   qr_background_color: string;
+  qr_logo_url: string;
   notification_email: string;
   notify_on_view: boolean;
   notify_on_click: boolean;
@@ -104,6 +105,7 @@ const initialFormData: FormData = {
   photo_url: '',
   qr_foreground_color: '#000000',
   qr_background_color: '#FFFFFF',
+  qr_logo_url: '',
   notification_email: '',
   notify_on_view: false,
   notify_on_click: false,
@@ -118,7 +120,9 @@ export default function VCardEditor() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const isEditing = !!id;
 
   useEffect(() => {
@@ -170,6 +174,7 @@ export default function VCardEditor() {
         photo_url: data.photo_url || '',
         qr_foreground_color: data.qr_foreground_color || '#000000',
         qr_background_color: data.qr_background_color || '#FFFFFF',
+        qr_logo_url: data.qr_logo_url || '',
         notification_email: data.notification_email || '',
         notify_on_view: data.notify_on_view ?? false,
         notify_on_click: data.notify_on_click ?? false,
@@ -236,6 +241,44 @@ export default function VCardEditor() {
       });
     } finally {
       setUploadingPhoto(false);
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Invalid file', description: 'Please upload an image file', variant: 'destructive' });
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Please upload an image smaller than 2MB', variant: 'destructive' });
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('qr-logos')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('qr-logos')
+        .getPublicUrl(fileName);
+
+      setFormData(prev => ({ ...prev, qr_logo_url: publicUrl }));
+      toast({ title: 'Logo uploaded successfully' });
+    } catch (error: any) {
+      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+    } finally {
+      setUploadingLogo(false);
     }
   };
 
@@ -628,8 +671,68 @@ export default function VCardEditor() {
                   </div>
                 </div>
               </div>
+
+              {/* QR Logo Upload */}
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Logo Overlay (Optional)
+                </label>
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex items-center justify-center border border-border">
+                      {formData.qr_logo_url ? (
+                        <img 
+                          src={formData.qr_logo_url} 
+                          alt="QR Logo" 
+                          className="w-full h-full object-contain"
+                        />
+                      ) : (
+                        <QrCode size={24} className="text-muted-foreground" />
+                      )}
+                    </div>
+                    {uploadingLogo && (
+                      <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                        <Loader2 size={20} className="animate-spin text-white" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      ref={logoInputRef}
+                      onChange={handleLogoUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={uploadingLogo}
+                    >
+                      {uploadingLogo ? 'Uploading...' : formData.qr_logo_url ? 'Change Logo' : 'Upload Logo'}
+                    </Button>
+                    {formData.qr_logo_url && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="ml-2 text-destructive"
+                        onClick={() => handleChange('qr_logo_url', '')}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Add your logo to the center of the QR code. Max 2MB.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <p className="text-xs text-muted-foreground mt-4">
-                Customize your QR code colors to match your brand identity.
+                Customize your QR code colors and add a logo to match your brand identity.
               </p>
             </div>
 
