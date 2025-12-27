@@ -124,6 +124,39 @@ export type Database = {
         }
         Relationships: []
       }
+      packages: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_days: number
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_days?: number
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_days?: number
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -150,6 +183,71 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          account_holder_name: string | null
+          admin_notes: string | null
+          amount: number
+          bank_name: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          package_id: string | null
+          payment_date: string | null
+          payment_method: string
+          payment_screenshot_url: string | null
+          sender_number: string | null
+          status: string | null
+          transaction_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_holder_name?: string | null
+          admin_notes?: string | null
+          amount: number
+          bank_name?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          package_id?: string | null
+          payment_date?: string | null
+          payment_method: string
+          payment_screenshot_url?: string | null
+          sender_number?: string | null
+          status?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_holder_name?: string | null
+          admin_notes?: string | null
+          amount?: number
+          bank_name?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          package_id?: string | null
+          payment_date?: string | null
+          payment_method?: string
+          payment_screenshot_url?: string | null
+          sender_number?: string | null
+          status?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vcard_analytics: {
         Row: {
@@ -214,6 +312,7 @@ export type Database = {
           photo_url: string | null
           qr_background_color: string | null
           qr_foreground_color: string | null
+          qr_logo_url: string | null
           slug: string | null
           template: string | null
           twitter_url: string | null
@@ -243,6 +342,7 @@ export type Database = {
           photo_url?: string | null
           qr_background_color?: string | null
           qr_foreground_color?: string | null
+          qr_logo_url?: string | null
           slug?: string | null
           template?: string | null
           twitter_url?: string | null
@@ -272,6 +372,7 @@ export type Database = {
           photo_url?: string | null
           qr_background_color?: string | null
           qr_foreground_color?: string | null
+          qr_logo_url?: string | null
           slug?: string | null
           template?: string | null
           twitter_url?: string | null
