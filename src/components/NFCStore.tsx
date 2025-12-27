@@ -207,6 +207,7 @@ export function NFCStore() {
         </motion.div>
         
         {/* Benefits */}
+        {/* Benefits */}
         <motion.div 
           className="mt-20 grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
           initial={{ opacity: 0 }}
@@ -233,6 +234,22 @@ export function NFCStore() {
               <p className="text-sm text-muted-foreground">{benefit.desc}</p>
             </motion.div>
           ))}
+        </motion.div>
+
+        {/* Track Order Link */}
+        <motion.div 
+          className="mt-8 text-center"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.5, duration: 0.4 }}
+        >
+          <p className="text-muted-foreground">
+            Already ordered?{' '}
+            <a href="/track-order" className="text-primary font-medium hover:underline">
+              Track your order →
+            </a>
+          </p>
         </motion.div>
       </div>
     </section>
