@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,7 +23,9 @@ import {
   Instagram,
   Youtube,
   Github,
-  Eye
+  Eye,
+  Camera,
+  Loader2
 } from 'lucide-react';
 
 // Import template images
@@ -72,6 +74,7 @@ interface FormData {
   youtube_url: string;
   github_url: string;
   is_active: boolean;
+  photo_url: string;
 }
 
 const initialFormData: FormData = {
@@ -91,6 +94,7 @@ const initialFormData: FormData = {
   youtube_url: '',
   github_url: '',
   is_active: true,
+  photo_url: '',
 };
 
 export default function VCardEditor() {
@@ -101,6 +105,8 @@ export default function VCardEditor() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isEditing = !!id;
 
   useEffect(() => {
@@ -149,6 +155,7 @@ export default function VCardEditor() {
         youtube_url: data.youtube_url || '',
         github_url: data.github_url || '',
         is_active: data.is_active ?? true,
+        photo_url: data.photo_url || '',
       });
     }
     setLoading(false);
@@ -156,6 +163,63 @@ export default function VCardEditor() {
 
   const handleChange = (field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid file',
+        description: 'Please upload an image file',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'Please upload an image smaller than 5MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploadingPhoto(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profile-photos')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-photos')
+        .getPublicUrl(fileName);
+
+      setFormData(prev => ({ ...prev, photo_url: publicUrl }));
+      
+      toast({
+        title: 'Photo uploaded',
+        description: 'Your profile photo has been uploaded successfully',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Upload failed',
+        description: error.message || 'Failed to upload photo',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const generateSlug = (name: string) => {
@@ -270,6 +334,55 @@ export default function VCardEditor() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Profile Photo */}
+            <div className="bg-card rounded-2xl p-6 border border-border">
+              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <Camera size={20} className="text-primary" />
+                Profile Photo
+              </h2>
+              <div className="flex items-center gap-6">
+                <div className="relative">
+                  <div className="w-24 h-24 rounded-full overflow-hidden bg-muted flex items-center justify-center border-2 border-border">
+                    {formData.photo_url ? (
+                      <img 
+                        src={formData.photo_url} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User size={32} className="text-muted-foreground" />
+                    )}
+                  </div>
+                  {uploadingPhoto && (
+                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                      <Loader2 size={24} className="animate-spin text-white" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handlePhotoUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingPhoto}
+                  >
+                    <Camera size={16} className="mr-2" />
+                    {uploadingPhoto ? 'Uploading...' : formData.photo_url ? 'Change Photo' : 'Upload Photo'}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    JPG, PNG or GIF. Max 5MB.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Basic Info */}
             <div className="bg-card rounded-2xl p-6 border border-border">
               <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
