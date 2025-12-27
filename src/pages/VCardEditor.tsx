@@ -25,7 +25,9 @@ import {
   Github,
   Eye,
   Camera,
-  Loader2
+  Loader2,
+  QrCode,
+  Bell
 } from 'lucide-react';
 
 // Import template images
@@ -75,6 +77,11 @@ interface FormData {
   github_url: string;
   is_active: boolean;
   photo_url: string;
+  qr_foreground_color: string;
+  qr_background_color: string;
+  notification_email: string;
+  notify_on_view: boolean;
+  notify_on_click: boolean;
 }
 
 const initialFormData: FormData = {
@@ -95,6 +102,11 @@ const initialFormData: FormData = {
   github_url: '',
   is_active: true,
   photo_url: '',
+  qr_foreground_color: '#000000',
+  qr_background_color: '#FFFFFF',
+  notification_email: '',
+  notify_on_view: false,
+  notify_on_click: false,
 };
 
 export default function VCardEditor() {
@@ -156,6 +168,11 @@ export default function VCardEditor() {
         github_url: data.github_url || '',
         is_active: data.is_active ?? true,
         photo_url: data.photo_url || '',
+        qr_foreground_color: data.qr_foreground_color || '#000000',
+        qr_background_color: data.qr_background_color || '#FFFFFF',
+        notification_email: data.notification_email || '',
+        notify_on_view: data.notify_on_view ?? false,
+        notify_on_click: data.notify_on_click ?? false,
       });
     }
     setLoading(false);
@@ -565,7 +582,104 @@ export default function VCardEditor() {
               </div>
             </div>
 
-            {/* Template Selection */}
+            {/* QR Code Customization */}
+            <div className="bg-card rounded-2xl p-6 border border-border">
+              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <QrCode size={20} className="text-primary" />
+                QR Code Customization
+              </h2>
+              <div className="grid sm:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Foreground Color
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={formData.qr_foreground_color}
+                      onChange={(e) => handleChange('qr_foreground_color', e.target.value)}
+                      className="w-12 h-12 rounded-lg border border-border cursor-pointer"
+                    />
+                    <Input
+                      value={formData.qr_foreground_color}
+                      onChange={(e) => handleChange('qr_foreground_color', e.target.value)}
+                      className="bg-background flex-1"
+                      placeholder="#000000"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Background Color
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={formData.qr_background_color}
+                      onChange={(e) => handleChange('qr_background_color', e.target.value)}
+                      className="w-12 h-12 rounded-lg border border-border cursor-pointer"
+                    />
+                    <Input
+                      value={formData.qr_background_color}
+                      onChange={(e) => handleChange('qr_background_color', e.target.value)}
+                      className="bg-background flex-1"
+                      placeholder="#FFFFFF"
+                    />
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-4">
+                Customize your QR code colors to match your brand identity.
+              </p>
+            </div>
+
+            {/* Notification Settings */}
+            <div className="bg-card rounded-2xl p-6 border border-border">
+              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <Bell size={20} className="text-primary" />
+                Email Notifications
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Notification Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                    <Input
+                      type="email"
+                      placeholder="your@email.com"
+                      value={formData.notification_email}
+                      onChange={(e) => handleChange('notification_email', e.target.value)}
+                      className="pl-10 bg-background"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Receive notifications when someone interacts with your card.
+                  </p>
+                </div>
+                <div className="flex items-center gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.notify_on_view}
+                      onChange={(e) => handleChange('notify_on_view', e.target.checked)}
+                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm text-foreground">Notify on card view</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.notify_on_click}
+                      onChange={(e) => handleChange('notify_on_click', e.target.checked)}
+                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm text-foreground">Notify on link click</span>
+                  </label>
+                </div>
+              </div>
+            </div>
             <div className="bg-card rounded-2xl p-6 border border-border">
               <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
                 <Eye size={20} className="text-primary" />

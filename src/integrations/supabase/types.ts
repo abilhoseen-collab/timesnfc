@@ -207,8 +207,13 @@ export type Database = {
           job_title: string | null
           linkedin_url: string | null
           name: string
+          notification_email: string | null
+          notify_on_click: boolean | null
+          notify_on_view: boolean | null
           phone: string | null
           photo_url: string | null
+          qr_background_color: string | null
+          qr_foreground_color: string | null
           slug: string | null
           template: string | null
           twitter_url: string | null
@@ -231,8 +236,13 @@ export type Database = {
           job_title?: string | null
           linkedin_url?: string | null
           name: string
+          notification_email?: string | null
+          notify_on_click?: boolean | null
+          notify_on_view?: boolean | null
           phone?: string | null
           photo_url?: string | null
+          qr_background_color?: string | null
+          qr_foreground_color?: string | null
           slug?: string | null
           template?: string | null
           twitter_url?: string | null
@@ -255,8 +265,13 @@ export type Database = {
           job_title?: string | null
           linkedin_url?: string | null
           name?: string
+          notification_email?: string | null
+          notify_on_click?: boolean | null
+          notify_on_view?: boolean | null
           phone?: string | null
           photo_url?: string | null
+          qr_background_color?: string | null
+          qr_foreground_color?: string | null
           slug?: string | null
           template?: string | null
           twitter_url?: string | null

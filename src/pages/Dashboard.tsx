@@ -42,6 +42,8 @@ interface VCard {
   is_active: boolean;
   slug: string;
   created_at: string;
+  qr_foreground_color: string | null;
+  qr_background_color: string | null;
 }
 
 interface AnalyticsEvent {
@@ -492,6 +494,8 @@ export default function Dashboard() {
                             value={getCardUrl(card.slug)} 
                             size={80}
                             level="M"
+                            fgColor={card.qr_foreground_color || '#000000'}
+                            bgColor={card.qr_background_color || '#FFFFFF'}
                           />
                         </div>
                       </div>
@@ -574,6 +578,8 @@ export default function Dashboard() {
                   size={200}
                   level="H"
                   includeMargin
+                  fgColor={selectedCard.qr_foreground_color || '#000000'}
+                  bgColor={selectedCard.qr_background_color || '#FFFFFF'}
                 />
               </div>
               <p className="text-sm text-muted-foreground text-center mb-4">
