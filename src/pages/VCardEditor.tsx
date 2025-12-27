@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { getUserFriendlyError } from '@/lib/errorHandler';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -394,7 +395,7 @@ export default function VCardEditor() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to save card',
+        description: getUserFriendlyError(error),
         variant: 'destructive',
       });
     } finally {

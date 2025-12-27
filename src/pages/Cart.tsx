@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { getUserFriendlyError } from '@/lib/errorHandler';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -34,6 +36,15 @@ export default function Cart() {
     city: '',
     phone: '',
   });
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Shipping info validation schema
+  const shippingSchema = z.object({
+    name: z.string().min(2, 'Name must be at least 2 characters').max(255, 'Name is too long'),
+    address: z.string().min(10, 'Please enter your full address').max(500, 'Address is too long'),
+    city: z.string().min(2, 'Please enter your city').max(100, 'City name is too long'),
+    phone: z.string().min(10, 'Phone must be at least 10 digits').max(20, 'Phone number is too long').regex(/^[0-9+\-\s]+$/, 'Invalid phone format'),
+  });
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,28 +54,36 @@ export default function Cart() {
       return;
     }
 
-    if (!shippingInfo.name || !shippingInfo.address || !shippingInfo.city || !shippingInfo.phone) {
+    // Validate shipping info with Zod
+    const validationResult = shippingSchema.safeParse(shippingInfo);
+    if (!validationResult.success) {
+      const errors: Record<string, string> = {};
+      validationResult.error.errors.forEach(err => {
+        if (err.path[0]) errors[err.path[0] as string] = err.message;
+      });
+      setValidationErrors(errors);
       toast({
-        title: 'Missing information',
-        description: 'Please fill in all shipping details',
+        title: 'Validation Error',
+        description: 'Please check your shipping details',
         variant: 'destructive',
       });
       return;
     }
+    setValidationErrors({});
 
     setOrderLoading(true);
 
     try {
-      // Create order
+      // Create order with trimmed and validated data
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: user.id,
           total_amount: totalAmount,
-          shipping_name: shippingInfo.name,
-          shipping_address: shippingInfo.address,
-          shipping_city: shippingInfo.city,
-          shipping_phone: shippingInfo.phone,
+          shipping_name: shippingInfo.name.trim(),
+          shipping_address: shippingInfo.address.trim(),
+          shipping_city: shippingInfo.city.trim(),
+          shipping_phone: shippingInfo.phone.trim(),
           payment_method: 'cod',
           status: 'pending',
         })
@@ -100,7 +119,7 @@ export default function Cart() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to place order',
+        description: getUserFriendlyError(error),
         variant: 'destructive',
       });
     } finally {
@@ -281,9 +300,11 @@ export default function Cart() {
                           value={shippingInfo.name}
                           onChange={(e) => setShippingInfo({ ...shippingInfo, name: e.target.value })}
                           className="pl-10 bg-background"
+                          maxLength={255}
                           required
                         />
                       </div>
+                      {validationErrors.name && <p className="text-xs text-destructive mt-1">{validationErrors.name}</p>}
                     </div>
                     <div className="sm:col-span-2">
                       <label className="block text-sm font-medium text-foreground mb-2">
@@ -296,9 +317,11 @@ export default function Cart() {
                           value={shippingInfo.address}
                           onChange={(e) => setShippingInfo({ ...shippingInfo, address: e.target.value })}
                           className="pl-10 bg-background"
+                          maxLength={500}
                           required
                         />
                       </div>
+                      {validationErrors.address && <p className="text-xs text-destructive mt-1">{validationErrors.address}</p>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
@@ -309,8 +332,10 @@ export default function Cart() {
                         value={shippingInfo.city}
                         onChange={(e) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
                         className="bg-background"
+                        maxLength={100}
                         required
                       />
+                      {validationErrors.city && <p className="text-xs text-destructive mt-1">{validationErrors.city}</p>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
@@ -323,9 +348,11 @@ export default function Cart() {
                           value={shippingInfo.phone}
                           onChange={(e) => setShippingInfo({ ...shippingInfo, phone: e.target.value })}
                           className="pl-10 bg-background"
+                          maxLength={20}
                           required
                         />
                       </div>
+                      {validationErrors.phone && <p className="text-xs text-destructive mt-1">{validationErrors.phone}</p>}
                     </div>
                   </div>
                 </div>
