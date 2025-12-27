@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdmin } from '@/hooks/useAdmin';
 import { Button } from '@/components/ui/button';
 import { QRCodeSVG } from 'qrcode.react';
 import { 
@@ -22,7 +23,11 @@ import {
   X,
   TrendingUp,
   Calendar,
-  Download
+  Download,
+  Shield,
+  Crown,
+  Clock,
+  CheckCircle
 } from 'lucide-react';
 import {
   Dialog,
@@ -32,6 +37,13 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import logo from '@/assets/logo.png';
+
+interface Subscription {
+  id: string;
+  status: string;
+  expires_at: string | null;
+  package_name: string | null;
+}
 
 interface VCard {
   id: string;
@@ -70,6 +82,7 @@ interface DailyStats {
 
 export default function Dashboard() {
   const { user, loading: authLoading, signOut } = useAuth();
+  const { isAdmin } = useAdmin();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [vcards, setVcards] = useState<VCard[]>([]);
@@ -84,6 +97,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedCard, setSelectedCard] = useState<VCard | null>(null);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -95,8 +109,33 @@ export default function Dashboard() {
     if (user) {
       fetchVCards();
       fetchAnalytics();
+      fetchSubscription();
     }
   }, [user]);
+
+  const fetchSubscription = async () => {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select(`
+        id,
+        status,
+        expires_at,
+        packages:package_id (name)
+      `)
+      .eq('user_id', user?.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!error && data) {
+      setSubscription({
+        id: data.id,
+        status: data.status || 'pending',
+        expires_at: data.expires_at,
+        package_name: (data.packages as any)?.name || null
+      });
+    }
+  };
 
   const fetchVCards = async () => {
     const { data, error } = await supabase
@@ -248,6 +287,17 @@ export default function Dashboard() {
             onClick={() => navigate('/')}
           />
           <div className="flex items-center gap-4">
+            {isAdmin && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => navigate('/admin')}
+                className="text-primary"
+              >
+                <Shield size={18} className="mr-2" />
+                Admin
+              </Button>
+            )}
             <Button 
               variant="ghost" 
               size="sm"
@@ -284,6 +334,95 @@ export default function Dashboard() {
           <p className="text-muted-foreground">
             Manage your digital business cards and track their performance.
           </p>
+        </motion.div>
+
+        {/* Subscription Status */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="mb-8"
+        >
+          {subscription ? (
+            <div className={`rounded-2xl p-6 border ${
+              subscription.status === 'approved' && subscription.expires_at && new Date(subscription.expires_at) > new Date()
+                ? 'bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20'
+                : subscription.status === 'pending'
+                ? 'bg-yellow-50 border-yellow-200'
+                : 'bg-muted border-border'
+            }`}>
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                    subscription.status === 'approved' ? 'bg-primary/20 text-primary' : 
+                    subscription.status === 'pending' ? 'bg-yellow-200 text-yellow-700' : 
+                    'bg-muted-foreground/20 text-muted-foreground'
+                  }`}>
+                    {subscription.status === 'approved' ? <Crown size={24} /> : 
+                     subscription.status === 'pending' ? <Clock size={24} /> : 
+                     <CreditCard size={24} />}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-foreground">
+                        {subscription.package_name || 'Subscription'}
+                      </h3>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        subscription.status === 'approved' ? 'bg-green-100 text-green-700' :
+                        subscription.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                        subscription.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                        'bg-muted text-muted-foreground'
+                      }`}>
+                        {subscription.status === 'approved' ? 'Active' : 
+                         subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1)}
+                      </span>
+                    </div>
+                    {subscription.status === 'approved' && subscription.expires_at && (
+                      <p className="text-sm text-muted-foreground">
+                        Expires: {new Date(subscription.expires_at).toLocaleDateString('en-US', { 
+                          year: 'numeric', month: 'long', day: 'numeric' 
+                        })}
+                      </p>
+                    )}
+                    {subscription.status === 'pending' && (
+                      <p className="text-sm text-yellow-700">
+                        Your payment is being verified
+                      </p>
+                    )}
+                    {subscription.status === 'rejected' && (
+                      <p className="text-sm text-red-600">
+                        Payment was rejected. Please try again.
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {subscription.status !== 'approved' && (
+                  <Button variant="secondary" onClick={() => navigate('/payment')}>
+                    {subscription.status === 'rejected' ? 'Try Again' : 'View Plans'}
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-2xl p-6 border border-border">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <Crown size={24} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground">Upgrade to Premium</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Unlock premium features and unlimited cards
+                    </p>
+                  </div>
+                </div>
+                <Button variant="secondary" onClick={() => navigate('/payment')}>
+                  View Plans
+                </Button>
+              </div>
+            </div>
+          )}
         </motion.div>
 
         {/* Stats Grid */}

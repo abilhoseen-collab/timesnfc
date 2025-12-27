@@ -8,6 +8,7 @@ import { CartProvider } from "@/hooks/useCart";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Admin from "./pages/Admin";
 import VCardEditor from "./pages/VCardEditor";
 import VCardPublic from "./pages/VCardPublic";
 import Cart from "./pages/Cart";
@@ -29,6 +30,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/admin" element={<Admin />} />
               <Route path="/vcard/new" element={<VCardEditor />} />
               <Route path="/vcard/:id" element={<VCardEditor />} />
               <Route path="/c/:slug" element={<VCardPublic />} />
