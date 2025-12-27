@@ -1,4 +1,5 @@
 import { Target, Users, Lightbulb, Globe } from "lucide-react";
+import { motion } from "framer-motion";
 
 const values = [
   {
@@ -30,12 +31,38 @@ const ecosystem = [
   { name: "Times Media", desc: "Digital marketing agency" },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5 },
+  },
+};
+
 export function About() {
   return (
     <section id="about" className="section-padding bg-card">
       <div className="container-custom">
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <motion.div 
+          className="text-center max-w-3xl mx-auto mb-16"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6 }}
+        >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
             About{" "}
             <span className="gradient-text">Times Business Card</span>
@@ -43,11 +70,16 @@ export function About() {
           <p className="text-lg text-muted-foreground">
             We are passionate about transforming how professionals connect.
           </p>
-        </div>
+        </motion.div>
         
         {/* Story Section */}
         <div className="grid lg:grid-cols-2 gap-12 items-center mb-20">
-          <div>
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6 }}
+          >
             <h3 className="text-2xl sm:text-3xl font-bold text-foreground mb-6">
               Empowering Professional Connections Since 2025
             </h3>
@@ -59,66 +91,123 @@ export function About() {
             </p>
             
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-6">
-              <div className="text-center p-4 bg-background rounded-xl">
-                <div className="text-2xl sm:text-3xl font-bold text-primary">10K+</div>
-                <div className="text-xs text-muted-foreground">Active Users</div>
-              </div>
-              <div className="text-center p-4 bg-background rounded-xl">
-                <div className="text-2xl sm:text-3xl font-bold text-secondary">50+</div>
-                <div className="text-xs text-muted-foreground">Countries</div>
-              </div>
-              <div className="text-center p-4 bg-background rounded-xl">
-                <div className="text-2xl sm:text-3xl font-bold text-primary">99%</div>
-                <div className="text-xs text-muted-foreground">Satisfaction</div>
-              </div>
-            </div>
-          </div>
+            <motion.div 
+              className="grid grid-cols-3 gap-6"
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+            >
+              {[
+                { value: "10K+", label: "Active Users", color: "text-primary" },
+                { value: "50+", label: "Countries", color: "text-secondary" },
+                { value: "99%", label: "Satisfaction", color: "text-primary" },
+              ].map((stat, index) => (
+                <motion.div 
+                  key={stat.label}
+                  className="text-center p-4 bg-background rounded-xl"
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.05, y: -5 }}
+                >
+                  <motion.div 
+                    className={`text-2xl sm:text-3xl font-bold ${stat.color}`}
+                    initial={{ scale: 0 }}
+                    whileInView={{ scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.3 + index * 0.1, duration: 0.5, type: "spring" }}
+                  >
+                    {stat.value}
+                  </motion.div>
+                  <div className="text-xs text-muted-foreground">{stat.label}</div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </motion.div>
           
-          <div className="relative">
-            <div className="glass-card rounded-3xl p-8 lg:p-10">
-              <div className="grid grid-cols-2 gap-4">
+          <motion.div 
+            className="relative"
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6 }}
+          >
+            <motion.div 
+              className="glass-card rounded-3xl p-8 lg:p-10"
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.3 }}
+            >
+              <motion.div 
+                className="grid grid-cols-2 gap-4"
+                variants={containerVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+              >
                 {values.map((value, index) => (
-                  <div
+                  <motion.div
                     key={value.title}
                     className="p-4 bg-background rounded-xl text-center hover:shadow-lg transition-shadow"
-                    style={{ animationDelay: `${index * 100}ms` }}
+                    variants={itemVariants}
+                    whileHover={{ y: -5, transition: { duration: 0.2 } }}
                   >
-                    <div className="w-12 h-12 mx-auto rounded-xl bg-accent flex items-center justify-center text-primary mb-3">
+                    <motion.div 
+                      className="w-12 h-12 mx-auto rounded-xl bg-accent flex items-center justify-center text-primary mb-3"
+                      whileHover={{ rotate: 10, scale: 1.1 }}
+                    >
                       <value.icon size={24} />
-                    </div>
+                    </motion.div>
                     <h4 className="font-bold text-foreground text-sm mb-1">{value.title}</h4>
                     <p className="text-xs text-muted-foreground leading-relaxed">{value.description}</p>
-                  </div>
+                  </motion.div>
                 ))}
-              </div>
-            </div>
-          </div>
+              </motion.div>
+            </motion.div>
+          </motion.div>
         </div>
         
         {/* Sayem Group Ecosystem */}
-        <div className="bg-gradient-to-br from-primary to-teal-600 rounded-3xl p-8 lg:p-12 text-primary-foreground">
-          <div className="text-center max-w-2xl mx-auto mb-10">
+        <motion.div 
+          className="bg-gradient-to-br from-primary to-teal-600 rounded-3xl p-8 lg:p-12 text-primary-foreground"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6 }}
+        >
+          <motion.div 
+            className="text-center max-w-2xl mx-auto mb-10"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
             <h3 className="text-2xl sm:text-3xl font-bold mb-4">
               Part of Sayem Group Ecosystem
             </h3>
             <p className="text-primary-foreground/80">
               Times Digital is part of a larger corporate network dedicated to excellence in technology and services.
             </p>
-          </div>
+          </motion.div>
           
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {ecosystem.map((company) => (
-              <div
+          <motion.div 
+            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+          >
+            {ecosystem.map((company, index) => (
+              <motion.div
                 key={company.name}
                 className="bg-primary-foreground/10 backdrop-blur-sm rounded-2xl p-6 text-center hover:bg-primary-foreground/20 transition-colors"
+                variants={itemVariants}
+                whileHover={{ scale: 1.05, y: -5, transition: { duration: 0.2 } }}
               >
                 <h4 className="font-bold text-lg mb-1">{company.name}</h4>
                 <p className="text-sm text-primary-foreground/70">{company.desc}</p>
-              </div>
+              </motion.div>
             ))}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );

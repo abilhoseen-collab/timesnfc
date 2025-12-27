@@ -1,4 +1,5 @@
 import { Star, Quote } from "lucide-react";
+import { motion } from "framer-motion";
 
 const testimonials = [
   {
@@ -45,12 +46,39 @@ const testimonials = [
   },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 40, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.5 },
+  },
+};
+
 export function Testimonials() {
   return (
     <section className="section-padding bg-background overflow-hidden">
       <div className="container-custom">
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <motion.div 
+          className="text-center max-w-2xl mx-auto mb-16"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6 }}
+        >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
             What Our{" "}
             <span className="gradient-text">Users Say</span>
@@ -58,25 +86,49 @@ export function Testimonials() {
           <p className="text-lg text-muted-foreground">
             Join thousands of satisfied professionals who trust Times Digital for their networking needs.
           </p>
-        </div>
+        </motion.div>
         
         {/* Testimonials Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <motion.div 
+          className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
           {testimonials.map((testimonial, index) => (
-            <div
+            <motion.div
               key={testimonial.name}
-              className="group relative bg-card rounded-2xl p-6 border border-border hover:border-primary/30 hover:shadow-xl transition-all duration-300"
-              style={{ animationDelay: `${index * 100}ms` }}
+              variants={cardVariants}
+              className="group relative bg-card rounded-2xl p-6 border border-border hover:border-primary/30 transition-all duration-300"
+              whileHover={{ 
+                y: -8, 
+                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
+                transition: { duration: 0.3 } 
+              }}
             >
               {/* Quote Icon */}
-              <div className="absolute top-6 right-6 text-primary/10">
+              <motion.div 
+                className="absolute top-6 right-6 text-primary/10"
+                initial={{ rotate: 0 }}
+                whileHover={{ rotate: 15, scale: 1.2 }}
+                transition={{ duration: 0.3 }}
+              >
                 <Quote size={40} />
-              </div>
+              </motion.div>
               
               {/* Rating */}
               <div className="flex gap-1 mb-4">
                 {[...Array(testimonial.rating)].map((_, i) => (
-                  <Star key={i} size={16} className="fill-secondary text-secondary" />
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, scale: 0 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.3 + i * 0.05, duration: 0.3, type: "spring" }}
+                  >
+                    <Star size={16} className="fill-secondary text-secondary" />
+                  </motion.div>
                 ))}
               </div>
               
@@ -87,17 +139,20 @@ export function Testimonials() {
               
               {/* Author */}
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-teal-400 flex items-center justify-center text-primary-foreground font-bold text-sm">
+                <motion.div 
+                  className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-teal-400 flex items-center justify-center text-primary-foreground font-bold text-sm"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                >
                   {testimonial.avatar}
-                </div>
+                </motion.div>
                 <div>
                   <h4 className="font-bold text-foreground">{testimonial.name}</h4>
                   <p className="text-sm text-muted-foreground">{testimonial.role}</p>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
