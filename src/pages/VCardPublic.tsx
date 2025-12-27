@@ -376,14 +376,21 @@ END:VCARD`;
                   )}
                   
                   {/* Text Section */}
-                  {section.section_type === 'text' && section.content?.text && (
-                    <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
-                      {section.content.text}
-                    </p>
+                  {section.section_type === 'text' && (section.content?.body || section.content?.heading) && (
+                    <div>
+                      {section.content.heading && (
+                        <h4 className="font-semibold text-gray-900 mb-2">{section.content.heading}</h4>
+                      )}
+                      {section.content.body && (
+                        <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
+                          {section.content.body}
+                        </p>
+                      )}
+                    </div>
                   )}
 
-                  {/* Gallery Section */}
-                  {section.section_type === 'gallery' && section.content?.images && (
+                  {/* Image Gallery Section */}
+                  {section.section_type === 'image_gallery' && section.content?.images && section.content.images.length > 0 && (
                     <div className="grid grid-cols-2 gap-2">
                       {(section.content.images as string[]).map((img, idx) => (
                         <div key={idx} className="aspect-square rounded-xl overflow-hidden bg-gray-100">
@@ -397,10 +404,10 @@ END:VCARD`;
                     </div>
                   )}
 
-                  {/* Products/Services Section */}
-                  {section.section_type === 'products' && section.content?.items && (
+                  {/* Service Cards Section */}
+                  {section.section_type === 'service_card' && section.content?.services && (
                     <div className="space-y-3">
-                      {(section.content.items as { name: string; price: string; description?: string }[]).map((item, idx) => (
+                      {(section.content.services as { name: string; price: string; description?: string }[]).map((item, idx) => (
                         <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
                           <div className={`w-10 h-10 rounded-lg ${style.accent} flex items-center justify-center flex-shrink-0`}>
                             <ShoppingBag size={16} className="text-white" />
