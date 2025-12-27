@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { CreditCard, Sparkles, Crown } from "lucide-react";
 import { motion } from "framer-motion";
-import { useCart } from "@/hooks/useCart";
+import { useNavigate } from "react-router-dom";
 
 const nfcCards = [
   {
@@ -55,15 +55,12 @@ const cardVariants = {
 };
 
 export function NFCStore() {
-  const { addToCart } = useCart();
+  const navigate = useNavigate();
 
-  const handleAddToCart = (card: typeof nfcCards[0]) => {
+  const handleBuyNow = (card: typeof nfcCards[0]) => {
     const price = parseFloat(card.price.replace(/[৳,]/g, ''));
-    addToCart({
-      product_name: `${card.name} NFC Card`,
-      product_type: card.name.toLowerCase(),
-      price,
-    });
+    const productName = `${card.name} NFC Card`;
+    navigate(`/nfc-payment?product=${encodeURIComponent(productName)}&price=${price}&quantity=1`);
   };
   return (
     <section id="nfc-store" className="section-padding bg-background">
@@ -199,9 +196,9 @@ export function NFCStore() {
                     className="w-full font-semibold"
                     variant={card.popular ? "secondary" : "outline"}
                     size="lg"
-                    onClick={() => handleAddToCart(card)}
+                    onClick={() => handleBuyNow(card)}
                   >
-                    Add to Cart
+                    Buy Now
                   </Button>
                 </motion.div>
               </div>

@@ -16,18 +16,18 @@ import eventplannerImg from "@/assets/templates/eventplanner.png";
 import techStartupImg from "@/assets/templates/tech-startup.png";
 
 const templates = [
-  { name: "Freelancer", category: "Professional", image: freelancerImg },
-  { name: "Doctor", category: "Medical", image: doctorImg },
-  { name: "Restaurant", category: "Food", image: restaurantImg },
-  { name: "Real Estate", category: "Business", image: realestateImg },
-  { name: "Fitness", category: "Health", image: fitnessImg },
-  { name: "Photography", category: "Creative", image: photographyImg },
-  { name: "Law Firm", category: "Professional", image: lawfirmImg },
-  { name: "Cafe", category: "Food", image: cafeImg },
-  { name: "Salon", category: "Beauty", image: salonImg },
-  { name: "Construction", category: "Business", image: constructionImg },
-  { name: "Event Planner", category: "Services", image: eventplannerImg },
-  { name: "Tech Startup", category: "Technology", image: techStartupImg },
+  { id: "freelancer", name: "Freelancer", category: "Professional", image: freelancerImg },
+  { id: "doctor", name: "Doctor", category: "Medical", image: doctorImg },
+  { id: "restaurant", name: "Restaurant", category: "Food", image: restaurantImg },
+  { id: "realestate", name: "Real Estate", category: "Business", image: realestateImg },
+  { id: "fitness", name: "Fitness", category: "Health", image: fitnessImg },
+  { id: "photography", name: "Photography", category: "Creative", image: photographyImg },
+  { id: "lawfirm", name: "Law Firm", category: "Professional", image: lawfirmImg },
+  { id: "cafe", name: "Cafe", category: "Food", image: cafeImg },
+  { id: "salon", name: "Salon", category: "Beauty", image: salonImg },
+  { id: "construction", name: "Construction", category: "Business", image: constructionImg },
+  { id: "eventplanner", name: "Event Planner", category: "Services", image: eventplannerImg },
+  { id: "tech-startup", name: "Tech Startup", category: "Technology", image: techStartupImg },
 ];
 
 const containerVariants = {
@@ -84,12 +84,13 @@ export function Templates() {
             <motion.div
               key={template.name}
               variants={itemVariants}
-              className="group relative bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 transition-all duration-300"
+              className="group relative bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 transition-all duration-300 cursor-pointer"
               whileHover={{ 
                 y: -8, 
                 boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
                 transition: { duration: 0.3 } 
               }}
+              onClick={() => window.open(`/template/${template.id}`, '_blank')}
             >
               {/* Image */}
               <div className="relative aspect-[3/4] overflow-hidden">
@@ -101,29 +102,15 @@ export function Templates() {
                   transition={{ duration: 0.6 }}
                 />
                 <motion.div 
-                  className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent"
-                  initial={{ opacity: 0 }}
-                  whileHover={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
+                  className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 />
                 
                 {/* Hover Button */}
-                <motion.div 
-                  className="absolute inset-0 flex items-center justify-center"
-                  initial={{ opacity: 0 }}
-                  whileHover={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    whileHover={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <Button variant="secondary" size="sm" className="font-semibold">
-                      Preview
-                    </Button>
-                  </motion.div>
-                </motion.div>
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <Button variant="secondary" size="sm" className="font-semibold">
+                    View Details
+                  </Button>
+                </div>
               </div>
               
               {/* Content */}

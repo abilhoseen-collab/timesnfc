@@ -44,6 +44,78 @@ export type Database = {
         }
         Relationships: []
       }
+      nfc_guest_orders: {
+        Row: {
+          account_holder_name: string | null
+          admin_notes: string | null
+          bank_name: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          payment_method: string
+          payment_screenshot_url: string | null
+          phone: string
+          price: number
+          product_name: string
+          product_type: string
+          quantity: number
+          sender_number: string | null
+          shipping_address: string
+          shipping_city: string
+          status: string | null
+          total_amount: number
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_holder_name?: string | null
+          admin_notes?: string | null
+          bank_name?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          payment_method: string
+          payment_screenshot_url?: string | null
+          phone: string
+          price: number
+          product_name: string
+          product_type: string
+          quantity?: number
+          sender_number?: string | null
+          shipping_address: string
+          shipping_city: string
+          status?: string | null
+          total_amount: number
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_holder_name?: string | null
+          admin_notes?: string | null
+          bank_name?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          payment_method?: string
+          payment_screenshot_url?: string | null
+          phone?: string
+          price?: number
+          product_name?: string
+          product_type?: string
+          quantity?: number
+          sender_number?: string | null
+          shipping_address?: string
+          shipping_city?: string
+          status?: string | null
+          total_amount?: number
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
