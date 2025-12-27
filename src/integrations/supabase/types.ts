@@ -531,6 +531,7 @@ export type Database = {
           address: string | null
           bio: string | null
           company: string | null
+          cover_image_url: string | null
           created_at: string
           email: string | null
           facebook_url: string | null
@@ -561,6 +562,7 @@ export type Database = {
           address?: string | null
           bio?: string | null
           company?: string | null
+          cover_image_url?: string | null
           created_at?: string
           email?: string | null
           facebook_url?: string | null
@@ -591,6 +593,7 @@ export type Database = {
           address?: string | null
           bio?: string | null
           company?: string | null
+          cover_image_url?: string | null
           created_at?: string
           email?: string | null
           facebook_url?: string | null
