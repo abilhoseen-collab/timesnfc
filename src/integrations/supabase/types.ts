@@ -262,6 +262,30 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           account_holder_name: string | null
@@ -321,6 +345,75 @@ export type Database = {
           {
             foreignKeyName: "subscriptions_package_id_fkey"
             columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upgrade_requests: {
+        Row: {
+          account_holder_name: string | null
+          admin_notes: string | null
+          amount: number
+          bank_name: string | null
+          created_at: string
+          current_subscription_id: string | null
+          id: string
+          payment_method: string
+          payment_screenshot_url: string | null
+          sender_number: string | null
+          status: string | null
+          target_package_id: string | null
+          transaction_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_holder_name?: string | null
+          admin_notes?: string | null
+          amount: number
+          bank_name?: string | null
+          created_at?: string
+          current_subscription_id?: string | null
+          id?: string
+          payment_method: string
+          payment_screenshot_url?: string | null
+          sender_number?: string | null
+          status?: string | null
+          target_package_id?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_holder_name?: string | null
+          admin_notes?: string | null
+          amount?: number
+          bank_name?: string | null
+          created_at?: string
+          current_subscription_id?: string | null
+          id?: string
+          payment_method?: string
+          payment_screenshot_url?: string | null
+          sender_number?: string | null
+          status?: string | null
+          target_package_id?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upgrade_requests_current_subscription_id_fkey"
+            columns: ["current_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upgrade_requests_target_package_id_fkey"
+            columns: ["target_package_id"]
             isOneToOne: false
             referencedRelation: "packages"
             referencedColumns: ["id"]

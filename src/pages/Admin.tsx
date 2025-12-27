@@ -16,7 +16,11 @@ import {
   Shield,
   Users,
   CreditCard,
-  Package
+  Package,
+  Settings,
+  ToggleLeft,
+  ToggleRight,
+  ArrowUpCircle
 } from 'lucide-react';
 import {
   Dialog,
@@ -83,7 +87,7 @@ export default function Admin() {
   const { toast } = useToast();
 
   // Tab management
-  const [activeTab, setActiveTab] = useState<'subscriptions' | 'nfc-orders'>('subscriptions');
+  const [activeTab, setActiveTab] = useState<'subscriptions' | 'nfc-orders' | 'upgrades' | 'settings'>('subscriptions');
 
   // Subscriptions state
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -104,6 +108,14 @@ export default function Admin() {
   const [adminNotes, setAdminNotes] = useState('');
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
 
+  // Settings state
+  const [templatesVisible, setTemplatesVisible] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+
+  // Upgrade requests state
+  const [upgradeRequests, setUpgradeRequests] = useState<any[]>([]);
+  const [upgradesLoading, setUpgradesLoading] = useState(true);
+
   useEffect(() => {
     if (!authLoading && !adminLoading) {
       if (!user) {
@@ -123,8 +135,12 @@ export default function Admin() {
     if (isAdmin) {
       if (activeTab === 'subscriptions') {
         fetchSubscriptions();
-      } else {
+      } else if (activeTab === 'nfc-orders') {
         fetchNfcOrders();
+      } else if (activeTab === 'upgrades') {
+        fetchUpgradeRequests();
+      } else if (activeTab === 'settings') {
+        fetchSettings();
       }
     }
   }, [isAdmin, filter, activeTab]);
@@ -228,6 +244,64 @@ export default function Admin() {
     }
   };
 
+  const fetchUpgradeRequests = async () => {
+    setUpgradesLoading(true);
+    let query = supabase
+      .from('upgrade_requests')
+      .select(`*, packages:target_package_id (name, price, duration_days)`)
+      .order('created_at', { ascending: false });
+
+    if (filter !== 'all') {
+      query = query.eq('status', filter);
+    }
+
+    const { data, error } = await query;
+    if (!error && data) {
+      // Fetch user profiles
+      const userIds = [...new Set(data.map(r => r.user_id))];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+      const enriched = data.map(r => ({
+        ...r,
+        user_profile: profilesMap.get(r.user_id) || null
+      }));
+      setUpgradeRequests(enriched);
+    }
+    setUpgradesLoading(false);
+  };
+
+  const fetchSettings = async () => {
+    setSettingsLoading(true);
+    const { data } = await supabase
+      .from('site_settings')
+      .select('*')
+      .eq('key', 'templates_visible')
+      .single();
+
+    if (data) {
+      const value = data.value as { enabled?: boolean } | null;
+      setTemplatesVisible(value?.enabled || false);
+    }
+    setSettingsLoading(false);
+  };
+
+  const toggleTemplatesVisible = async () => {
+    const newValue = !templatesVisible;
+    const { error } = await supabase
+      .from('site_settings')
+      .update({ value: { enabled: newValue } })
+      .eq('key', 'templates_visible');
+
+    if (!error) {
+      setTemplatesVisible(newValue);
+      toast({ title: `Templates section ${newValue ? 'shown' : 'hidden'}` });
+    }
+  };
+
   const handleApproveSub = async (sub: Subscription) => {
     setProcessing(true);
     
@@ -248,8 +322,23 @@ export default function Admin() {
     if (error) {
       toast({ title: 'Failed to approve', variant: 'destructive' });
     } else {
-      await sendPaymentNotification('approved', sub, expiresAtISO);
-      toast({ title: 'Subscription approved!' });
+      // Create user account and send credentials
+      try {
+        await supabase.functions.invoke('create-user-account', {
+          body: {
+            email: sub.user_profile?.email,
+            fullName: sub.user_profile?.full_name || 'Valued Customer',
+            packageName: sub.packages?.name || 'Premium',
+            amount: sub.amount,
+            expiresAt: expiresAtISO,
+            subscriptionId: sub.id,
+          },
+        });
+        toast({ title: 'Subscription approved! User account created and email sent.' });
+      } catch (e) {
+        console.error('User creation failed:', e);
+        toast({ title: 'Approved but user creation failed', variant: 'destructive' });
+      }
       setShowSubsModal(false);
       fetchSubscriptions();
     }
@@ -439,10 +528,10 @@ export default function Admin() {
           <p className="text-muted-foreground mb-6">Review and approve pending payments</p>
 
           {/* Main Tabs */}
-          <div className="flex gap-4 mb-8">
+          <div className="flex flex-wrap gap-3 mb-8">
             <button
               onClick={() => { setActiveTab('subscriptions'); setFilter('pending'); }}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${
                 activeTab === 'subscriptions'
                   ? 'bg-primary text-primary-foreground shadow-lg'
                   : 'bg-card border border-border text-foreground hover:bg-accent'
@@ -453,7 +542,7 @@ export default function Admin() {
             </button>
             <button
               onClick={() => { setActiveTab('nfc-orders'); setFilter('pending'); }}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${
                 activeTab === 'nfc-orders'
                   ? 'bg-primary text-primary-foreground shadow-lg'
                   : 'bg-card border border-border text-foreground hover:bg-accent'
@@ -461,6 +550,28 @@ export default function Admin() {
             >
               <Package size={18} />
               NFC Orders
+            </button>
+            <button
+              onClick={() => { setActiveTab('upgrades'); setFilter('pending'); }}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${
+                activeTab === 'upgrades'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-card border border-border text-foreground hover:bg-accent'
+              }`}
+            >
+              <ArrowUpCircle size={18} />
+              Upgrade Requests
+            </button>
+            <button
+              onClick={() => { setActiveTab('settings'); }}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${
+                activeTab === 'settings'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-card border border-border text-foreground hover:bg-accent'
+              }`}
+            >
+              <Settings size={18} />
+              Site Settings
             </button>
           </div>
 
@@ -530,17 +641,48 @@ export default function Admin() {
           </div>
 
           {/* Content */}
-          <div className="bg-card rounded-2xl border border-border overflow-hidden">
-            {loading ? (
-              <div className="p-8 text-center">
-                <Loader2 className="animate-spin mx-auto mb-2" />
-                <p className="text-muted-foreground">Loading...</p>
-              </div>
-            ) : activeTab === 'subscriptions' ? (
-              subscriptions.length === 0 ? (
+          {activeTab === 'settings' ? (
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <h3 className="font-bold text-foreground mb-6 flex items-center gap-2">
+                <Settings size={20} className="text-primary" />
+                Site Settings
+              </h3>
+              
+              {settingsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="animate-spin" />
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Templates Visibility */}
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border">
+                    <div>
+                      <p className="font-medium text-foreground">Templates Section</p>
+                      <p className="text-sm text-muted-foreground">Show or hide the "Explore Our Templates" section on homepage</p>
+                    </div>
+                    <button
+                      onClick={toggleTemplatesVisible}
+                      className={`p-2 rounded-lg transition-colors ${
+                        templatesVisible ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      {templatesVisible ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : activeTab === 'upgrades' ? (
+            <div className="bg-card rounded-2xl border border-border overflow-hidden">
+              {upgradesLoading ? (
                 <div className="p-8 text-center">
-                  <Users size={48} className="mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">No subscriptions found</p>
+                  <Loader2 className="animate-spin mx-auto mb-2" />
+                  <p className="text-muted-foreground">Loading...</p>
+                </div>
+              ) : upgradeRequests.length === 0 ? (
+                <div className="p-8 text-center">
+                  <ArrowUpCircle size={48} className="mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground">No upgrade requests found</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -548,32 +690,30 @@ export default function Admin() {
                     <thead className="bg-muted/50 border-b border-border">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">User</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Package</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Target Package</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Amount</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Method</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Date</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {subscriptions.map((sub) => (
-                        <tr key={sub.id} className="hover:bg-muted/30 transition-colors">
+                      {upgradeRequests.map((req) => (
+                        <tr key={req.id} className="hover:bg-muted/30 transition-colors">
                           <td className="px-4 py-3">
                             <div>
-                              <p className="font-medium text-foreground">{sub.user_profile?.full_name || 'Unknown'}</p>
-                              <p className="text-xs text-muted-foreground">{sub.user_profile?.email || ''}</p>
+                              <p className="font-medium text-foreground">{req.user_profile?.full_name || 'Unknown'}</p>
+                              <p className="text-xs text-muted-foreground">{req.user_profile?.email || ''}</p>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-foreground">{sub.packages?.name || 'N/A'}</td>
-                          <td className="px-4 py-3 font-medium text-foreground">৳{sub.amount}</td>
-                          <td className="px-4 py-3 text-foreground capitalize">{sub.payment_method}</td>
-                          <td className="px-4 py-3">{getStatusBadge(sub.status)}</td>
+                          <td className="px-4 py-3 text-foreground">{req.packages?.name || 'N/A'}</td>
+                          <td className="px-4 py-3 font-medium text-foreground">৳{req.amount}</td>
+                          <td className="px-4 py-3">{getStatusBadge(req.status)}</td>
                           <td className="px-4 py-3 text-sm text-muted-foreground">
-                            {new Date(sub.created_at).toLocaleDateString()}
+                            {new Date(req.created_at).toLocaleDateString()}
                           </td>
                           <td className="px-4 py-3">
-                            <Button size="sm" variant="outline" onClick={() => openSubDetails(sub)}>
+                            <Button size="sm" variant="outline">
                               <Eye size={14} className="mr-1" />
                               View
                             </Button>
@@ -583,57 +723,114 @@ export default function Admin() {
                     </tbody>
                   </table>
                 </div>
-              )
-            ) : (
-              nfcOrders.length === 0 ? (
+              )}
+            </div>
+          ) : (
+            <div className="bg-card rounded-2xl border border-border overflow-hidden">
+              {loading ? (
                 <div className="p-8 text-center">
-                  <Package size={48} className="mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">No NFC orders found</p>
+                  <Loader2 className="animate-spin mx-auto mb-2" />
+                  <p className="text-muted-foreground">Loading...</p>
                 </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted/50 border-b border-border">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Customer</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Product</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Amount</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Method</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Date</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {nfcOrders.map((order) => (
-                        <tr key={order.id} className="hover:bg-muted/30 transition-colors">
-                          <td className="px-4 py-3">
-                            <div>
-                              <p className="font-medium text-foreground">{order.full_name}</p>
-                              <p className="text-xs text-muted-foreground">{order.email}</p>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-foreground">{order.product_name}</td>
-                          <td className="px-4 py-3 font-medium text-foreground">৳{order.total_amount}</td>
-                          <td className="px-4 py-3 text-foreground capitalize">{order.payment_method}</td>
-                          <td className="px-4 py-3">{getStatusBadge(order.status)}</td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground">
-                            {new Date(order.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="px-4 py-3">
-                            <Button size="sm" variant="outline" onClick={() => openNfcDetails(order)}>
-                              <Eye size={14} className="mr-1" />
-                              View
-                            </Button>
-                          </td>
+              ) : activeTab === 'subscriptions' ? (
+                subscriptions.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <Users size={48} className="mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">No subscriptions found</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-muted/50 border-b border-border">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">User</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Package</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Amount</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Method</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )
-            )}
-          </div>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {subscriptions.map((sub) => (
+                          <tr key={sub.id} className="hover:bg-muted/30 transition-colors">
+                            <td className="px-4 py-3">
+                              <div>
+                                <p className="font-medium text-foreground">{sub.user_profile?.full_name || 'Unknown'}</p>
+                                <p className="text-xs text-muted-foreground">{sub.user_profile?.email || ''}</p>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-foreground">{sub.packages?.name || 'N/A'}</td>
+                            <td className="px-4 py-3 font-medium text-foreground">৳{sub.amount}</td>
+                            <td className="px-4 py-3 text-foreground capitalize">{sub.payment_method}</td>
+                            <td className="px-4 py-3">{getStatusBadge(sub.status)}</td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
+                              {new Date(sub.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="px-4 py-3">
+                              <Button size="sm" variant="outline" onClick={() => openSubDetails(sub)}>
+                                <Eye size={14} className="mr-1" />
+                                View
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              ) : (
+                nfcOrders.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <Package size={48} className="mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">No NFC orders found</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-muted/50 border-b border-border">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Customer</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Product</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Amount</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Method</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {nfcOrders.map((order) => (
+                          <tr key={order.id} className="hover:bg-muted/30 transition-colors">
+                            <td className="px-4 py-3">
+                              <div>
+                                <p className="font-medium text-foreground">{order.full_name}</p>
+                                <p className="text-xs text-muted-foreground">{order.email}</p>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-foreground">{order.product_name}</td>
+                            <td className="px-4 py-3 font-medium text-foreground">৳{order.total_amount}</td>
+                            <td className="px-4 py-3 text-foreground capitalize">{order.payment_method}</td>
+                            <td className="px-4 py-3">{getStatusBadge(order.status)}</td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
+                              {new Date(order.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="px-4 py-3">
+                              <Button size="sm" variant="outline" onClick={() => openNfcDetails(order)}>
+                                <Eye size={14} className="mr-1" />
+                                View
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              )}
+            </div>
+          )}
         </motion.div>
       </main>
 
