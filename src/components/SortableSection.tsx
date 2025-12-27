@@ -38,6 +38,7 @@ import {
   Loader2,
   Upload,
   Move,
+  Video,
 } from 'lucide-react';
 import type { CustomSection, SectionType } from './CustomSectionsEditor';
 
@@ -127,6 +128,7 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
       case 'text': return Type;
       case 'image_gallery': return ImageIcon;
       case 'service_card': return CreditCard;
+      case 'video': return Video;
     }
   };
 
@@ -209,6 +211,55 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
     const services = [...(section.content.services || [])];
     services.splice(index, 1);
     handleContentChange('services', services);
+  };
+
+  // Helper function to parse video URLs and generate embed
+  const getVideoEmbed = (url: string) => {
+    if (!url) return null;
+    
+    // YouTube
+    const youtubeMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    if (youtubeMatch) {
+      return (
+        <iframe
+          src={`https://www.youtube.com/embed/${youtubeMatch[1]}`}
+          className="w-full h-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          title="YouTube video"
+        />
+      );
+    }
+    
+    // Vimeo
+    const vimeoMatch = url.match(/vimeo\.com\/(?:.*\/)?(\d+)/);
+    if (vimeoMatch) {
+      return (
+        <iframe
+          src={`https://player.vimeo.com/video/${vimeoMatch[1]}`}
+          className="w-full h-full"
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowFullScreen
+          title="Vimeo video"
+        />
+      );
+    }
+    
+    // Direct video link
+    if (url.match(/\.(mp4|webm|ogg)$/i)) {
+      return (
+        <video controls className="w-full h-full">
+          <source src={url} />
+          Your browser does not support the video tag.
+        </video>
+      );
+    }
+    
+    return (
+      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
+        Invalid video URL. Please use YouTube, Vimeo, or direct video links.
+      </div>
+    );
   };
 
   return (
@@ -402,6 +453,29 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                     <Plus size={16} className="mr-2" />
                     Add Service
                   </Button>
+                </div>
+              )}
+
+              {/* Video Embed */}
+              {section.section_type === 'video' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Video URL</label>
+                    <Input
+                      value={section.content.video_url || ''}
+                      onChange={(e) => handleContentChange('video_url', e.target.value)}
+                      placeholder="https://www.youtube.com/watch?v=... or https://vimeo.com/..."
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Supports YouTube, Vimeo, and direct video links
+                    </p>
+                  </div>
+                  
+                  {section.content.video_url && (
+                    <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                      {getVideoEmbed(section.content.video_url)}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

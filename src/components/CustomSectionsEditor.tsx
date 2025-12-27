@@ -27,10 +27,11 @@ import {
   CreditCard,
   Loader2,
   Save,
+  Video,
 } from 'lucide-react';
 import { SortableSection } from './SortableSection';
 
-export type SectionType = 'text' | 'image_gallery' | 'service_card';
+export type SectionType = 'text' | 'image_gallery' | 'service_card' | 'video';
 
 export interface CustomSection {
   id: string;
@@ -50,6 +51,7 @@ const sectionTypes = [
   { type: 'text' as SectionType, icon: Type, label: 'Text Section', description: 'Headings, paragraphs, and formatted text' },
   { type: 'image_gallery' as SectionType, icon: ImageIcon, label: 'Image Gallery', description: 'Photo galleries and image carousels' },
   { type: 'service_card' as SectionType, icon: CreditCard, label: 'Service Card', description: 'Services or products with pricing' },
+  { type: 'video' as SectionType, icon: Video, label: 'Video Embed', description: 'YouTube, Vimeo, or other video embeds' },
 ];
 
 export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorProps) {
@@ -129,6 +131,7 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
       case 'text': return 'About Me';
       case 'image_gallery': return 'Gallery';
       case 'service_card': return 'Services';
+      case 'video': return 'Video';
     }
   };
 
@@ -140,6 +143,8 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
         return { images: [] };
       case 'service_card':
         return { services: [{ name: '', description: '', price: '' }] };
+      case 'video':
+        return { video_url: '', video_type: 'youtube' };
     }
   };
 
