@@ -20,8 +20,16 @@ import {
   Settings,
   ToggleLeft,
   ToggleRight,
-  ArrowUpCircle
+  ArrowUpCircle,
+  Truck
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -76,9 +84,17 @@ interface NFCGuestOrder {
   account_holder_name: string | null;
   payment_screenshot_url: string | null;
   status: string;
+  shipping_status: string | null;
   admin_notes: string | null;
   created_at: string;
 }
+
+const SHIPPING_STATUSES = [
+  { value: 'payment_received', label: 'Payment Received', color: 'bg-blue-100 text-blue-700' },
+  { value: 'verified', label: 'Verified', color: 'bg-indigo-100 text-indigo-700' },
+  { value: 'shipped', label: 'Shipped', color: 'bg-yellow-100 text-yellow-700' },
+  { value: 'delivered', label: 'Delivered', color: 'bg-green-100 text-green-700' },
+];
 
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
@@ -443,6 +459,23 @@ export default function Admin() {
       }
       toast({ title: 'NFC Order rejected' });
       setShowNfcModal(false);
+      fetchNfcOrders();
+    }
+    setProcessing(false);
+  };
+
+  const handleUpdateShippingStatus = async (order: NFCGuestOrder, newStatus: string) => {
+    setProcessing(true);
+    const { error } = await supabase
+      .from('nfc_guest_orders')
+      .update({ shipping_status: newStatus })
+      .eq('id', order.id);
+
+    if (error) {
+      toast({ title: 'Failed to update shipping status', variant: 'destructive' });
+    } else {
+      toast({ title: `Shipping status updated to ${newStatus}` });
+      setSelectedNfc({ ...order, shipping_status: newStatus });
       fetchNfcOrders();
     }
     setProcessing(false);
@@ -988,6 +1021,34 @@ export default function Admin() {
                 <p className="text-xs text-muted-foreground mb-1">Shipping Address</p>
                 <p className="text-sm">{selectedNfc.shipping_address}, {selectedNfc.shipping_city}</p>
               </div>
+
+              {/* Shipping Status Control */}
+              {selectedNfc.status === 'approved' && (
+                <div className="bg-accent/50 rounded-lg p-4 border border-border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Truck size={18} className="text-primary" />
+                    <p className="font-medium text-foreground">Shipping Status</p>
+                  </div>
+                  <Select
+                    value={selectedNfc.shipping_status || 'payment_received'}
+                    onValueChange={(value) => handleUpdateShippingStatus(selectedNfc, value)}
+                    disabled={processing}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SHIPPING_STATUSES.map((status) => (
+                        <SelectItem key={status.value} value={status.value}>
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${status.color}`}>
+                            {status.label}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {selectedNfc.payment_screenshot_url && (
                 <div>

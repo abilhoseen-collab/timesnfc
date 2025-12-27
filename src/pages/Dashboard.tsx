@@ -27,7 +27,8 @@ import {
   Shield,
   Crown,
   Clock,
-  CheckCircle
+  CheckCircle,
+  ArrowUpCircle
 } from 'lucide-react';
 import {
   Dialog,
@@ -37,6 +38,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import logo from '@/assets/logo.png';
+import UpgradePackageForm from '@/components/UpgradePackageForm';
 
 interface Subscription {
   id: string;
@@ -396,11 +398,21 @@ export default function Dashboard() {
                     )}
                   </div>
                 </div>
-                {subscription.status !== 'approved' && (
-                  <Button variant="secondary" onClick={() => navigate('/payment')}>
-                    {subscription.status === 'rejected' ? 'Try Again' : 'View Plans'}
-                  </Button>
-                )}
+                <div className="flex gap-2 flex-wrap">
+                  {subscription.status === 'approved' && subscription.package_name && (
+                    <UpgradePackageForm
+                      userId={user!.id}
+                      currentSubscriptionId={subscription.id}
+                      currentPackageName={subscription.package_name}
+                      onSuccess={fetchSubscription}
+                    />
+                  )}
+                  {subscription.status !== 'approved' && (
+                    <Button variant="secondary" onClick={() => navigate('/payment')}>
+                      {subscription.status === 'rejected' ? 'Try Again' : 'View Plans'}
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           ) : (
