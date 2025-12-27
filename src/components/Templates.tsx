@@ -1,5 +1,7 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
 
 // Import template images
 import freelancerImg from "@/assets/templates/freelancer.png";
@@ -52,6 +54,32 @@ const itemVariants = {
 };
 
 export function Templates() {
+  const [isVisible, setIsVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchVisibility();
+  }, []);
+
+  const fetchVisibility = async () => {
+    const { data } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'templates_visible')
+      .maybeSingle();
+
+    if (data) {
+      const value = data.value as { enabled?: boolean } | null;
+      setIsVisible(value?.enabled || false);
+    }
+    setLoading(false);
+  };
+
+  // Don't render if hidden or still loading
+  if (loading || !isVisible) {
+    return null;
+  }
+
   return (
     <section id="templates" className="section-padding bg-background">
       <div className="container-custom">
