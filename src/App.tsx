@@ -18,6 +18,9 @@ import TemplatePreview from "./pages/TemplatePreview";
 import NFCPayment from "./pages/NFCPayment";
 import TrackOrder from "./pages/TrackOrder";
 import NotFound from "./pages/NotFound";
+import ConstructionTemplate from "./pages/templates/ConstructionTemplate";
+import DoctorTemplate from "./pages/templates/DoctorTemplate";
+import RealEstateTemplate from "./pages/templates/RealEstateTemplate";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +46,9 @@ const App = () => (
               <Route path="/template/:templateId" element={<TemplatePreview />} />
               <Route path="/nfc-payment" element={<NFCPayment />} />
               <Route path="/track-order" element={<TrackOrder />} />
+              <Route path="/templates/construction" element={<ConstructionTemplate />} />
+              <Route path="/templates/doctor" element={<DoctorTemplate />} />
+              <Route path="/templates/realestate" element={<RealEstateTemplate />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
