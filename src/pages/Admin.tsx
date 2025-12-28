@@ -103,7 +103,7 @@ export default function Admin() {
   const { toast } = useToast();
 
   // Tab management
-  const [activeTab, setActiveTab] = useState<'subscriptions' | 'nfc-orders' | 'upgrades' | 'settings'>('subscriptions');
+  const [activeTab, setActiveTab] = useState<'subscriptions' | 'nfc-orders' | 'upgrades' | 'users' | 'settings'>('subscriptions');
 
   // Subscriptions state
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -134,6 +134,12 @@ export default function Admin() {
   const [selectedUpgrade, setSelectedUpgrade] = useState<any | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
+  // Users state
+  const [users, setUsers] = useState<any[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [showUserModal, setShowUserModal] = useState(false);
+
   useEffect(() => {
     if (!authLoading && !adminLoading) {
       if (!user) {
@@ -157,6 +163,8 @@ export default function Admin() {
         fetchNfcOrders();
       } else if (activeTab === 'upgrades') {
         fetchUpgradeRequests();
+      } else if (activeTab === 'users') {
+        fetchUsers();
       } else if (activeTab === 'settings') {
         fetchSettings();
       }
@@ -290,6 +298,57 @@ export default function Admin() {
       setUpgradeRequests(enriched);
     }
     setUpgradesLoading(false);
+  };
+
+  const fetchUsers = async () => {
+    setUsersLoading(true);
+    
+    // Fetch all profiles
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (profilesError || !profilesData) {
+      setUsersLoading(false);
+      return;
+    }
+
+    // Fetch all subscriptions
+    const { data: subsData } = await supabase
+      .from('subscriptions')
+      .select(`*, packages:package_id (name, duration_days)`)
+      .eq('status', 'approved');
+
+    // Fetch all user roles
+    const { data: rolesData } = await supabase
+      .from('user_roles')
+      .select('*');
+
+    // Create maps for quick lookup
+    const subsMap = new Map<string, any>();
+    subsData?.forEach(sub => {
+      if (!subsMap.has(sub.user_id) || new Date(sub.created_at) > new Date(subsMap.get(sub.user_id).created_at)) {
+        subsMap.set(sub.user_id, sub);
+      }
+    });
+
+    const rolesMap = new Map<string, string[]>();
+    rolesData?.forEach(role => {
+      const existing = rolesMap.get(role.user_id) || [];
+      existing.push(role.role);
+      rolesMap.set(role.user_id, existing);
+    });
+
+    // Enrich users with subscription and role info
+    const enrichedUsers = profilesData.map(profile => ({
+      ...profile,
+      subscription: subsMap.get(profile.id) || null,
+      roles: rolesMap.get(profile.id) || []
+    }));
+
+    setUsers(enrichedUsers);
+    setUsersLoading(false);
   };
 
   const fetchSettings = async () => {
@@ -709,6 +768,17 @@ export default function Admin() {
               Upgrade Requests
             </button>
             <button
+              onClick={() => { setActiveTab('users'); }}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${
+                activeTab === 'users'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-card border border-border text-foreground hover:bg-accent'
+              }`}
+            >
+              <Users size={18} />
+              Users
+            </button>
+            <button
               onClick={() => { setActiveTab('settings'); }}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${
                 activeTab === 'settings'
@@ -787,7 +857,116 @@ export default function Admin() {
           </div>
 
           {/* Content */}
-          {activeTab === 'settings' ? (
+          {activeTab === 'users' ? (
+            <div className="bg-card rounded-2xl border border-border overflow-hidden">
+              {usersLoading ? (
+                <div className="p-8 text-center">
+                  <Loader2 className="animate-spin mx-auto mb-2" />
+                  <p className="text-muted-foreground">Loading...</p>
+                </div>
+              ) : users.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Users size={48} className="mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground">No users found</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-muted/50 border-b border-border">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">User</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Package</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Expires</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Role</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Joined</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {users.map((u) => (
+                        <tr key={u.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              {u.avatar_url ? (
+                                <img src={u.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <span className="text-primary font-medium">
+                                    {u.full_name?.charAt(0) || u.email?.charAt(0) || '?'}
+                                  </span>
+                                </div>
+                              )}
+                              <div>
+                                <p className="font-medium text-foreground">{u.full_name || 'Unknown'}</p>
+                                <p className="text-xs text-muted-foreground">{u.email || ''}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-foreground">
+                            {u.subscription?.packages?.name || 'No Package'}
+                          </td>
+                          <td className="px-4 py-3">
+                            {u.subscription ? (
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                u.subscription.expires_at && new Date(u.subscription.expires_at) > new Date()
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-red-100 text-red-700'
+                              }`}>
+                                {u.subscription.expires_at && new Date(u.subscription.expires_at) > new Date()
+                                  ? 'Active'
+                                  : 'Expired'}
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                                No Sub
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            {u.subscription?.expires_at 
+                              ? new Date(u.subscription.expires_at).toLocaleDateString()
+                              : '-'}
+                          </td>
+                          <td className="px-4 py-3">
+                            {u.roles.includes('admin') ? (
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                                Admin
+                              </span>
+                            ) : u.roles.includes('moderator') ? (
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                Moderator
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                                User
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            {new Date(u.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedUser(u);
+                                setShowUserModal(true);
+                              }}
+                            >
+                              <Eye size={14} className="mr-1" />
+                              View
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          ) : activeTab === 'settings' ? (
             <div className="bg-card rounded-2xl border border-border p-6">
               <h3 className="font-bold text-foreground mb-6 flex items-center gap-2">
                 <Settings size={20} className="text-primary" />
@@ -1329,6 +1508,111 @@ export default function Admin() {
                   )}
                 </div>
               )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* User Details Modal */}
+      <Dialog open={showUserModal} onOpenChange={setShowUserModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>User Details</DialogTitle>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                {selectedUser.avatar_url ? (
+                  <img src={selectedUser.avatar_url} alt="" className="w-16 h-16 rounded-full object-cover" />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-primary font-bold text-xl">
+                      {selectedUser.full_name?.charAt(0) || selectedUser.email?.charAt(0) || '?'}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <h3 className="font-bold text-lg text-foreground">{selectedUser.full_name || 'Unknown'}</h3>
+                  <p className="text-muted-foreground">{selectedUser.email || ''}</p>
+                  <div className="flex gap-2 mt-1">
+                    {selectedUser.roles.includes('admin') && (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">Admin</span>
+                    )}
+                    {selectedUser.roles.includes('moderator') && (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Moderator</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">User ID</p>
+                  <p className="font-mono text-sm break-all">{selectedUser.id}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Joined</p>
+                  <p className="font-medium">{new Date(selectedUser.created_at).toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              {/* Subscription Info */}
+              <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                  <CreditCard size={16} className="text-primary" />
+                  Subscription
+                </h4>
+                {selectedUser.subscription ? (
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Package</span>
+                      <span className="font-medium">{selectedUser.subscription.packages?.name || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Amount</span>
+                      <span className="font-medium">৳{selectedUser.subscription.amount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Status</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        selectedUser.subscription.expires_at && new Date(selectedUser.subscription.expires_at) > new Date()
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {selectedUser.subscription.expires_at && new Date(selectedUser.subscription.expires_at) > new Date()
+                          ? 'Active'
+                          : 'Expired'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Expires</span>
+                      <span className="font-medium">
+                        {selectedUser.subscription.expires_at 
+                          ? new Date(selectedUser.subscription.expires_at).toLocaleDateString()
+                          : '-'}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">No active subscription</p>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    setShowUserModal(false);
+                    // Focus on subscriptions tab with this user
+                    setActiveTab('subscriptions');
+                    setFilter('all');
+                    toast({ title: 'View subscriptions to manage this user\'s payments' });
+                  }}
+                >
+                  View Subscriptions
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
