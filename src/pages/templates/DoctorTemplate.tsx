@@ -163,34 +163,22 @@ export default function DoctorTemplate() {
     setLoading(false);
   };
 
-  const loadSavedData = async () => {
-    const { data } = await supabase
-      .from('vcard_custom_sections')
-      .select('content')
-      .eq('vcard_id', user?.id)
-      .eq('section_type', 'doctor_template')
-      .maybeSingle();
-    
-    if (data?.content) {
-      setFormData({ ...formData, ...data.content });
+  const loadSavedData = () => {
+    const saved = localStorage.getItem(`doctor_template_${user?.id}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setFormData(prev => ({ ...prev, ...parsed }));
+      } catch (e) {
+        console.log('No saved data found');
+      }
     }
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('vcard_custom_sections')
-        .upsert({
-          vcard_id: user?.id,
-          section_type: 'doctor_template',
-          title: 'Doctor Template Data',
-          content: formData,
-          is_visible: true,
-          sort_order: 0,
-        });
-
-      if (error) throw error;
+      localStorage.setItem(`doctor_template_${user?.id}`, JSON.stringify(formData));
       toast({ title: 'Saved successfully!' });
     } catch (error) {
       toast({ title: 'Save failed', variant: 'destructive' });
