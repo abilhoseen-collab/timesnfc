@@ -28,7 +28,11 @@ import {
   Crown,
   Clock,
   CheckCircle,
-  ArrowUpCircle
+  ArrowUpCircle,
+  HardHat,
+  Stethoscope,
+  Home,
+  Share2
 } from 'lucide-react';
 import {
   Dialog,
@@ -338,6 +342,148 @@ export default function Dashboard() {
           </p>
         </motion.div>
 
+        {/* Quick Access Templates - Only for Subscribed Users */}
+        {subscription?.status === 'approved' && subscription.expires_at && new Date(subscription.expires_at) > new Date() && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="mb-8"
+          >
+            <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+              <Crown size={20} className="text-primary" />
+              Premium Templates
+            </h2>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {/* Construction Template */}
+              <div className="bg-card rounded-2xl p-6 border border-border hover:shadow-lg transition-all">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center">
+                    <HardHat size={24} className="text-orange-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground">Construction</h3>
+                    <p className="text-xs text-muted-foreground">নির্মাণ ব্যবসা</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => navigate('/templates/construction')}
+                  >
+                    <Edit size={14} className="mr-1" />
+                    Edit
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      const url = `${window.location.origin}/p/construction/${user?.id}`;
+                      navigator.clipboard.writeText(url);
+                      toast({ title: 'Public link copied!' });
+                    }}
+                  >
+                    <Share2 size={14} />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => window.open(`/p/construction/${user?.id}`, '_blank')}
+                  >
+                    <ExternalLink size={14} />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Doctor Template */}
+              <div className="bg-card rounded-2xl p-6 border border-border hover:shadow-lg transition-all">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+                    <Stethoscope size={24} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground">Doctor</h3>
+                    <p className="text-xs text-muted-foreground">ডাক্তার প্রোফাইল</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => navigate('/templates/doctor')}
+                  >
+                    <Edit size={14} className="mr-1" />
+                    Edit
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      const url = `${window.location.origin}/p/doctor/${user?.id}`;
+                      navigator.clipboard.writeText(url);
+                      toast({ title: 'Public link copied!' });
+                    }}
+                  >
+                    <Share2 size={14} />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => window.open(`/p/doctor/${user?.id}`, '_blank')}
+                  >
+                    <ExternalLink size={14} />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Real Estate Template */}
+              <div className="bg-card rounded-2xl p-6 border border-border hover:shadow-lg transition-all">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+                    <Home size={24} className="text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground">Real Estate</h3>
+                    <p className="text-xs text-muted-foreground">রিয়েল এস্টেট</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => navigate('/templates/realestate')}
+                  >
+                    <Edit size={14} className="mr-1" />
+                    Edit
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      const url = `${window.location.origin}/p/realestate/${user?.id}`;
+                      navigator.clipboard.writeText(url);
+                      toast({ title: 'Public link copied!' });
+                    }}
+                  >
+                    <Share2 size={14} />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => window.open(`/p/realestate/${user?.id}`, '_blank')}
+                  >
+                    <ExternalLink size={14} />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Subscription Status */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -568,7 +714,21 @@ export default function Dashboard() {
             </h2>
             <Button 
               variant="secondary" 
-              onClick={() => navigate('/vcard/new')}
+              onClick={() => {
+                const hasActiveSubscription = subscription?.status === 'approved' && 
+                  subscription.expires_at && 
+                  new Date(subscription.expires_at) > new Date();
+                if (!hasActiveSubscription) {
+                  toast({ 
+                    title: 'Subscription Required',
+                    description: 'Please purchase a package to create cards.',
+                    variant: 'destructive'
+                  });
+                  navigate('/payment');
+                  return;
+                }
+                navigate('/vcard/new');
+              }}
               className="font-semibold"
             >
               <Plus size={18} className="mr-2" />
@@ -591,7 +751,21 @@ export default function Dashboard() {
               </p>
               <Button 
                 variant="secondary" 
-                onClick={() => navigate('/vcard/new')}
+                onClick={() => {
+                  const hasActiveSubscription = subscription?.status === 'approved' && 
+                    subscription.expires_at && 
+                    new Date(subscription.expires_at) > new Date();
+                  if (!hasActiveSubscription) {
+                    toast({ 
+                      title: 'Subscription Required',
+                      description: 'Please purchase a package to create cards.',
+                      variant: 'destructive'
+                    });
+                    navigate('/payment');
+                    return;
+                  }
+                  navigate('/vcard/new');
+                }}
                 className="font-semibold"
               >
                 <Plus size={18} className="mr-2" />
