@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAdmin } from '@/hooks/useAdmin';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import HomePageContentManager from '@/components/admin/HomePageContentManager';
 import { 
   ArrowLeft,
   CheckCircle,
@@ -21,7 +22,8 @@ import {
   ToggleLeft,
   ToggleRight,
   ArrowUpCircle,
-  Truck
+  Truck,
+  Home
 } from 'lucide-react';
 import {
   Select,
@@ -103,7 +105,7 @@ export default function Admin() {
   const { toast } = useToast();
 
   // Tab management
-  const [activeTab, setActiveTab] = useState<'subscriptions' | 'nfc-orders' | 'upgrades' | 'users' | 'settings'>('subscriptions');
+  const [activeTab, setActiveTab] = useState<'subscriptions' | 'nfc-orders' | 'upgrades' | 'users' | 'settings' | 'homepage'>('subscriptions');
 
   // Subscriptions state
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -789,6 +791,17 @@ export default function Admin() {
               <Settings size={18} />
               Site Settings
             </button>
+            <button
+              onClick={() => { setActiveTab('homepage'); }}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${
+                activeTab === 'homepage'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-card border border-border text-foreground hover:bg-accent'
+              }`}
+            >
+              <Home size={18} />
+              Home Page
+            </button>
           </div>
 
           {/* Stats */}
@@ -857,7 +870,11 @@ export default function Admin() {
           </div>
 
           {/* Content */}
-          {activeTab === 'users' ? (
+          {activeTab === 'homepage' ? (
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <HomePageContentManager />
+            </div>
+          ) : activeTab === 'users' ? (
             <div className="bg-card rounded-2xl border border-border overflow-hidden">
               {usersLoading ? (
                 <div className="p-8 text-center">
