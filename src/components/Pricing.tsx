@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Check, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const plans = [
   {
@@ -82,6 +83,16 @@ const cardVariants = {
 };
 
 export function Pricing() {
+  const navigate = useNavigate();
+
+  const handlePlanClick = (planName: string) => {
+    if (planName === 'Starter') {
+      navigate('/auth');
+    } else if (planName === 'Professional' || planName === 'Premium') {
+      navigate('/payment');
+    }
+  };
+  
   return (
     <section id="pricing" className="section-padding bg-card">
       <div className="container-custom">
@@ -207,6 +218,7 @@ export function Pricing() {
                   }`}
                   variant={plan.popular ? "default" : plan.buttonVariant}
                   size="lg"
+                  onClick={() => handlePlanClick(plan.name)}
                 >
                   {plan.buttonText}
                 </Button>
