@@ -1,8 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Check } from "lucide-react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export function CTA() {
+  const navigate = useNavigate();
+
+  const scrollToSection = (href: string) => {
+    const element = document.querySelector(href);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
     <section className="section-padding bg-gradient-to-br from-primary via-teal-600 to-teal-700 relative overflow-hidden">
       {/* Background elements */}
@@ -81,6 +91,7 @@ export function CTA() {
               <Button
                 size="lg"
                 className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold text-base px-8 py-6 shadow-lg shadow-secondary/30"
+                onClick={() => navigate('/auth')}
               >
                 Start Free Trial
                 <motion.div
@@ -96,6 +107,7 @@ export function CTA() {
                 size="lg"
                 variant="outline"
                 className="bg-transparent border-2 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 font-medium text-base px-8 py-6"
+                onClick={() => scrollToSection('#templates')}
               >
                 View Demo
               </Button>
