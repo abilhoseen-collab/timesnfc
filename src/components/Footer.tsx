@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 
 const footerLinks = {
@@ -16,37 +17,54 @@ const footerLinks = {
     links: [
       { name: "About Us", href: "#about" },
       { name: "Contact", href: "#contact" },
-      { name: "Careers", href: "#" },
-      { name: "Blog", href: "#" },
+      { name: "Track Order", href: "/track-order" },
+      { name: "Dashboard", href: "/dashboard" },
     ],
   },
   support: {
     title: "Support",
     links: [
-      { name: "Help Center", href: "#" },
-      { name: "Documentation", href: "#" },
-      { name: "API Reference", href: "#" },
-      { name: "Community", href: "#" },
+      { name: "FAQ", href: "#faq" },
+      { name: "Contact Us", href: "#contact" },
+      { name: "Get Started", href: "/auth" },
+      { name: "NFC Cards", href: "#nfc-store" },
     ],
   },
   legal: {
     title: "Legal",
     links: [
-      { name: "Privacy Policy", href: "#" },
-      { name: "Terms of Service", href: "#" },
-      { name: "Cookie Policy", href: "#" },
-      { name: "GDPR", href: "#" },
+      { name: "Privacy Policy", href: "#contact", placeholder: true },
+      { name: "Terms of Service", href: "#contact", placeholder: true },
+      { name: "Refund Policy", href: "#contact", placeholder: true },
+      { name: "Shipping Policy", href: "#contact", placeholder: true },
     ],
   },
 };
 
 export function Footer() {
-  const scrollToSection = (href: string) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleLinkClick = (href: string, isPlaceholder?: boolean) => {
+    if (isPlaceholder) {
+      toast({
+        title: "Coming Soon",
+        description: "This page is under development. Please contact us for any queries.",
+      });
+      const element = document.querySelector('#contact');
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+      return;
+    }
+    
     if (href.startsWith("#")) {
       const element = document.querySelector(href);
       if (element) {
         element.scrollIntoView({ behavior: "smooth" });
       }
+    } else {
+      navigate(href);
     }
   };
 
@@ -83,7 +101,7 @@ export function Footer() {
                 {section.links.map((link) => (
                   <li key={link.name}>
                     <button
-                      onClick={() => scrollToSection(link.href)}
+                      onClick={() => handleLinkClick(link.href, (link as any).placeholder)}
                       className="text-sm text-primary-foreground/70 hover:text-secondary transition-colors"
                     >
                       {link.name}

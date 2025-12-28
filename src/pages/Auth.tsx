@@ -43,7 +43,7 @@ export default function Auth() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Check for prefilled email from NFC payment
+  // Check for prefilled email from NFC payment and redirect param
   useEffect(() => {
     const emailParam = searchParams.get('email');
     const pendingType = searchParams.get('pending');
@@ -57,6 +57,8 @@ export default function Auth() {
       checkNfcOrderStatus(emailParam);
     }
   }, [searchParams]);
+
+  const redirectPath = searchParams.get('redirect') || '/dashboard';
 
   // Check NFC order status when email changes during signup
   useEffect(() => {
@@ -98,9 +100,9 @@ export default function Auth() {
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      navigate(redirectPath);
     }
-  }, [user, navigate]);
+  }, [user, navigate, redirectPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,7 +166,7 @@ export default function Auth() {
             title: 'Account created!',
             description: 'Welcome to Times Digital. You are now logged in.',
           });
-          navigate('/dashboard');
+          navigate(redirectPath);
         }
       } else {
         const result = signInSchema.safeParse({ email, password });
@@ -192,7 +194,7 @@ export default function Auth() {
             title: 'Welcome back!',
             description: 'You have successfully signed in.',
           });
-          navigate('/dashboard');
+          navigate(redirectPath);
         }
       }
     } catch (error) {
