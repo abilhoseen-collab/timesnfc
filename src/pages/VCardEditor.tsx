@@ -386,9 +386,12 @@ export default function VCardEditor() {
         
         toast({
           title: 'Success',
-          description: 'Card created successfully. You can now add custom sections.',
+          description: 'Card created successfully! You can now add custom sections below.',
         });
-        return; // Don't navigate away yet, let user add custom sections
+        
+        // Navigate to edit page with the new vcard id so custom sections work properly
+        navigate(`/vcard/${data.id}`, { replace: true });
+        return;
       }
       
       navigate('/dashboard');
