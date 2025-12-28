@@ -131,6 +131,8 @@ export default function Admin() {
   // Upgrade requests state
   const [upgradeRequests, setUpgradeRequests] = useState<any[]>([]);
   const [upgradesLoading, setUpgradesLoading] = useState(true);
+  const [selectedUpgrade, setSelectedUpgrade] = useState<any | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !adminLoading) {
@@ -493,6 +495,117 @@ export default function Admin() {
     setShowNfcModal(true);
   };
 
+  const openUpgradeDetails = (upgrade: any) => {
+    setSelectedUpgrade(upgrade);
+    setAdminNotes(upgrade.admin_notes || '');
+    setShowUpgradeModal(true);
+  };
+
+  const handleApproveUpgrade = async (upgrade: any) => {
+    setProcessing(true);
+
+    // Calculate new expiry date based on target package duration
+    const expiresAt = new Date();
+    const durationDays = upgrade.packages?.duration_days || 30;
+    expiresAt.setDate(expiresAt.getDate() + durationDays);
+    const expiresAtISO = expiresAt.toISOString();
+
+    // Update the user's subscription to the new package
+    if (upgrade.current_subscription_id) {
+      const { error: subError } = await supabase
+        .from('subscriptions')
+        .update({
+          package_id: upgrade.target_package_id,
+          amount: upgrade.packages?.price || upgrade.amount,
+          expires_at: expiresAtISO,
+          status: 'approved',
+        })
+        .eq('id', upgrade.current_subscription_id);
+
+      if (subError) {
+        toast({ title: 'Failed to update subscription', variant: 'destructive' });
+        setProcessing(false);
+        return;
+      }
+    }
+
+    // Update upgrade request status
+    const { error } = await supabase
+      .from('upgrade_requests')
+      .update({
+        status: 'approved',
+        admin_notes: adminNotes || null,
+      })
+      .eq('id', upgrade.id);
+
+    if (error) {
+      toast({ title: 'Failed to approve upgrade', variant: 'destructive' });
+    } else {
+      // Send notification
+      try {
+        await supabase.functions.invoke('send-payment-notification', {
+          body: {
+            type: 'approved',
+            userEmail: upgrade.user_profile?.email,
+            userName: upgrade.user_profile?.full_name || 'Valued Customer',
+            packageName: upgrade.packages?.name || 'Premium',
+            amount: upgrade.amount,
+            expiresAt: expiresAtISO,
+            adminNotes: adminNotes || undefined,
+            isUpgrade: true,
+          },
+        });
+      } catch (e) {
+        console.error('Notification failed:', e);
+      }
+      toast({ title: 'Upgrade approved! Subscription updated successfully.' });
+      setShowUpgradeModal(false);
+      fetchUpgradeRequests();
+    }
+    setProcessing(false);
+  };
+
+  const handleRejectUpgrade = async (upgrade: any) => {
+    if (!adminNotes.trim()) {
+      toast({ title: 'Please provide a reason for rejection', variant: 'destructive' });
+      return;
+    }
+
+    setProcessing(true);
+    const { error } = await supabase
+      .from('upgrade_requests')
+      .update({
+        status: 'rejected',
+        admin_notes: adminNotes,
+      })
+      .eq('id', upgrade.id);
+
+    if (error) {
+      toast({ title: 'Failed to reject upgrade', variant: 'destructive' });
+    } else {
+      // Send notification
+      try {
+        await supabase.functions.invoke('send-payment-notification', {
+          body: {
+            type: 'rejected',
+            userEmail: upgrade.user_profile?.email,
+            userName: upgrade.user_profile?.full_name || 'Valued Customer',
+            packageName: upgrade.packages?.name || 'Premium',
+            amount: upgrade.amount,
+            adminNotes: adminNotes,
+            isUpgrade: true,
+          },
+        });
+      } catch (e) {
+        console.error('Notification failed:', e);
+      }
+      toast({ title: 'Upgrade request rejected' });
+      setShowUpgradeModal(false);
+      fetchUpgradeRequests();
+    }
+    setProcessing(false);
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
@@ -746,7 +859,7 @@ export default function Admin() {
                             {new Date(req.created_at).toLocaleDateString()}
                           </td>
                           <td className="px-4 py-3">
-                            <Button size="sm" variant="outline">
+                            <Button size="sm" variant="outline" onClick={() => openUpgradeDetails(req)}>
                               <Eye size={14} className="mr-1" />
                               View
                             </Button>
@@ -1103,6 +1216,116 @@ export default function Admin() {
                   </div>
                   {selectedNfc.admin_notes && (
                     <p className="text-sm mt-2">{selectedNfc.admin_notes}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Upgrade Details Modal */}
+      <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Upgrade Request Details</DialogTitle>
+          </DialogHeader>
+          {selectedUpgrade && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">User Name</p>
+                  <p className="font-medium">{selectedUpgrade.user_profile?.full_name || 'Unknown'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Email</p>
+                  <p className="font-medium">{selectedUpgrade.user_profile?.email || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Target Package</p>
+                  <p className="font-medium">{selectedUpgrade.packages?.name || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Amount</p>
+                  <p className="font-medium text-lg">৳{selectedUpgrade.amount}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Payment Method</p>
+                  <p className="font-medium capitalize">{selectedUpgrade.payment_method}</p>
+                </div>
+                {selectedUpgrade.transaction_id && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Transaction ID</p>
+                    <p className="font-medium font-mono">{selectedUpgrade.transaction_id}</p>
+                  </div>
+                )}
+                {selectedUpgrade.sender_number && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Sender Number</p>
+                    <p className="font-medium">{selectedUpgrade.sender_number}</p>
+                  </div>
+                )}
+                {selectedUpgrade.bank_name && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Bank Name</p>
+                    <p className="font-medium">{selectedUpgrade.bank_name}</p>
+                  </div>
+                )}
+              </div>
+
+              {selectedUpgrade.payment_screenshot_url && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Payment Screenshot</p>
+                  <Button variant="outline" size="sm" onClick={() => viewScreenshot(selectedUpgrade.payment_screenshot_url!)}>
+                    <Eye size={14} className="mr-1" /> View Screenshot
+                  </Button>
+                </div>
+              )}
+
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Admin Notes</p>
+                <Textarea
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  placeholder="Add notes about this upgrade request..."
+                  rows={3}
+                />
+              </div>
+
+              {selectedUpgrade.status === 'pending' && (
+                <div className="flex gap-3">
+                  <Button 
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                    onClick={() => handleApproveUpgrade(selectedUpgrade)}
+                    disabled={processing}
+                  >
+                    {processing ? <Loader2 className="animate-spin mr-2" size={16} /> : <CheckCircle size={16} className="mr-2" />}
+                    Approve
+                  </Button>
+                  <Button 
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={() => handleRejectUpgrade(selectedUpgrade)}
+                    disabled={processing}
+                  >
+                    {processing ? <Loader2 className="animate-spin mr-2" size={16} /> : <XCircle size={16} className="mr-2" />}
+                    Reject
+                  </Button>
+                </div>
+              )}
+
+              {selectedUpgrade.status !== 'pending' && (
+                <div className="p-4 bg-muted rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    {selectedUpgrade.status === 'approved' ? (
+                      <CheckCircle size={16} className="text-green-600" />
+                    ) : (
+                      <XCircle size={16} className="text-red-600" />
+                    )}
+                    <span className="font-medium capitalize">{selectedUpgrade.status}</span>
+                  </div>
+                  {selectedUpgrade.admin_notes && (
+                    <p className="text-sm mt-2">{selectedUpgrade.admin_notes}</p>
                   )}
                 </div>
               )}
