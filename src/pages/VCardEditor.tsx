@@ -128,6 +128,7 @@ export default function VCardEditor() {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [currentVcardId, setCurrentVcardId] = useState<string | null>(id || null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -142,8 +143,58 @@ export default function VCardEditor() {
   useEffect(() => {
     if (id && user) {
       fetchVCard();
+    } else if (user && !id) {
+      // For new cards, create a draft immediately so custom sections can work
+      createDraftCard();
     }
   }, [id, user]);
+
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') + '-' + Date.now().toString(36);
+  };
+
+  const createDraftCard = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const draftName = 'New Card';
+      const { data, error } = await supabase
+        .from('vcards')
+        .insert({
+          name: draftName,
+          user_id: user.id,
+          slug: generateSlug(draftName),
+          is_active: false, // Draft cards start as inactive
+        })
+        .select()
+        .single();
+
+      if (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to create card',
+          variant: 'destructive',
+        });
+        navigate('/dashboard');
+        return;
+      }
+
+      if (data) {
+        setCurrentVcardId(data.id);
+        setFormData(prev => ({ ...prev, name: '' })); // Clear name so user can enter their own
+        // Navigate to the edit URL so the ID is in the URL
+        navigate(`/vcard/${data.id}`, { replace: true });
+      }
+    } catch (error) {
+      console.error('Failed to create draft:', error);
+      navigate('/dashboard');
+    }
+    setLoading(false);
+  };
 
   const fetchVCard = async () => {
     setLoading(true);
@@ -188,6 +239,7 @@ export default function VCardEditor() {
         notify_on_view: data.notify_on_view ?? false,
         notify_on_click: data.notify_on_click ?? false,
       });
+      setCurrentVcardId(data.id);
     }
     setLoading(false);
   };
@@ -329,14 +381,6 @@ export default function VCardEditor() {
     }
   };
 
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '') + 
-      '-' + 
-      Math.random().toString(36).substring(2, 8);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -353,45 +397,24 @@ export default function VCardEditor() {
     setSaving(true);
 
     try {
-      if (isEditing) {
+      // Always update since we create a draft on new card
+      if (currentVcardId) {
         const { error } = await supabase
           .from('vcards')
-          .update(formData)
-          .eq('id', id)
+          .update({
+            ...formData,
+            is_active: true, // Activate the card when saved
+            slug: generateSlug(formData.name), // Update slug with actual name
+          })
+          .eq('id', currentVcardId)
           .eq('user_id', user?.id);
 
         if (error) throw error;
         
         toast({
           title: 'Success',
-          description: 'Card updated successfully',
+          description: 'Card saved successfully',
         });
-      } else {
-        const { data, error } = await supabase
-          .from('vcards')
-          .insert({
-            ...formData,
-            user_id: user?.id,
-            slug: generateSlug(formData.name),
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        
-        // Set the vcard ID for custom sections editor
-        if (data) {
-          setCurrentVcardId(data.id);
-        }
-        
-        toast({
-          title: 'Success',
-          description: 'Card created successfully! You can now add custom sections below.',
-        });
-        
-        // Navigate to edit page with the new vcard id so custom sections work properly
-        navigate(`/vcard/${data.id}`, { replace: true });
-        return;
       }
       
       navigate('/dashboard');
