@@ -44,6 +44,42 @@ export type Database = {
         }
         Relationships: []
       }
+      home_page_content: {
+        Row: {
+          content: Json | null
+          created_at: string
+          id: string
+          is_visible: boolean | null
+          section_key: string
+          sort_order: number | null
+          subtitle: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          content?: Json | null
+          created_at?: string
+          id?: string
+          is_visible?: boolean | null
+          section_key: string
+          sort_order?: number | null
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: Json | null
+          created_at?: string
+          id?: string
+          is_visible?: boolean | null
+          section_key?: string
+          sort_order?: number | null
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       nfc_guest_orders: {
         Row: {
           account_holder_name: string | null
