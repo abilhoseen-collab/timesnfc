@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Mail, Phone, Link as LinkIcon, QrCode, Play } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function Hero() {
   const [showVideo, setShowVideo] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <section id="home" className="relative min-h-screen flex items-center pt-20 overflow-hidden">
@@ -78,7 +80,12 @@ export function Hero() {
               transition={{ delay: 0.7, duration: 0.6 }}
             >
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button size="lg" variant="secondary" className="text-base font-semibold px-8 py-6">
+                <Button 
+                  size="lg" 
+                  variant="secondary" 
+                  className="text-base font-semibold px-8 py-6"
+                  onClick={() => navigate('/auth')}
+                >
                   Start Free Trial
                 </Button>
               </motion.div>

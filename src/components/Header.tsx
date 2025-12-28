@@ -197,12 +197,49 @@ export function Header() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3, duration: 0.3 }}
               >
-                <Button variant="ghost" className="w-full font-medium">
-                  Login
+                <Button 
+                  variant="ghost" 
+                  className="w-full font-medium" 
+                  onClick={() => navigate('/cart')}
+                >
+                  <ShoppingCart size={18} className="mr-2" />
+                  Cart {itemCount > 0 && `(${itemCount})`}
                 </Button>
-                <Button variant="secondary" className="w-full font-semibold">
-                  Start Free Trial
-                </Button>
+                {user ? (
+                  <Button 
+                    variant="secondary" 
+                    className="w-full font-semibold"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      navigate('/dashboard');
+                    }}
+                  >
+                    Dashboard
+                  </Button>
+                ) : (
+                  <>
+                    <Button 
+                      variant="ghost" 
+                      className="w-full font-medium"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        navigate('/auth');
+                      }}
+                    >
+                      Login
+                    </Button>
+                    <Button 
+                      variant="secondary" 
+                      className="w-full font-semibold"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        navigate('/auth');
+                      }}
+                    >
+                      Start Free Trial
+                    </Button>
+                  </>
+                )}
               </motion.div>
             </nav>
           </motion.div>
