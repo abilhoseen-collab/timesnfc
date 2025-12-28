@@ -21,6 +21,9 @@ import NotFound from "./pages/NotFound";
 import ConstructionTemplate from "./pages/templates/ConstructionTemplate";
 import DoctorTemplate from "./pages/templates/DoctorTemplate";
 import RealEstateTemplate from "./pages/templates/RealEstateTemplate";
+import ConstructionPublic from "./pages/templates/ConstructionPublic";
+import DoctorPublic from "./pages/templates/DoctorPublic";
+import RealEstatePublic from "./pages/templates/RealEstatePublic";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +52,9 @@ const App = () => (
               <Route path="/templates/construction" element={<ConstructionTemplate />} />
               <Route path="/templates/doctor" element={<DoctorTemplate />} />
               <Route path="/templates/realestate" element={<RealEstateTemplate />} />
+              <Route path="/p/construction/:userId" element={<ConstructionPublic />} />
+              <Route path="/p/doctor/:userId" element={<DoctorPublic />} />
+              <Route path="/p/realestate/:userId" element={<RealEstatePublic />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
