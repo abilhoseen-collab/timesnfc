@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { QRCodeSVG } from 'qrcode.react';
 import { 
   Building, 
   Phone, 
@@ -15,10 +16,19 @@ import {
   Square,
   Award,
   Users,
-  TrendingUp
+  TrendingUp,
+  QrCode,
+  Download,
+  Copy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface Property {
   id: string;
@@ -92,6 +102,8 @@ export default function RealEstatePublic() {
   const { userId } = useParams();
   const { toast } = useToast();
   const [data, setData] = useState<RealEstateData>(defaultData);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const currentUrl = window.location.href;
 
   useEffect(() => {
     if (userId) {
@@ -107,13 +119,37 @@ export default function RealEstatePublic() {
   }, [userId]);
 
   const handleShare = async () => {
-    const url = window.location.href;
     if (navigator.share) {
-      await navigator.share({ title: data.agentName, url });
+      await navigator.share({ title: data.agentName, url: currentUrl });
     } else {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(currentUrl);
       toast({ title: 'Link copied to clipboard!' });
     }
+  };
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(currentUrl);
+    toast({ title: 'Link copied to clipboard!' });
+  };
+
+  const downloadQR = () => {
+    const svg = document.getElementById('qr-code-svg');
+    if (!svg) return;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
+      const pngFile = canvas.toDataURL('image/png');
+      const downloadLink = document.createElement('a');
+      downloadLink.download = `${data.agentName.replace(/\s+/g, '_')}_QR.png`;
+      downloadLink.href = pngFile;
+      downloadLink.click();
+    };
+    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
   };
 
   return (
@@ -159,6 +195,9 @@ export default function RealEstatePublic() {
             </a>
             <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10" onClick={handleShare}>
               <Share2 size={18} className="mr-2" /> Share
+            </Button>
+            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10" onClick={() => setShowQRModal(true)}>
+              <QrCode size={18} className="mr-2" /> QR Code
             </Button>
           </motion.div>
         </div>
@@ -371,6 +410,39 @@ export default function RealEstatePublic() {
           <p className="text-gray-500 text-sm mt-2">Powered by TimesNFC</p>
         </div>
       </footer>
+
+      {/* QR Code Modal */}
+      <Dialog open={showQRModal} onOpenChange={setShowQRModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">{data.agentName}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center py-6">
+            <div className="p-6 bg-white rounded-2xl shadow-lg border border-border mb-6">
+              <QRCodeSVG 
+                id="qr-code-svg"
+                value={currentUrl} 
+                size={200}
+                level="H"
+                includeMargin
+                fgColor="#334155"
+                bgColor="#FFFFFF"
+              />
+            </div>
+            <p className="text-sm text-muted-foreground text-center mb-4">
+              Scan this QR code to view the profile
+            </p>
+            <div className="flex gap-3 w-full">
+              <Button variant="outline" className="flex-1" onClick={copyLink}>
+                <Copy size={16} className="mr-2" /> Copy Link
+              </Button>
+              <Button variant="secondary" className="flex-1" onClick={downloadQR}>
+                <Download size={16} className="mr-2" /> Download
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
