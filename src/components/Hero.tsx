@@ -3,10 +3,23 @@ import { Mail, Phone, Link as LinkIcon, QrCode, Play } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useHomeContent } from "@/hooks/useHomeContent";
 
 export function Hero() {
   const [showVideo, setShowVideo] = useState(false);
   const navigate = useNavigate();
+  const { section, loading } = useHomeContent('hero');
+
+  // Default content
+  const title = section?.title || "Create Your Business Card";
+  const subtitle = section?.subtitle || "Transform your networking with professional digital business cards. Share your contact info instantly with NFC technology.";
+  const content = section?.content || {};
+  const badge = content.badge || "IT Solution";
+  const stats = content.stats || [
+    { value: "10K+", label: "Active Users" },
+    { value: "50+", label: "Countries" },
+    { value: "99%", label: "Satisfaction" },
+  ];
 
   return (
     <section id="home" className="relative min-h-screen flex items-center pt-20 overflow-hidden">
@@ -51,7 +64,7 @@ export function Hero() {
                 animate={{ scale: [1, 1.5, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               />
-              IT Solution
+              {badge}
             </motion.div>
             
             <motion.h1 
@@ -60,8 +73,15 @@ export function Hero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.8 }}
             >
-              Create Your{" "}
-              <span className="gradient-text">Business Card</span>
+              {title.includes("Business Card") ? (
+                <>
+                  {title.split("Business Card")[0]}
+                  <span className="gradient-text">Business Card</span>
+                  {title.split("Business Card")[1]}
+                </>
+              ) : (
+                title
+              )}
             </motion.h1>
             
             <motion.p 
@@ -70,7 +90,7 @@ export function Hero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5, duration: 0.6 }}
             >
-              Transform your networking with professional digital business cards. Share your contact info instantly with NFC technology.
+              {subtitle}
             </motion.p>
             
             <motion.div 
@@ -109,11 +129,7 @@ export function Hero() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9, duration: 0.6 }}
             >
-              {[
-                { value: "10K+", label: "Active Users" },
-                { value: "50+", label: "Countries" },
-                { value: "99%", label: "Satisfaction" },
-              ].map((stat, index) => (
+              {stats.map((stat: { value: string; label: string }, index: number) => (
                 <motion.div 
                   key={stat.label}
                   className="text-center lg:text-left"

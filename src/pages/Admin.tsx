@@ -7,6 +7,7 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import HomePageContentManager from '@/components/admin/HomePageContentManager';
+import PackageManager from '@/components/admin/PackageManager';
 import { 
   ArrowLeft,
   CheckCircle,
@@ -105,7 +106,7 @@ export default function Admin() {
   const { toast } = useToast();
 
   // Tab management
-  const [activeTab, setActiveTab] = useState<'subscriptions' | 'nfc-orders' | 'upgrades' | 'users' | 'settings' | 'homepage'>('subscriptions');
+  const [activeTab, setActiveTab] = useState<'subscriptions' | 'nfc-orders' | 'upgrades' | 'users' | 'settings' | 'homepage' | 'packages'>('subscriptions');
 
   // Subscriptions state
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -802,6 +803,17 @@ export default function Admin() {
               <Home size={18} />
               Home Page
             </button>
+            <button
+              onClick={() => { setActiveTab('packages'); }}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${
+                activeTab === 'packages'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-card border border-border text-foreground hover:bg-accent'
+              }`}
+            >
+              <Package size={18} />
+              Packages
+            </button>
           </div>
 
           {/* Stats */}
@@ -870,7 +882,11 @@ export default function Admin() {
           </div>
 
           {/* Content */}
-          {activeTab === 'homepage' ? (
+          {activeTab === 'packages' ? (
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <PackageManager />
+            </div>
+          ) : activeTab === 'homepage' ? (
             <div className="bg-card rounded-2xl border border-border p-6">
               <HomePageContentManager />
             </div>

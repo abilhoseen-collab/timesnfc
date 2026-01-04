@@ -5,8 +5,9 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { motion } from "framer-motion";
+import { useHomeContent } from "@/hooks/useHomeContent";
 
-const faqs = [
+const defaultFaqs = [
   {
     question: "What is a digital business card?",
     answer: "A digital business card is an electronic version of a traditional paper business card. It can be shared instantly via QR code, NFC tap, or direct link. It includes your contact information, social links, and can be updated anytime without reprinting.",
@@ -42,6 +43,14 @@ const faqs = [
 ];
 
 export function FAQ() {
+  const { section, isVisible } = useHomeContent('faq');
+
+  if (!isVisible) return null;
+
+  const title = section?.title || "Frequently Asked Questions";
+  const subtitle = section?.subtitle || "Got questions? We've got answers. If you don't find what you're looking for, feel free to contact us.";
+  const faqs = section?.content?.faqs || defaultFaqs;
+
   return (
     <section className="section-padding bg-card">
       <div className="container-custom">
@@ -54,11 +63,17 @@ export function FAQ() {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-            Frequently Asked{" "}
-            <span className="gradient-text">Questions</span>
+            {title.includes("Questions") ? (
+              <>
+                Frequently Asked{" "}
+                <span className="gradient-text">Questions</span>
+              </>
+            ) : (
+              title
+            )}
           </h2>
           <p className="text-lg text-muted-foreground">
-            Got questions? We've got answers. If you don't find what you're looking for, feel free to contact us.
+            {subtitle}
           </p>
         </motion.div>
         
@@ -71,7 +86,7 @@ export function FAQ() {
           transition={{ delay: 0.2, duration: 0.6 }}
         >
           <Accordion type="single" collapsible className="space-y-4">
-            {faqs.map((faq, index) => (
+            {faqs.map((faq: { question: string; answer: string }, index: number) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
