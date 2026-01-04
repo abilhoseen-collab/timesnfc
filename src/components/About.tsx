@@ -1,35 +1,43 @@
 import { Target, Users, Lightbulb, Globe } from "lucide-react";
 import { motion } from "framer-motion";
+import { useHomeContent } from "@/hooks/useHomeContent";
 
-const values = [
+const defaultValues = [
   {
-    icon: Target,
+    icon: "Target",
     title: "Our Mission",
     description: "To revolutionize professional networking by making digital business cards accessible, eco-friendly, and impactful for everyone.",
   },
   {
-    icon: Lightbulb,
+    icon: "Lightbulb",
     title: "Innovation",
     description: "We constantly push boundaries with cutting-edge NFC technology and AI-powered features to stay ahead of the curve.",
   },
   {
-    icon: Users,
+    icon: "Users",
     title: "Community",
     description: "Building a global community of professionals who believe in sustainable, modern networking solutions.",
   },
   {
-    icon: Globe,
+    icon: "Globe",
     title: "Global Reach",
     description: "Serving professionals in 50+ countries, connecting businesses across borders seamlessly.",
   },
 ];
 
-const ecosystem = [
+const defaultEcosystem = [
   { name: "Times Travel", desc: "Premium travel experiences" },
   { name: "Times IT", desc: "IT solutions & consulting" },
   { name: "Times Graphics", desc: "Creative design services" },
   { name: "Times Media", desc: "Digital marketing agency" },
 ];
+
+const iconMap: Record<string, React.ElementType> = {
+  Target,
+  Users,
+  Lightbulb,
+  Globe,
+};
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -52,6 +60,21 @@ const itemVariants = {
 };
 
 export function About() {
+  const { section, isVisible } = useHomeContent('about');
+
+  if (!isVisible) return null;
+
+  const title = section?.title || "About Times Business Card";
+  const subtitle = section?.subtitle || "We are passionate about transforming how professionals connect.";
+  const content = section?.content || {};
+  const values = content.values || defaultValues;
+  const ecosystem = content.ecosystem || defaultEcosystem;
+  const story = content.story || {
+    heading: "Empowering Professional Connections Since 2025",
+    paragraph1: "Founded by a team of networking enthusiasts and technology experts, Times Card was born from the frustration of outdated paper business cards. We envisioned a world where sharing contact information is instant, eco-friendly, and memorable.",
+    paragraph2: "Today, we're proud to serve over 10,000 professionals across 50+ countries, helping them make lasting impressions in a digital-first world. Our platform combines cutting-edge NFC technology with beautiful design to create the ultimate networking tool.",
+  };
+
   return (
     <section id="about" className="section-padding bg-card">
       <div className="container-custom">
@@ -64,11 +87,17 @@ export function About() {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-            About{" "}
-            <span className="gradient-text">Times Business Card</span>
+            {title.includes("Times Business Card") ? (
+              <>
+                About{" "}
+                <span className="gradient-text">Times Business Card</span>
+              </>
+            ) : (
+              title
+            )}
           </h2>
           <p className="text-lg text-muted-foreground">
-            We are passionate about transforming how professionals connect.
+            {subtitle}
           </p>
         </motion.div>
         
@@ -81,13 +110,13 @@ export function About() {
             transition={{ duration: 0.6 }}
           >
             <h3 className="text-2xl sm:text-3xl font-bold text-foreground mb-6">
-              Empowering Professional Connections Since 2025
+              {story.heading}
             </h3>
             <p className="text-muted-foreground mb-6 leading-relaxed">
-              Founded by a team of networking enthusiasts and technology experts, Times Card was born from the frustration of outdated paper business cards. We envisioned a world where sharing contact information is instant, eco-friendly, and memorable.
+              {story.paragraph1}
             </p>
             <p className="text-muted-foreground mb-6 leading-relaxed">
-              Today, we're proud to serve over 10,000 professionals across 50+ countries, helping them make lasting impressions in a digital-first world. Our platform combines cutting-edge NFC technology with beautiful design to create the ultimate networking tool.
+              {story.paragraph2}
             </p>
             
             {/* Stats */}
@@ -143,23 +172,26 @@ export function About() {
                 whileInView="visible"
                 viewport={{ once: true }}
               >
-                {values.map((value, index) => (
-                  <motion.div
-                    key={value.title}
-                    className="p-4 bg-background rounded-xl text-center hover:shadow-lg transition-shadow"
-                    variants={itemVariants}
-                    whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                  >
-                    <motion.div 
-                      className="w-12 h-12 mx-auto rounded-xl bg-accent flex items-center justify-center text-primary mb-3"
-                      whileHover={{ rotate: 10, scale: 1.1 }}
+                {values.map((value: any) => {
+                  const IconComponent = iconMap[value.icon] || Target;
+                  return (
+                    <motion.div
+                      key={value.title}
+                      className="p-4 bg-background rounded-xl text-center hover:shadow-lg transition-shadow"
+                      variants={itemVariants}
+                      whileHover={{ y: -5, transition: { duration: 0.2 } }}
                     >
-                      <value.icon size={24} />
+                      <motion.div 
+                        className="w-12 h-12 mx-auto rounded-xl bg-accent flex items-center justify-center text-primary mb-3"
+                        whileHover={{ rotate: 10, scale: 1.1 }}
+                      >
+                        <IconComponent size={24} />
+                      </motion.div>
+                      <h4 className="font-bold text-foreground text-sm mb-1">{value.title}</h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{value.description}</p>
                     </motion.div>
-                    <h4 className="font-bold text-foreground text-sm mb-1">{value.title}</h4>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{value.description}</p>
-                  </motion.div>
-                ))}
+                  );
+                })}
               </motion.div>
             </motion.div>
           </motion.div>
@@ -195,7 +227,7 @@ export function About() {
             whileInView="visible"
             viewport={{ once: true }}
           >
-            {ecosystem.map((company, index) => (
+            {ecosystem.map((company: any) => (
               <motion.div
                 key={company.name}
                 className="bg-primary-foreground/10 backdrop-blur-sm rounded-2xl p-6 text-center hover:bg-primary-foreground/20 transition-colors"

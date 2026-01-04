@@ -1,38 +1,48 @@
 import { QrCode, Nfc, BarChart3, Zap, Users, Shield } from "lucide-react";
 import { motion } from "framer-motion";
+import { useHomeContent } from "@/hooks/useHomeContent";
 
-const features = [
+const defaultFeatures = [
   {
-    icon: QrCode,
+    icon: "QrCode",
     title: "QR Code Generation",
     description: "Generate unique QR codes for instant contact sharing. Scannable from any smartphone.",
   },
   {
-    icon: Nfc,
+    icon: "Nfc",
     title: "NFC Technology",
     description: "Tap-to-share functionality with NFC-enabled devices. No app required for recipients.",
   },
   {
-    icon: BarChart3,
+    icon: "BarChart3",
     title: "Analytics & Insights",
     description: "Track views, clicks, and engagement metrics. Understand your networking impact.",
   },
   {
-    icon: Zap,
+    icon: "Zap",
     title: "Quick Setup",
     description: "Create your digital business card in under 5 minutes. No technical skills needed.",
   },
   {
-    icon: Users,
+    icon: "Users",
     title: "Professional Network",
     description: "Join thousands of professionals using our platform for modern networking.",
   },
   {
-    icon: Shield,
+    icon: "Shield",
     title: "Trusted by Industry Leaders",
     description: "Secure, reliable, and trusted by businesses worldwide for professional connections.",
   },
 ];
+
+const iconMap: Record<string, React.ElementType> = {
+  QrCode,
+  Nfc,
+  BarChart3,
+  Zap,
+  Users,
+  Shield,
+};
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -55,6 +65,14 @@ const itemVariants = {
 };
 
 export function Features() {
+  const { section, isVisible } = useHomeContent('features');
+
+  if (!isVisible) return null;
+
+  const title = section?.title || "Powerful Features for Modern Networking";
+  const subtitle = section?.subtitle || "Everything you need to create, share, and manage your digital business presence.";
+  const features = section?.content?.features || defaultFeatures;
+
   return (
     <section id="features" className="section-padding bg-card">
       <div className="container-custom">
@@ -67,11 +85,17 @@ export function Features() {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-            Powerful Features for{" "}
-            <span className="gradient-text">Modern Networking</span>
+            {title.includes("Modern Networking") ? (
+              <>
+                {title.split("Modern Networking")[0]}
+                <span className="gradient-text">Modern Networking</span>
+              </>
+            ) : (
+              title
+            )}
           </h2>
           <p className="text-lg text-muted-foreground">
-            Everything you need to create, share, and manage your digital business presence.
+            {subtitle}
           </p>
         </motion.div>
         
@@ -83,38 +107,41 @@ export function Features() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
         >
-          {features.map((feature) => (
-            <motion.div
-              key={feature.title}
-              variants={itemVariants}
-              className="group relative p-6 lg:p-8 bg-background rounded-2xl border border-border hover:border-primary/30 hover:shadow-xl transition-all duration-300"
-              whileHover={{ y: -8, transition: { duration: 0.3 } }}
-            >
-              {/* Icon */}
-              <motion.div 
-                className="w-14 h-14 rounded-xl bg-accent flex items-center justify-center text-primary mb-5 group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-                whileHover={{ rotate: 10, scale: 1.1 }}
+          {features.map((feature: any) => {
+            const IconComponent = iconMap[feature.icon] || QrCode;
+            return (
+              <motion.div
+                key={feature.title}
+                variants={itemVariants}
+                className="group relative p-6 lg:p-8 bg-background rounded-2xl border border-border hover:border-primary/30 hover:shadow-xl transition-all duration-300"
+                whileHover={{ y: -8, transition: { duration: 0.3 } }}
               >
-                <feature.icon size={28} />
+                {/* Icon */}
+                <motion.div 
+                  className="w-14 h-14 rounded-xl bg-accent flex items-center justify-center text-primary mb-5 group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                  whileHover={{ rotate: 10, scale: 1.1 }}
+                >
+                  <IconComponent size={28} />
+                </motion.div>
+                
+                {/* Content */}
+                <h3 className="text-xl font-bold text-foreground mb-3">
+                  {feature.title}
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  {feature.description}
+                </p>
+                
+                {/* Hover accent */}
+                <motion.div 
+                  className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-secondary rounded-b-2xl"
+                  initial={{ scaleX: 0 }}
+                  whileHover={{ scaleX: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
               </motion.div>
-              
-              {/* Content */}
-              <h3 className="text-xl font-bold text-foreground mb-3">
-                {feature.title}
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {feature.description}
-              </p>
-              
-              {/* Hover accent */}
-              <motion.div 
-                className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-secondary rounded-b-2xl"
-                initial={{ scaleX: 0 }}
-                whileHover={{ scaleX: 1 }}
-                transition={{ duration: 0.3 }}
-              />
-            </motion.div>
-          ))}
+            );
+          })}
         </motion.div>
         
         {/* Why Choose Section */}
