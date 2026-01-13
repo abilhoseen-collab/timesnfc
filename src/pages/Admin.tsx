@@ -24,7 +24,11 @@ import {
   ToggleRight,
   ArrowUpCircle,
   Truck,
-  Home
+  Home,
+  Search,
+  Filter,
+  UserCog,
+  X
 } from 'lucide-react';
 import {
   Select,
@@ -142,6 +146,10 @@ export default function Admin() {
   const [usersLoading, setUsersLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'admin' | 'moderator' | 'user'>('all');
+  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'active' | 'expired' | 'none'>('all');
+  const [roleUpdateLoading, setRoleUpdateLoading] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !adminLoading) {
@@ -352,6 +360,97 @@ export default function Admin() {
 
     setUsers(enrichedUsers);
     setUsersLoading(false);
+  };
+
+  // Filter users based on search and filters
+  const filteredUsers = users.filter(u => {
+    // Search filter
+    const searchLower = userSearchQuery.toLowerCase();
+    const matchesSearch = !userSearchQuery || 
+      u.full_name?.toLowerCase().includes(searchLower) ||
+      u.email?.toLowerCase().includes(searchLower);
+
+    // Role filter
+    let matchesRole = true;
+    if (userRoleFilter === 'admin') {
+      matchesRole = u.roles.includes('admin');
+    } else if (userRoleFilter === 'moderator') {
+      matchesRole = u.roles.includes('moderator');
+    } else if (userRoleFilter === 'user') {
+      matchesRole = !u.roles.includes('admin') && !u.roles.includes('moderator');
+    }
+
+    // Status filter
+    let matchesStatus = true;
+    if (userStatusFilter === 'active') {
+      matchesStatus = u.subscription && u.subscription.expires_at && new Date(u.subscription.expires_at) > new Date();
+    } else if (userStatusFilter === 'expired') {
+      matchesStatus = u.subscription && (!u.subscription.expires_at || new Date(u.subscription.expires_at) <= new Date());
+    } else if (userStatusFilter === 'none') {
+      matchesStatus = !u.subscription;
+    }
+
+    return matchesSearch && matchesRole && matchesStatus;
+  });
+
+  const assignRole = async (userId: string, role: 'admin' | 'moderator') => {
+    setRoleUpdateLoading(true);
+    
+    // Check if role already exists
+    const { data: existingRole } = await supabase
+      .from('user_roles')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('role', role)
+      .maybeSingle();
+
+    if (existingRole) {
+      toast({ title: `User already has ${role} role`, variant: 'destructive' });
+      setRoleUpdateLoading(false);
+      return;
+    }
+
+    const { error } = await supabase
+      .from('user_roles')
+      .insert({ user_id: userId, role });
+
+    if (error) {
+      toast({ title: `Failed to assign ${role} role`, variant: 'destructive' });
+    } else {
+      toast({ title: `${role.charAt(0).toUpperCase() + role.slice(1)} role assigned successfully` });
+      fetchUsers();
+      if (selectedUser && selectedUser.id === userId) {
+        setSelectedUser({
+          ...selectedUser,
+          roles: [...selectedUser.roles, role]
+        });
+      }
+    }
+    setRoleUpdateLoading(false);
+  };
+
+  const removeRole = async (userId: string, role: 'admin' | 'moderator') => {
+    setRoleUpdateLoading(true);
+    
+    const { error } = await supabase
+      .from('user_roles')
+      .delete()
+      .eq('user_id', userId)
+      .eq('role', role);
+
+    if (error) {
+      toast({ title: `Failed to remove ${role} role`, variant: 'destructive' });
+    } else {
+      toast({ title: `${role.charAt(0).toUpperCase() + role.slice(1)} role removed successfully` });
+      fetchUsers();
+      if (selectedUser && selectedUser.id === userId) {
+        setSelectedUser({
+          ...selectedUser,
+          roles: selectedUser.roles.filter((r: string) => r !== role)
+        });
+      }
+    }
+    setRoleUpdateLoading(false);
   };
 
   const fetchSettings = async () => {
@@ -891,113 +990,196 @@ export default function Admin() {
               <HomePageContentManager />
             </div>
           ) : activeTab === 'users' ? (
-            <div className="bg-card rounded-2xl border border-border overflow-hidden">
-              {usersLoading ? (
-                <div className="p-8 text-center">
-                  <Loader2 className="animate-spin mx-auto mb-2" />
-                  <p className="text-muted-foreground">Loading...</p>
+            <div className="space-y-4">
+              {/* Search and Filter Bar */}
+              <div className="bg-card rounded-xl border border-border p-4">
+                <div className="flex flex-col md:flex-row gap-4">
+                  {/* Search Input */}
+                  <div className="relative flex-1">
+                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Search by name or email..."
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                    {userSearchQuery && (
+                      <button
+                        onClick={() => setUserSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Role Filter */}
+                  <Select value={userRoleFilter} onValueChange={(v: any) => setUserRoleFilter(v)}>
+                    <SelectTrigger className="w-full md:w-40">
+                      <div className="flex items-center gap-2">
+                        <UserCog size={16} className="text-muted-foreground" />
+                        <SelectValue placeholder="Role" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Roles</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="moderator">Moderator</SelectItem>
+                      <SelectItem value="user">Regular User</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Status Filter */}
+                  <Select value={userStatusFilter} onValueChange={(v: any) => setUserStatusFilter(v)}>
+                    <SelectTrigger className="w-full md:w-44">
+                      <div className="flex items-center gap-2">
+                        <Filter size={16} className="text-muted-foreground" />
+                        <SelectValue placeholder="Status" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active Sub</SelectItem>
+                      <SelectItem value="expired">Expired Sub</SelectItem>
+                      <SelectItem value="none">No Subscription</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              ) : users.length === 0 ? (
-                <div className="p-8 text-center">
-                  <Users size={48} className="mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">No users found</p>
+                
+                {/* Results Count */}
+                <div className="mt-3 text-sm text-muted-foreground">
+                  Showing {filteredUsers.length} of {users.length} users
                 </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted/50 border-b border-border">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">User</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Package</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Expires</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Role</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Joined</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {users.map((u) => (
-                        <tr key={u.id} className="hover:bg-muted/30 transition-colors">
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-3">
-                              {u.avatar_url ? (
-                                <img src={u.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
-                              ) : (
-                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                  <span className="text-primary font-medium">
-                                    {u.full_name?.charAt(0) || u.email?.charAt(0) || '?'}
-                                  </span>
-                                </div>
-                              )}
-                              <div>
-                                <p className="font-medium text-foreground">{u.full_name || 'Unknown'}</p>
-                                <p className="text-xs text-muted-foreground">{u.email || ''}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-foreground">
-                            {u.subscription?.packages?.name || 'No Package'}
-                          </td>
-                          <td className="px-4 py-3">
-                            {u.subscription ? (
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                u.subscription.expires_at && new Date(u.subscription.expires_at) > new Date()
-                                  ? 'bg-green-100 text-green-700'
-                                  : 'bg-red-100 text-red-700'
-                              }`}>
-                                {u.subscription.expires_at && new Date(u.subscription.expires_at) > new Date()
-                                  ? 'Active'
-                                  : 'Expired'}
-                              </span>
-                            ) : (
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-                                No Sub
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground">
-                            {u.subscription?.expires_at 
-                              ? new Date(u.subscription.expires_at).toLocaleDateString()
-                              : '-'}
-                          </td>
-                          <td className="px-4 py-3">
-                            {u.roles.includes('admin') ? (
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                                Admin
-                              </span>
-                            ) : u.roles.includes('moderator') ? (
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                                Moderator
-                              </span>
-                            ) : (
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-                                User
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground">
-                            {new Date(u.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="px-4 py-3">
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedUser(u);
-                                setShowUserModal(true);
-                              }}
-                            >
-                              <Eye size={14} className="mr-1" />
-                              View
-                            </Button>
-                          </td>
+              </div>
+              
+              {/* Users Table */}
+              <div className="bg-card rounded-2xl border border-border overflow-hidden">
+                {usersLoading ? (
+                  <div className="p-8 text-center">
+                    <Loader2 className="animate-spin mx-auto mb-2" />
+                    <p className="text-muted-foreground">Loading...</p>
+                  </div>
+                ) : filteredUsers.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <Users size={48} className="mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">No users found matching your criteria</p>
+                    {(userSearchQuery || userRoleFilter !== 'all' || userStatusFilter !== 'all') && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-3"
+                        onClick={() => {
+                          setUserSearchQuery('');
+                          setUserRoleFilter('all');
+                          setUserStatusFilter('all');
+                        }}
+                      >
+                        Clear Filters
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-muted/50 border-b border-border">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">User</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Package</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Expires</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Role</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Joined</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {filteredUsers.map((u) => (
+                          <tr key={u.id} className="hover:bg-muted/30 transition-colors">
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-3">
+                                {u.avatar_url ? (
+                                  <img src={u.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <span className="text-primary font-medium">
+                                      {u.full_name?.charAt(0) || u.email?.charAt(0) || '?'}
+                                    </span>
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-medium text-foreground">{u.full_name || 'Unknown'}</p>
+                                  <p className="text-xs text-muted-foreground">{u.email || ''}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-foreground">
+                              {u.subscription?.packages?.name || 'No Package'}
+                            </td>
+                            <td className="px-4 py-3">
+                              {u.subscription ? (
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  u.subscription.expires_at && new Date(u.subscription.expires_at) > new Date()
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-red-100 text-red-700'
+                                }`}>
+                                  {u.subscription.expires_at && new Date(u.subscription.expires_at) > new Date()
+                                    ? 'Active'
+                                    : 'Expired'}
+                                </span>
+                              ) : (
+                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                                  No Sub
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
+                              {u.subscription?.expires_at 
+                                ? new Date(u.subscription.expires_at).toLocaleDateString()
+                                : '-'}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex gap-1 flex-wrap">
+                                {u.roles.includes('admin') && (
+                                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                                    Admin
+                                  </span>
+                                )}
+                                {u.roles.includes('moderator') && (
+                                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                    Moderator
+                                  </span>
+                                )}
+                                {!u.roles.includes('admin') && !u.roles.includes('moderator') && (
+                                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                                    User
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
+                              {new Date(u.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="px-4 py-3">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedUser(u);
+                                  setShowUserModal(true);
+                                }}
+                              >
+                                <Eye size={14} className="mr-1" />
+                                View
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </div>
           ) : activeTab === 'settings' ? (
             <div className="bg-card rounded-2xl border border-border p-6">
@@ -1548,9 +1730,9 @@ export default function Admin() {
 
       {/* User Details Modal */}
       <Dialog open={showUserModal} onOpenChange={setShowUserModal}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>User Details</DialogTitle>
+            <DialogTitle>User Details & Role Management</DialogTitle>
           </DialogHeader>
           {selectedUser && (
             <div className="space-y-4">
@@ -1574,6 +1756,9 @@ export default function Admin() {
                     {selectedUser.roles.includes('moderator') && (
                       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Moderator</span>
                     )}
+                    {!selectedUser.roles.includes('admin') && !selectedUser.roles.includes('moderator') && (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">User</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1586,6 +1771,73 @@ export default function Admin() {
                 <div>
                   <p className="text-xs text-muted-foreground">Joined</p>
                   <p className="font-medium">{new Date(selectedUser.created_at).toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              {/* Role Management */}
+              <div className="bg-purple-50 dark:bg-purple-950/30 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                  <UserCog size={16} className="text-purple-600" />
+                  Role Management
+                </h4>
+                <div className="space-y-3">
+                  {/* Admin Role */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-foreground">Admin</p>
+                      <p className="text-xs text-muted-foreground">Full access to admin panel</p>
+                    </div>
+                    {selectedUser.roles.includes('admin') ? (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => removeRole(selectedUser.id, 'admin')}
+                        disabled={roleUpdateLoading}
+                      >
+                        {roleUpdateLoading ? <Loader2 className="animate-spin" size={14} /> : <X size={14} className="mr-1" />}
+                        Remove
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        className="bg-purple-600 hover:bg-purple-700"
+                        onClick={() => assignRole(selectedUser.id, 'admin')}
+                        disabled={roleUpdateLoading}
+                      >
+                        {roleUpdateLoading ? <Loader2 className="animate-spin" size={14} /> : <Shield size={14} className="mr-1" />}
+                        Assign
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {/* Moderator Role */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-foreground">Moderator</p>
+                      <p className="text-xs text-muted-foreground">Limited admin access</p>
+                    </div>
+                    {selectedUser.roles.includes('moderator') ? (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => removeRole(selectedUser.id, 'moderator')}
+                        disabled={roleUpdateLoading}
+                      >
+                        {roleUpdateLoading ? <Loader2 className="animate-spin" size={14} /> : <X size={14} className="mr-1" />}
+                        Remove
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700"
+                        onClick={() => assignRole(selectedUser.id, 'moderator')}
+                        disabled={roleUpdateLoading}
+                      >
+                        {roleUpdateLoading ? <Loader2 className="animate-spin" size={14} /> : <UserCog size={14} className="mr-1" />}
+                        Assign
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
 

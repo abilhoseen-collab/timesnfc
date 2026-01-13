@@ -1,7 +1,8 @@
-import { Star, Quote } from "lucide-react";
+import { Star, Quote, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useHomeContent } from "@/hooks/useHomeContent";
 
-const testimonials = [
+const defaultTestimonials = [
   {
     name: "Rahim Ahmed",
     role: "CEO, TechBD Solutions",
@@ -68,6 +69,24 @@ const cardVariants = {
 };
 
 export function Testimonials() {
+  const { section, loading, isVisible } = useHomeContent('testimonials');
+
+  if (!isVisible) return null;
+
+  if (loading) {
+    return (
+      <section className="section-padding bg-background">
+        <div className="container-custom flex items-center justify-center py-20">
+          <Loader2 className="animate-spin text-primary" size={32} />
+        </div>
+      </section>
+    );
+  }
+
+  const title = section?.title || "What Our Users Say";
+  const subtitle = section?.subtitle || "Join thousands of satisfied professionals who trust Times Digital for their networking needs.";
+  const testimonials = section?.content?.testimonials || defaultTestimonials;
+
   return (
     <section className="section-padding bg-background overflow-hidden">
       <div className="container-custom">
@@ -80,11 +99,11 @@ export function Testimonials() {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-            What Our{" "}
-            <span className="gradient-text">Users Say</span>
+            {title.split(' ').slice(0, -2).join(' ')}{" "}
+            <span className="gradient-text">{title.split(' ').slice(-2).join(' ')}</span>
           </h2>
           <p className="text-lg text-muted-foreground">
-            Join thousands of satisfied professionals who trust Times Digital for their networking needs.
+            {subtitle}
           </p>
         </motion.div>
         
@@ -96,9 +115,9 @@ export function Testimonials() {
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
         >
-          {testimonials.map((testimonial, index) => (
+          {testimonials.map((testimonial: any, index: number) => (
             <motion.div
-              key={testimonial.name}
+              key={testimonial.name + index}
               variants={cardVariants}
               className="group relative bg-card rounded-2xl p-6 border border-border hover:border-primary/30 transition-all duration-300"
               whileHover={{ 
@@ -119,7 +138,7 @@ export function Testimonials() {
               
               {/* Rating */}
               <div className="flex gap-1 mb-4">
-                {[...Array(testimonial.rating)].map((_, i) => (
+                {[...Array(testimonial.rating || 5)].map((_, i) => (
                   <motion.div
                     key={i}
                     initial={{ opacity: 0, scale: 0 }}
@@ -143,7 +162,7 @@ export function Testimonials() {
                   className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-teal-400 flex items-center justify-center text-primary-foreground font-bold text-sm"
                   whileHover={{ scale: 1.1, rotate: 5 }}
                 >
-                  {testimonial.avatar}
+                  {testimonial.avatar || testimonial.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                 </motion.div>
                 <div>
                   <h4 className="font-bold text-foreground">{testimonial.name}</h4>

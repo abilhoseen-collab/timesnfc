@@ -1,35 +1,41 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Mail, Phone, MapPin, Send, Clock } from "lucide-react";
+import { MapPin, Mail, Phone, Clock, Send, Facebook, Linkedin, Instagram, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useHomeContent } from "@/hooks/useHomeContent";
 
-const contactInfo = [
+const defaultContactInfo = [
   {
-    icon: MapPin,
+    icon: "MapPin",
     title: "Address",
     content: "Anderkilla, Chattagram, Bangladesh",
   },
   {
-    icon: Mail,
+    icon: "Mail",
     title: "Email",
     content: "support@timesdigitalbd.com",
   },
   {
-    icon: Phone,
+    icon: "Phone",
     title: "Phone",
     content: "+880 1XXX-XXXXXX",
   },
   {
-    icon: Clock,
+    icon: "Clock",
     title: "Business Hours",
     content: "Sat - Thu: 9AM - 6PM",
   },
 ];
 
+const iconMap: Record<string, any> = {
+  MapPin,
+  Mail,
+  Phone,
+  Clock,
+};
+
 export function Contact() {
-  const { toast } = useToast();
+  const { section, loading, isVisible } = useHomeContent('contact');
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -37,6 +43,35 @@ export function Contact() {
     message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  if (!isVisible) return null;
+
+  if (loading) {
+    return (
+      <section className="section-padding bg-muted/30">
+        <div className="container-custom flex items-center justify-center py-20">
+          <Loader2 className="animate-spin text-primary" size={32} />
+        </div>
+      </section>
+    );
+  }
+
+  const title = section?.title || "Get in Touch";
+  const subtitle = section?.subtitle || "Have a question or want to work together? We'd love to hear from you.";
+  const content = section?.content || {};
+  const email = content.email || "support@timesdigitalbd.com";
+  const phone = content.phone || "+880 1XXX-XXXXXX";
+  const address = content.address || "Anderkilla, Chattagram, Bangladesh";
+  const businessHours = content.businessHours || "Sat - Thu: 9AM - 6PM";
+  const socialLinks = content.socialLinks || {};
+
+  const contactInfo = [
+    { icon: MapPin, title: "Address", content: address },
+    { icon: Mail, title: "Email", content: email },
+    { icon: Phone, title: "Phone", content: phone },
+    { icon: Clock, title: "Business Hours", content: businessHours },
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +82,7 @@ export function Contact() {
     
     toast({
       title: "Message Sent!",
-      description: "Thank you for contacting us. We'll get back to you soon.",
+      description: "We'll get back to you within 24 hours.",
     });
     
     setFormData({ name: "", email: "", subject: "", message: "" });
@@ -55,139 +90,195 @@ export function Contact() {
   };
 
   return (
-    <section id="contact" className="section-padding bg-background">
+    <section id="contact" className="section-padding bg-muted/30">
       <div className="container-custom">
-        {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center max-w-2xl mx-auto mb-16"
+        >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-            Get in{" "}
-            <span className="gradient-text">Touch</span>
+            {title.split(' ').slice(0, -2).join(' ')}{" "}
+            <span className="gradient-text">{title.split(' ').slice(-2).join(' ') || title}</span>
           </h2>
           <p className="text-lg text-muted-foreground">
-            Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+            {subtitle}
           </p>
-        </div>
-        
-        <div className="grid lg:grid-cols-5 gap-12 max-w-6xl mx-auto">
+        </motion.div>
+
+        <div className="grid lg:grid-cols-2 gap-12">
           {/* Contact Info */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="glass-card rounded-2xl p-8">
-              <h3 className="text-xl font-bold text-foreground mb-6">Contact Information</h3>
-              
-              <div className="space-y-6">
-                {contactInfo.map((info) => (
-                  <div key={info.title} className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center text-primary shrink-0">
-                      <info.icon size={20} />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-foreground">{info.title}</h4>
-                      <p className="text-muted-foreground text-sm">{info.content}</p>
-                    </div>
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="space-y-8"
+          >
+            <div className="grid sm:grid-cols-2 gap-6">
+              {contactInfo.map((item, index) => (
+                <motion.div
+                  key={item.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-card rounded-xl p-6 border border-border hover:border-primary/30 transition-colors"
+                >
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                    <item.icon className="text-primary" size={24} />
                   </div>
-                ))}
-              </div>
-              
-              {/* Social Links */}
-              <div className="mt-8 pt-6 border-t border-border">
-                <h4 className="font-semibold text-foreground mb-4">Follow Us</h4>
-                <div className="flex gap-3">
-                  {["Facebook", "Twitter", "LinkedIn", "Instagram"].map((social) => (
+                  <h3 className="font-semibold text-foreground mb-1">{item.title}</h3>
+                  <p className="text-muted-foreground text-sm">{item.content}</p>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Social Links */}
+            <div className="bg-card rounded-xl p-6 border border-border">
+              <h3 className="font-semibold text-foreground mb-4">Follow Us</h3>
+              <div className="flex gap-4">
+                {socialLinks.facebook && (
+                  <a
+                    href={socialLinks.facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                  >
+                    <Facebook size={20} />
+                  </a>
+                )}
+                {socialLinks.linkedin && (
+                  <a
+                    href={socialLinks.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                  >
+                    <Linkedin size={20} />
+                  </a>
+                )}
+                {socialLinks.instagram && (
+                  <a
+                    href={socialLinks.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                  >
+                    <Instagram size={20} />
+                  </a>
+                )}
+                {!socialLinks.facebook && !socialLinks.linkedin && !socialLinks.instagram && (
+                  <>
                     <a
-                      key={social}
                       href="#"
-                      className="w-10 h-10 rounded-full bg-accent text-primary hover:bg-primary hover:text-primary-foreground transition-colors flex items-center justify-center text-xs font-bold"
+                      className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
                     >
-                      {social[0]}
+                      <Facebook size={20} />
                     </a>
-                  ))}
-                </div>
+                    <a
+                      href="#"
+                      className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                    >
+                      <Linkedin size={20} />
+                    </a>
+                    <a
+                      href="#"
+                      className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                    >
+                      <Instagram size={20} />
+                    </a>
+                  </>
+                )}
               </div>
             </div>
-          </div>
-          
+          </motion.div>
+
           {/* Contact Form */}
-          <div className="lg:col-span-3">
-            <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-8">
-              <h3 className="text-xl font-bold text-foreground mb-6">Send us a Message</h3>
-              
-              <div className="grid sm:grid-cols-2 gap-6 mb-6">
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+          >
+            <form onSubmit={handleSubmit} className="bg-card rounded-xl p-8 border border-border space-y-6">
+              <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Your Name
                   </label>
-                  <Input
-                    id="name"
-                    placeholder="John Doe"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  <input
+                    type="text"
                     required
-                    className="bg-background"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    placeholder="John Doe"
                   />
                 </div>
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Email Address
                   </label>
-                  <Input
-                    id="email"
+                  <input
                     type="email"
-                    placeholder="john@example.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
-                    className="bg-background"
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                    className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    placeholder="john@example.com"
                   />
                 </div>
               </div>
-              
-              <div className="mb-6">
-                <label htmlFor="subject" className="block text-sm font-medium text-foreground mb-2">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Subject
                 </label>
-                <Input
-                  id="subject"
-                  placeholder="How can we help?"
-                  value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                <input
+                  type="text"
                   required
-                  className="bg-background"
+                  value={formData.subject}
+                  onChange={(e) =>
+                    setFormData({ ...formData, subject: e.target.value })
+                  }
+                  className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  placeholder="How can we help?"
                 />
               </div>
-              
-              <div className="mb-6">
-                <label htmlFor="message" className="block text-sm font-medium text-foreground mb-2">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Message
                 </label>
-                <Textarea
-                  id="message"
-                  placeholder="Tell us more about your inquiry..."
-                  value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                <textarea
                   required
                   rows={5}
-                  className="bg-background resize-none"
+                  value={formData.message}
+                  onChange={(e) =>
+                    setFormData({ ...formData, message: e.target.value })
+                  }
+                  className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
+                  placeholder="Tell us more about your project..."
                 />
               </div>
-              
-              <Button
+              <button
                 type="submit"
-                size="lg"
-                variant="secondary"
-                className="w-full sm:w-auto font-semibold"
                 disabled={isSubmitting}
+                className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
               >
                 {isSubmitting ? (
                   "Sending..."
                 ) : (
                   <>
-                    <Send size={18} className="mr-2" />
                     Send Message
+                    <Send size={18} />
                   </>
                 )}
-              </Button>
+              </button>
             </form>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>
