@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Check } from "lucide-react";
+import { ArrowRight, Sparkles, Check, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useHomeContent } from "@/hooks/useHomeContent";
 
 export function CTA() {
   const navigate = useNavigate();
+  const { section, loading, isVisible } = useHomeContent('cta');
 
   const scrollToSection = (href: string) => {
     const element = document.querySelector(href);
@@ -12,6 +14,30 @@ export function CTA() {
       element.scrollIntoView({ behavior: "smooth" });
     }
   };
+
+  if (!isVisible) return null;
+
+  if (loading) {
+    return (
+      <section className="section-padding bg-gradient-to-br from-primary via-teal-600 to-teal-700">
+        <div className="container-custom flex items-center justify-center py-20">
+          <Loader2 className="animate-spin text-primary-foreground" size={32} />
+        </div>
+      </section>
+    );
+  }
+
+  const content = section?.content || {};
+  const badgeText = content.badge_text || "Limited Time Offer - 30% Off Premium";
+  const title = section?.title || "Ready to Transform Your Networking?";
+  const subtitle = section?.subtitle || "Join 10,000+ professionals who have already upgraded to digital business cards. Start free today and experience the future of networking.";
+  const primaryButtonText = content.primary_button_text || "Start Free Trial";
+  const secondaryButtonText = content.secondary_button_text || "View Demo";
+  const trustBadges = content.trust_badges || [
+    "No credit card required",
+    "Free forever plan available",
+    "Cancel anytime",
+  ];
 
   return (
     <section className="section-padding bg-gradient-to-br from-primary via-teal-600 to-teal-700 relative overflow-hidden">
@@ -56,7 +82,7 @@ export function CTA() {
             >
               <Sparkles size={16} className="text-secondary" />
             </motion.div>
-            Limited Time Offer - 30% Off Premium
+            {badgeText}
           </motion.div>
           
           <motion.h2 
@@ -66,7 +92,7 @@ export function CTA() {
             viewport={{ once: true }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
-            Ready to Transform Your Networking?
+            {title}
           </motion.h2>
           
           <motion.p 
@@ -76,8 +102,7 @@ export function CTA() {
             viewport={{ once: true }}
             transition={{ delay: 0.4, duration: 0.5 }}
           >
-            Join 10,000+ professionals who have already upgraded to digital business cards. 
-            Start free today and experience the future of networking.
+            {subtitle}
           </motion.p>
           
           <motion.div 
@@ -93,7 +118,7 @@ export function CTA() {
                 className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold text-base px-8 py-6 shadow-lg shadow-secondary/30"
                 onClick={() => navigate('/auth')}
               >
-                Start Free Trial
+                {primaryButtonText}
                 <motion.div
                   animate={{ x: [0, 5, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
@@ -109,7 +134,7 @@ export function CTA() {
                 className="bg-transparent border-2 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 font-medium text-base px-8 py-6"
                 onClick={() => scrollToSection('#templates')}
               >
-                View Demo
+                {secondaryButtonText}
               </Button>
             </motion.div>
           </motion.div>
@@ -122,11 +147,7 @@ export function CTA() {
             viewport={{ once: true }}
             transition={{ delay: 0.7, duration: 0.5 }}
           >
-            {[
-              "No credit card required",
-              "Free forever plan available",
-              "Cancel anytime",
-            ].map((text, index) => (
+            {trustBadges.map((text: string, index: number) => (
               <motion.div 
                 key={text}
                 className="flex items-center gap-2"
