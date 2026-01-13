@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import HomePageContentManager from '@/components/admin/HomePageContentManager';
 import PackageManager from '@/components/admin/PackageManager';
+import DashboardOverview from '@/components/admin/DashboardOverview';
 import { 
   ArrowLeft,
   CheckCircle,
@@ -28,7 +29,8 @@ import {
   Search,
   Filter,
   UserCog,
-  X
+  X,
+  LayoutDashboard
 } from 'lucide-react';
 import {
   Select,
@@ -110,7 +112,7 @@ export default function Admin() {
   const { toast } = useToast();
 
   // Tab management
-  const [activeTab, setActiveTab] = useState<'subscriptions' | 'nfc-orders' | 'upgrades' | 'users' | 'settings' | 'homepage' | 'packages'>('subscriptions');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'subscriptions' | 'nfc-orders' | 'upgrades' | 'users' | 'settings' | 'homepage' | 'packages'>('dashboard');
 
   // Subscriptions state
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -837,6 +839,17 @@ export default function Admin() {
           {/* Main Tabs */}
           <div className="flex flex-wrap gap-3 mb-8">
             <button
+              onClick={() => { setActiveTab('dashboard'); }}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${
+                activeTab === 'dashboard'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-card border border-border text-foreground hover:bg-accent'
+              }`}
+            >
+              <LayoutDashboard size={18} />
+              Dashboard
+            </button>
+            <button
               onClick={() => { setActiveTab('subscriptions'); setFilter('pending'); }}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${
                 activeTab === 'subscriptions'
@@ -981,7 +994,9 @@ export default function Admin() {
           </div>
 
           {/* Content */}
-          {activeTab === 'packages' ? (
+          {activeTab === 'dashboard' ? (
+            <DashboardOverview />
+          ) : activeTab === 'packages' ? (
             <div className="bg-card rounded-2xl border border-border p-6">
               <PackageManager />
             </div>
