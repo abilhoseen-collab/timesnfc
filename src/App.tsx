@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
 import Index from "./pages/Index";
@@ -24,45 +25,52 @@ import RealEstateTemplate from "./pages/templates/RealEstateTemplate";
 import ConstructionPublic from "./pages/templates/ConstructionPublic";
 import DoctorPublic from "./pages/templates/DoctorPublic";
 import RealEstatePublic from "./pages/templates/RealEstatePublic";
+import LandingPageBuilder from "./pages/LandingPageBuilder";
+import LandingPagePublic from "./pages/LandingPagePublic";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <CartProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/vcard/new" element={<VCardEditor />} />
-              <Route path="/vcard/:id" element={<VCardEditor />} />
-              <Route path="/c/:slug" element={<VCardPublic />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/payment" element={<Payment />} />
-              <Route path="/template/:templateId" element={<TemplatePreview />} />
-              <Route path="/nfc-payment" element={<NFCPayment />} />
-              <Route path="/track-order" element={<TrackOrder />} />
-              <Route path="/templates/construction" element={<ConstructionTemplate />} />
-              <Route path="/templates/doctor" element={<DoctorTemplate />} />
-              <Route path="/templates/realestate" element={<RealEstateTemplate />} />
-              <Route path="/p/construction/:userId" element={<ConstructionPublic />} />
-              <Route path="/p/doctor/:userId" element={<DoctorPublic />} />
-              <Route path="/p/realestate/:userId" element={<RealEstatePublic />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </CartProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+  <HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <CartProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/vcard/new" element={<VCardEditor />} />
+                <Route path="/vcard/:id" element={<VCardEditor />} />
+                <Route path="/c/:slug" element={<VCardPublic />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/orders" element={<Orders />} />
+                <Route path="/payment" element={<Payment />} />
+                <Route path="/template/:templateId" element={<TemplatePreview />} />
+                <Route path="/nfc-payment" element={<NFCPayment />} />
+                <Route path="/track-order" element={<TrackOrder />} />
+                <Route path="/templates/construction" element={<ConstructionTemplate />} />
+                <Route path="/templates/doctor" element={<DoctorTemplate />} />
+                <Route path="/templates/realestate" element={<RealEstateTemplate />} />
+                <Route path="/p/construction/:userId" element={<ConstructionPublic />} />
+                <Route path="/p/doctor/:userId" element={<DoctorPublic />} />
+                <Route path="/p/realestate/:userId" element={<RealEstatePublic />} />
+                <Route path="/landing-builder" element={<LandingPageBuilder />} />
+                <Route path="/landing-builder/:id" element={<LandingPageBuilder />} />
+                <Route path="/site/:slug" element={<LandingPagePublic />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </CartProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </HelmetProvider>
 );
 
 export default App;

@@ -44,6 +44,53 @@ export type Database = {
         }
         Relationships: []
       }
+      domain_verifications: {
+        Row: {
+          a_record: string | null
+          created_at: string
+          domain: string
+          id: string
+          landing_page_id: string
+          last_check_at: string | null
+          status: string | null
+          txt_record: string | null
+          verification_token: string
+          verified_at: string | null
+        }
+        Insert: {
+          a_record?: string | null
+          created_at?: string
+          domain: string
+          id?: string
+          landing_page_id: string
+          last_check_at?: string | null
+          status?: string | null
+          txt_record?: string | null
+          verification_token: string
+          verified_at?: string | null
+        }
+        Update: {
+          a_record?: string | null
+          created_at?: string
+          domain?: string
+          id?: string
+          landing_page_id?: string
+          last_check_at?: string | null
+          status?: string | null
+          txt_record?: string | null
+          verification_token?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "domain_verifications_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       home_page_content: {
         Row: {
           content: Json | null
@@ -77,6 +124,122 @@ export type Database = {
           subtitle?: string | null
           title?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      landing_page_sections: {
+        Row: {
+          content: Json | null
+          created_at: string
+          id: string
+          is_visible: boolean | null
+          landing_page_id: string
+          section_type: string
+          settings: Json | null
+          sort_order: number | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          content?: Json | null
+          created_at?: string
+          id?: string
+          is_visible?: boolean | null
+          landing_page_id: string
+          section_type: string
+          settings?: Json | null
+          sort_order?: number | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: Json | null
+          created_at?: string
+          id?: string
+          is_visible?: boolean | null
+          landing_page_id?: string
+          section_type?: string
+          settings?: Json | null
+          sort_order?: number | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_sections_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_pages: {
+        Row: {
+          background_color: string | null
+          created_at: string
+          custom_domain: string | null
+          domain_verified: boolean | null
+          favicon_url: string | null
+          font_family: string | null
+          id: string
+          is_active: boolean | null
+          is_published: boolean | null
+          meta_description: string | null
+          meta_title: string | null
+          name: string
+          og_image_url: string | null
+          slug: string
+          ssl_status: string | null
+          text_color: string | null
+          theme_color: string | null
+          total_views: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          background_color?: string | null
+          created_at?: string
+          custom_domain?: string | null
+          domain_verified?: boolean | null
+          favicon_url?: string | null
+          font_family?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_published?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
+          name: string
+          og_image_url?: string | null
+          slug: string
+          ssl_status?: string | null
+          text_color?: string | null
+          theme_color?: string | null
+          total_views?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          background_color?: string | null
+          created_at?: string
+          custom_domain?: string | null
+          domain_verified?: boolean | null
+          favicon_url?: string | null
+          font_family?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_published?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
+          name?: string
+          og_image_url?: string | null
+          slug?: string
+          ssl_status?: string | null
+          text_color?: string | null
+          theme_color?: string | null
+          total_views?: number | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
