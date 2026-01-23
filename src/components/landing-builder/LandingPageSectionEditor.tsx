@@ -32,6 +32,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import ImageUploader from './ImageUploader';
 
 interface LandingPageSection {
   id: string;
@@ -46,6 +47,7 @@ interface LandingPageSection {
 
 interface Props {
   section: LandingPageSection;
+  userId: string;
   onUpdate: (updates: Partial<LandingPageSection>) => void;
   onDelete: () => void;
   onMoveUp: () => void;
@@ -70,6 +72,7 @@ const sectionIcons: Record<string, any> = {
 
 export default function LandingPageSectionEditor({
   section,
+  userId,
   onUpdate,
   onDelete,
   onMoveUp,
@@ -148,13 +151,17 @@ export default function LandingPageSectionEditor({
               </div>
             </div>
             <div>
-              <Label>Background Image URL</Label>
-              <Input
-                value={content.backgroundImage || ''}
-                onChange={(e) => handleContentChange('backgroundImage', e.target.value)}
-                placeholder="https://..."
-                className="mt-1.5"
-              />
+              <Label>Background Image</Label>
+              <div className="mt-1.5">
+                <ImageUploader
+                  value={content.backgroundImage || ''}
+                  onChange={(url) => handleContentChange('backgroundImage', url)}
+                  userId={userId}
+                  folder="hero"
+                  placeholder="Upload hero background"
+                  aspectRatio="wide"
+                />
+              </div>
             </div>
           </div>
         );
@@ -222,13 +229,17 @@ export default function LandingPageSectionEditor({
               />
             </div>
             <div>
-              <Label>Image URL</Label>
-              <Input
-                value={content.image || ''}
-                onChange={(e) => handleContentChange('image', e.target.value)}
-                placeholder="https://..."
-                className="mt-1.5"
-              />
+              <Label>Image</Label>
+              <div className="mt-1.5">
+                <ImageUploader
+                  value={content.image || ''}
+                  onChange={(url) => handleContentChange('image', url)}
+                  userId={userId}
+                  folder="about"
+                  placeholder="Upload about image"
+                  aspectRatio="wide"
+                />
+              </div>
             </div>
           </div>
         );

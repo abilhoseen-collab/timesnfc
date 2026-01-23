@@ -182,6 +182,13 @@ export type Database = {
           domain_verified: boolean | null
           favicon_url: string | null
           font_family: string | null
+          header_cta_link: string | null
+          header_cta_text: string | null
+          header_logo_url: string | null
+          header_nav_items: Json | null
+          header_show_cta: boolean | null
+          header_sticky: boolean | null
+          header_title: string | null
           id: string
           is_active: boolean | null
           is_published: boolean | null
@@ -204,6 +211,13 @@ export type Database = {
           domain_verified?: boolean | null
           favicon_url?: string | null
           font_family?: string | null
+          header_cta_link?: string | null
+          header_cta_text?: string | null
+          header_logo_url?: string | null
+          header_nav_items?: Json | null
+          header_show_cta?: boolean | null
+          header_sticky?: boolean | null
+          header_title?: string | null
           id?: string
           is_active?: boolean | null
           is_published?: boolean | null
@@ -226,6 +240,13 @@ export type Database = {
           domain_verified?: boolean | null
           favicon_url?: string | null
           font_family?: string | null
+          header_cta_link?: string | null
+          header_cta_text?: string | null
+          header_logo_url?: string | null
+          header_nav_items?: Json | null
+          header_show_cta?: boolean | null
+          header_sticky?: boolean | null
+          header_title?: string | null
           id?: string
           is_active?: boolean | null
           is_published?: boolean | null

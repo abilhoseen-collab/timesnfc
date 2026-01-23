@@ -32,7 +32,10 @@ import {
   HardHat,
   Stethoscope,
   Home,
-  Share2
+  Share2,
+  Globe,
+  Layout,
+  BarChart3
 } from 'lucide-react';
 import {
   Dialog,
@@ -43,6 +46,15 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import logo from '@/assets/logo.png';
 import UpgradePackageForm from '@/components/UpgradePackageForm';
+
+interface LandingPage {
+  id: string;
+  name: string;
+  slug: string;
+  is_published: boolean;
+  total_views: number;
+  created_at: string;
+}
 
 interface Subscription {
   id: string;
@@ -104,6 +116,7 @@ export default function Dashboard() {
   const [selectedCard, setSelectedCard] = useState<VCard | null>(null);
   const [showQRModal, setShowQRModal] = useState(false);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [landingPages, setLandingPages] = useState<LandingPage[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -116,8 +129,21 @@ export default function Dashboard() {
       fetchVCards();
       fetchAnalytics();
       fetchSubscription();
+      fetchLandingPages();
     }
   }, [user]);
+
+  const fetchLandingPages = async () => {
+    const { data, error } = await supabase
+      .from('landing_pages')
+      .select('id, name, slug, is_published, total_views, created_at')
+      .eq('user_id', user?.id)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setLandingPages(data);
+    }
+  };
 
   const fetchSubscription = async () => {
     const { data, error } = await supabase
@@ -701,6 +727,124 @@ export default function Dashboard() {
             </div>
           </motion.div>
         )}
+
+        {/* Landing Pages Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.18 }}
+          className="mb-8"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Globe size={24} className="text-primary" />
+              Your Landing Pages
+            </h2>
+            <Button 
+              variant="secondary" 
+              onClick={() => navigate('/landing-builder')}
+              className="font-semibold"
+            >
+              <Plus size={18} className="mr-2" />
+              Create Landing Page
+            </Button>
+          </div>
+
+          {landingPages.length === 0 ? (
+            <div className="bg-card rounded-2xl p-8 border border-border text-center">
+              <div className="w-16 h-16 rounded-full bg-accent mx-auto mb-4 flex items-center justify-center">
+                <Layout size={32} className="text-primary" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-2">No landing pages yet</h3>
+              <p className="text-muted-foreground mb-6">
+                Build professional websites with custom domains and SSL
+              </p>
+              <Button 
+                variant="secondary" 
+                onClick={() => navigate('/landing-builder')}
+                className="font-semibold"
+              >
+                <Plus size={18} className="mr-2" />
+                Create Your First Landing Page
+              </Button>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {landingPages.map((page, index) => (
+                <motion.div
+                  key={page.id}
+                  className="bg-card rounded-2xl border border-border overflow-hidden"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.18 + index * 0.05 }}
+                  whileHover={{ y: -5, boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)' }}
+                >
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                          <Globe size={20} className="text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-foreground">{page.name}</h3>
+                          <p className="text-xs text-muted-foreground">/site/{page.slug}</p>
+                        </div>
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        page.is_published 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {page.is_published ? 'Published' : 'Draft'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+                      <div className="flex items-center gap-1">
+                        <BarChart3 size={14} />
+                        <span>{page.total_views} views</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar size={14} />
+                        <span>{new Date(page.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => navigate(`/landing-builder/${page.id}`)}
+                      >
+                        <Edit size={14} className="mr-1" />
+                        Edit
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          const url = `${window.location.origin}/site/${page.slug}`;
+                          navigator.clipboard.writeText(url);
+                          toast({ title: 'Link copied!' });
+                        }}
+                      >
+                        <Copy size={14} />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => window.open(`/site/${page.slug}`, '_blank')}
+                      >
+                        <ExternalLink size={14} />
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </motion.div>
 
         {/* Cards Section */}
         <motion.div
