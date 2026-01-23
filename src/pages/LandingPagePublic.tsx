@@ -15,11 +15,18 @@ import {
   ChevronUp,
   Send,
   Loader2,
+  Menu,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+
+interface NavItem {
+  label: string;
+  link: string;
+}
 
 interface LandingPage {
   id: string;
@@ -35,6 +42,14 @@ interface LandingPage {
   font_family: string;
   background_color: string;
   text_color: string;
+  // Header settings
+  header_logo_url: string | null;
+  header_title: string | null;
+  header_nav_items: NavItem[];
+  header_sticky: boolean;
+  header_show_cta: boolean;
+  header_cta_text: string | null;
+  header_cta_link: string | null;
 }
 
 interface LandingPageSection {
@@ -57,6 +72,7 @@ export default function LandingPagePublic() {
   const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
   const [sendingContact, setSendingContact] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (slug) {
@@ -80,7 +96,15 @@ export default function LandingPagePublic() {
       return;
     }
 
-    setLandingPage(data);
+    // Parse header_nav_items from JSON
+    const parsedData: LandingPage = {
+      ...data,
+      header_nav_items: Array.isArray(data.header_nav_items) 
+        ? (data.header_nav_items as unknown as NavItem[])
+        : [],
+    };
+
+    setLandingPage(parsedData);
 
     // Fetch sections
     const { data: sectionsData } = await supabase
@@ -631,6 +655,97 @@ export default function LandingPagePublic() {
           fontFamily: landingPage.font_family,
         }}
       >
+        {/* Custom Header */}
+        {(landingPage.header_title || landingPage.header_logo_url || (landingPage.header_nav_items && landingPage.header_nav_items.length > 0)) && (
+          <header
+            className={`${landingPage.header_sticky ? 'sticky top-0 z-50' : ''} bg-white/95 backdrop-blur-lg border-b border-gray-100 shadow-sm`}
+          >
+            <div className="container mx-auto px-4">
+              <div className="flex items-center justify-between h-16">
+                {/* Logo & Title */}
+                <div className="flex items-center gap-3">
+                  {landingPage.header_logo_url && (
+                    <img 
+                      src={landingPage.header_logo_url} 
+                      alt={landingPage.header_title || landingPage.name}
+                      className="h-10 w-10 object-contain rounded-lg"
+                    />
+                  )}
+                  {landingPage.header_title && (
+                    <span className="font-bold text-lg" style={{ color: landingPage.text_color }}>
+                      {landingPage.header_title}
+                    </span>
+                  )}
+                </div>
+
+                {/* Desktop Navigation */}
+                <nav className="hidden md:flex items-center gap-6">
+                  {landingPage.header_nav_items?.map((item, index) => (
+                    <a
+                      key={index}
+                      href={item.link}
+                      className="text-sm font-medium transition-colors hover:opacity-70"
+                      style={{ color: landingPage.text_color }}
+                    >
+                      {item.label}
+                    </a>
+                  ))}
+                  {landingPage.header_show_cta && landingPage.header_cta_text && (
+                    <a
+                      href={landingPage.header_cta_link || '#contact'}
+                      className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-transform hover:scale-105"
+                      style={{ backgroundColor: landingPage.theme_color }}
+                    >
+                      {landingPage.header_cta_text}
+                    </a>
+                  )}
+                </nav>
+
+                {/* Mobile Menu Button */}
+                <button
+                  className="md:hidden p-2"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                >
+                  {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                </button>
+              </div>
+
+              {/* Mobile Navigation */}
+              {mobileMenuOpen && (
+                <motion.nav
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="md:hidden py-4 border-t border-gray-100"
+                >
+                  <div className="flex flex-col gap-3">
+                    {landingPage.header_nav_items?.map((item, index) => (
+                      <a
+                        key={index}
+                        href={item.link}
+                        className="text-sm font-medium py-2 transition-colors hover:opacity-70"
+                        style={{ color: landingPage.text_color }}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        {item.label}
+                      </a>
+                    ))}
+                    {landingPage.header_show_cta && landingPage.header_cta_text && (
+                      <a
+                        href={landingPage.header_cta_link || '#contact'}
+                        className="px-4 py-2 rounded-lg text-sm font-semibold text-white text-center transition-transform hover:scale-105"
+                        style={{ backgroundColor: landingPage.theme_color }}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        {landingPage.header_cta_text}
+                      </a>
+                    )}
+                  </div>
+                </motion.nav>
+              )}
+            </div>
+          </header>
+        )}
+
         {sections.map(renderSection)}
 
         {/* Footer */}

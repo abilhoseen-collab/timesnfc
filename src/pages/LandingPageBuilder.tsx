@@ -46,6 +46,12 @@ import LandingPageSectionEditor from '@/components/landing-builder/LandingPageSe
 import DomainManager from '@/components/landing-builder/DomainManager';
 import SEOSettings from '@/components/landing-builder/SEOSettings';
 import ThemeSettings from '@/components/landing-builder/ThemeSettings';
+import HeaderEditor from '@/components/landing-builder/HeaderEditor';
+
+interface NavItem {
+  label: string;
+  link: string;
+}
 
 interface LandingPage {
   id: string;
@@ -68,6 +74,14 @@ interface LandingPage {
   total_views: number;
   created_at: string;
   updated_at: string;
+  // Header settings
+  header_logo_url: string | null;
+  header_title: string | null;
+  header_nav_items: NavItem[];
+  header_sticky: boolean;
+  header_show_cta: boolean;
+  header_cta_text: string | null;
+  header_cta_link: string | null;
 }
 
 interface LandingPageSection {
@@ -141,7 +155,15 @@ export default function LandingPageBuilder() {
       return;
     }
 
-    setLandingPage(data);
+    // Parse header_nav_items from JSON
+    const parsedData: LandingPage = {
+      ...data,
+      header_nav_items: Array.isArray(data.header_nav_items) 
+        ? (data.header_nav_items as unknown as NavItem[])
+        : [],
+    };
+
+    setLandingPage(parsedData);
     setName(data.name);
     setSlug(data.slug);
 
@@ -526,6 +548,10 @@ export default function LandingPageBuilder() {
               <Layout size={16} />
               Sections
             </TabsTrigger>
+            <TabsTrigger value="header" className="flex items-center gap-2">
+              <Layers size={16} />
+              Header
+            </TabsTrigger>
             <TabsTrigger value="domain" className="flex items-center gap-2">
               <Globe size={16} />
               Domain & SSL
@@ -569,6 +595,7 @@ export default function LandingPageBuilder() {
                       <LandingPageSectionEditor
                         key={section.id}
                         section={section}
+                        userId={user?.id || ''}
                         onUpdate={(updates) => updateSection(section.id, updates)}
                         onDelete={() => deleteSection(section.id)}
                         onMoveUp={() => moveSection(index, 'up')}
@@ -614,6 +641,30 @@ export default function LandingPageBuilder() {
                 </div>
               </div>
             </div>
+          </TabsContent>
+
+          {/* Header Tab */}
+          <TabsContent value="header">
+            {landingPage && (
+              <div className="max-w-2xl">
+                <div className="bg-card rounded-2xl p-6 border border-border">
+                  <HeaderEditor
+                    landingPageId={landingPage.id}
+                    userId={user?.id || ''}
+                    initialSettings={{
+                      header_logo_url: landingPage.header_logo_url,
+                      header_title: landingPage.header_title,
+                      header_nav_items: landingPage.header_nav_items || [],
+                      header_sticky: landingPage.header_sticky ?? true,
+                      header_show_cta: landingPage.header_show_cta ?? true,
+                      header_cta_text: landingPage.header_cta_text,
+                      header_cta_link: landingPage.header_cta_link,
+                    }}
+                    onUpdate={(updates) => setLandingPage({ ...landingPage, ...updates })}
+                  />
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           {/* Domain Tab */}
