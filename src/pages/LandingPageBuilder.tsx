@@ -11,6 +11,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
   ArrowLeft,
   Save,
   Eye,
@@ -40,6 +57,7 @@ import {
   FileText,
   Layers,
   Lock,
+  BarChart3,
 } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import LandingPageSectionEditor from '@/components/landing-builder/LandingPageSectionEditor';
@@ -49,7 +67,6 @@ import ThemeSettings from '@/components/landing-builder/ThemeSettings';
 import HeaderEditor from '@/components/landing-builder/HeaderEditor';
 import FooterEditor from '@/components/landing-builder/FooterEditor';
 import LandingPageAnalytics from '@/components/landing-builder/LandingPageAnalytics';
-import { BarChart3 } from 'lucide-react';
 
 interface NavItem {
   label: string;
@@ -104,6 +121,63 @@ interface LandingPageSection {
   is_visible: boolean;
 }
 
+// Sortable wrapper component for drag and drop
+interface SortableSectionWrapperProps {
+  section: LandingPageSection;
+  index: number;
+  userId: string;
+  onUpdate: (updates: Partial<LandingPageSection>) => void;
+  onDelete: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+}
+
+function SortableSectionWrapper({
+  section,
+  index,
+  userId,
+  onUpdate,
+  onDelete,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp,
+  canMoveDown,
+}: SortableSectionWrapperProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: section.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 'auto',
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <LandingPageSectionEditor
+        section={section}
+        userId={userId}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
+        onMoveUp={onMoveUp}
+        onMoveDown={onMoveDown}
+        canMoveUp={canMoveUp}
+        canMoveDown={canMoveDown}
+        dragHandleProps={listeners}
+      />
+    </div>
+  );
+}
+
 const sectionTypes = [
   { type: 'hero', icon: Layout, label: 'Hero Section', description: 'Main banner with headline and CTA' },
   { type: 'features', icon: Star, label: 'Features', description: 'Highlight key features or services' },
@@ -130,6 +204,14 @@ export default function LandingPageBuilder() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('sections');
   const [showAddSection, setShowAddSection] = useState(false);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Form states
   const [name, setName] = useState('');
@@ -389,7 +471,25 @@ export default function LandingPageBuilder() {
     [newSections[index], newSections[newIndex]] = [newSections[newIndex], newSections[index]];
     
     // Update sort orders
-    const updates = newSections.map((s, i) => ({ id: s.id, sort_order: i }));
+    await saveSectionOrder(newSections);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const oldIndex = sections.findIndex(s => s.id === active.id);
+      const newIndex = sections.findIndex(s => s.id === over.id);
+      
+      const newSections = arrayMove(sections, oldIndex, newIndex);
+      setSections(newSections);
+      
+      await saveSectionOrder(newSections);
+    }
+  };
+
+  const saveSectionOrder = async (orderedSections: LandingPageSection[]) => {
+    const updates = orderedSections.map((s, i) => ({ id: s.id, sort_order: i }));
     
     for (const update of updates) {
       await supabase
@@ -398,7 +498,7 @@ export default function LandingPageBuilder() {
         .eq('id', update.id);
     }
 
-    setSections(newSections.map((s, i) => ({ ...s, sort_order: i })));
+    setSections(orderedSections.map((s, i) => ({ ...s, sort_order: i })));
   };
 
   const getPageUrl = () => {
@@ -614,19 +714,33 @@ export default function LandingPageBuilder() {
                   </div>
                 ) : (
                   <>
-                    {sections.map((section, index) => (
-                      <LandingPageSectionEditor
-                        key={section.id}
-                        section={section}
-                        userId={user?.id || ''}
-                        onUpdate={(updates) => updateSection(section.id, updates)}
-                        onDelete={() => deleteSection(section.id)}
-                        onMoveUp={() => moveSection(index, 'up')}
-                        onMoveDown={() => moveSection(index, 'down')}
-                        canMoveUp={index > 0}
-                        canMoveDown={index < sections.length - 1}
-                      />
-                    ))}
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext
+                        items={sections.map(s => s.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div className="space-y-4">
+                          {sections.map((section, index) => (
+                            <SortableSectionWrapper
+                              key={section.id}
+                              section={section}
+                              index={index}
+                              userId={user?.id || ''}
+                              onUpdate={(updates) => updateSection(section.id, updates)}
+                              onDelete={() => deleteSection(section.id)}
+                              onMoveUp={() => moveSection(index, 'up')}
+                              onMoveDown={() => moveSection(index, 'down')}
+                              canMoveUp={index > 0}
+                              canMoveDown={index < sections.length - 1}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
                     
                     <Button 
                       variant="outline" 

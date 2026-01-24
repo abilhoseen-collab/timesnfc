@@ -54,6 +54,7 @@ interface Props {
   onMoveDown: () => void;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  dragHandleProps?: Record<string, any>;
 }
 
 const sectionIcons: Record<string, any> = {
@@ -79,6 +80,7 @@ export default function LandingPageSectionEditor({
   onMoveDown,
   canMoveUp,
   canMoveDown,
+  dragHandleProps,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [content, setContent] = useState(section.content);
@@ -574,7 +576,9 @@ export default function LandingPageSectionEditor({
     >
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <div className="flex items-center gap-3 p-4">
-          <GripVertical size={20} className="text-muted-foreground cursor-grab" />
+          <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing">
+            <GripVertical size={20} className="text-muted-foreground" />
+          </div>
           
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
             <Icon size={20} className="text-primary" />
