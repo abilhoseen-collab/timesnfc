@@ -845,6 +845,7 @@ export type Database = {
         Row: {
           address: string | null
           bio: string | null
+          chat_enabled: boolean | null
           company: string | null
           cover_image_url: string | null
           created_at: string
@@ -860,22 +861,31 @@ export type Database = {
           notification_email: string | null
           notify_on_click: boolean | null
           notify_on_view: boolean | null
+          payment_bank_details: string | null
+          payment_bkash: string | null
+          payment_button_text: string | null
+          payment_enabled: boolean | null
+          payment_nagad: string | null
+          payment_rocket: string | null
           phone: string | null
           photo_url: string | null
           qr_background_color: string | null
           qr_foreground_color: string | null
           qr_logo_url: string | null
           slug: string | null
+          telegram_username: string | null
           template: string | null
           twitter_url: string | null
           updated_at: string
           user_id: string
           website: string | null
+          whatsapp_number: string | null
           youtube_url: string | null
         }
         Insert: {
           address?: string | null
           bio?: string | null
+          chat_enabled?: boolean | null
           company?: string | null
           cover_image_url?: string | null
           created_at?: string
@@ -891,22 +901,31 @@ export type Database = {
           notification_email?: string | null
           notify_on_click?: boolean | null
           notify_on_view?: boolean | null
+          payment_bank_details?: string | null
+          payment_bkash?: string | null
+          payment_button_text?: string | null
+          payment_enabled?: boolean | null
+          payment_nagad?: string | null
+          payment_rocket?: string | null
           phone?: string | null
           photo_url?: string | null
           qr_background_color?: string | null
           qr_foreground_color?: string | null
           qr_logo_url?: string | null
           slug?: string | null
+          telegram_username?: string | null
           template?: string | null
           twitter_url?: string | null
           updated_at?: string
           user_id: string
           website?: string | null
+          whatsapp_number?: string | null
           youtube_url?: string | null
         }
         Update: {
           address?: string | null
           bio?: string | null
+          chat_enabled?: boolean | null
           company?: string | null
           cover_image_url?: string | null
           created_at?: string
@@ -922,17 +941,25 @@ export type Database = {
           notification_email?: string | null
           notify_on_click?: boolean | null
           notify_on_view?: boolean | null
+          payment_bank_details?: string | null
+          payment_bkash?: string | null
+          payment_button_text?: string | null
+          payment_enabled?: boolean | null
+          payment_nagad?: string | null
+          payment_rocket?: string | null
           phone?: string | null
           photo_url?: string | null
           qr_background_color?: string | null
           qr_foreground_color?: string | null
           qr_logo_url?: string | null
           slug?: string | null
+          telegram_username?: string | null
           template?: string | null
           twitter_url?: string | null
           updated_at?: string
           user_id?: string
           website?: string | null
+          whatsapp_number?: string | null
           youtube_url?: string | null
         }
         Relationships: []

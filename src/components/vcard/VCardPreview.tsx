@@ -43,6 +43,16 @@ interface FormData {
   notify_on_view: boolean;
   notify_on_click: boolean;
   slug: string;
+  // Chat & Payment
+  whatsapp_number?: string;
+  telegram_username?: string;
+  chat_enabled?: boolean;
+  payment_enabled?: boolean;
+  payment_bkash?: string;
+  payment_nagad?: string;
+  payment_rocket?: string;
+  payment_bank_details?: string;
+  payment_button_text?: string;
 }
 
 interface VCardPreviewProps {
