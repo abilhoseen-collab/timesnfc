@@ -150,6 +150,7 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
       case 'testimonial': return Quote;
       case 'social_proof': return Award;
       case 'faq': return HelpCircle;
+      case 'contact_form': return Type;
     }
   };
 
@@ -748,7 +749,7 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                 </div>
               )}
 
-              {/* Product Catalog */}
+              {/* Product Catalog with Image Upload */}
               {section.section_type === 'product_catalog' && (
                 <div className="space-y-4">
                   {(section.content.products || []).map((product: any, index: number) => (
@@ -763,6 +764,59 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                           <Trash2 size={14} />
                         </Button>
                       </div>
+                      
+                      {/* Product Image */}
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-muted border border-border flex-shrink-0">
+                          {product.image ? (
+                            <img src={product.image} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ImageIcon size={20} className="text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              if (file.size > 5 * 1024 * 1024) {
+                                toast({ title: 'File too large', description: 'Max 5MB', variant: 'destructive' });
+                                return;
+                              }
+                              try {
+                                const fileExt = file.name.split('.').pop();
+                                const fileName = `products/${section.id}/${Date.now()}-${index}.${fileExt}`;
+                                const { error: uploadError } = await supabase.storage.from('profile-photos').upload(fileName, file);
+                                if (uploadError) throw uploadError;
+                                const { data: { publicUrl } } = supabase.storage.from('profile-photos').getPublicUrl(fileName);
+                                const products = [...(section.content.products || [])];
+                                products[index] = { ...products[index], image: publicUrl };
+                                handleContentChange('products', products);
+                                toast({ title: 'Image uploaded!' });
+                              } catch (err) {
+                                toast({ title: 'Upload failed', variant: 'destructive' });
+                              }
+                            }}
+                            className="hidden"
+                            id={`product-image-${section.id}-${index}`}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => document.getElementById(`product-image-${section.id}-${index}`)?.click()}
+                          >
+                            <Camera size={14} className="mr-2" />
+                            {product.image ? 'Change Image' : 'Add Image'}
+                          </Button>
+                          <p className="text-xs text-muted-foreground mt-1">Product photo (optional)</p>
+                        </div>
+                      </div>
+                      
                       <Input value={product.name || ''} onChange={(e) => {
                         const products = [...(section.content.products || [])];
                         products[index] = { ...products[index], name: e.target.value };
@@ -773,12 +827,17 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                         products[index] = { ...products[index], description: e.target.value };
                         handleContentChange('products', products);
                       }} placeholder="Description" rows={2} />
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-3 gap-3">
                         <Input value={product.price || ''} onChange={(e) => {
                           const products = [...(section.content.products || [])];
                           products[index] = { ...products[index], price: e.target.value };
                           handleContentChange('products', products);
                         }} placeholder="৳500" />
+                        <Input value={product.originalPrice || ''} onChange={(e) => {
+                          const products = [...(section.content.products || [])];
+                          products[index] = { ...products[index], originalPrice: e.target.value };
+                          handleContentChange('products', products);
+                        }} placeholder="৳800 (original)" />
                         <Input value={product.category || ''} onChange={(e) => {
                           const products = [...(section.content.products || [])];
                           products[index] = { ...products[index], category: e.target.value };
@@ -789,7 +848,7 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                   ))}
                   <Button variant="outline" size="sm" onClick={() => {
                     const products = [...(section.content.products || [])];
-                    products.push({ name: '', description: '', price: '', category: '' });
+                    products.push({ name: '', description: '', price: '', image: '', category: '', originalPrice: '' });
                     handleContentChange('products', products);
                   }} className="w-full"><Plus size={16} className="mr-2" />Add Product</Button>
                 </div>
@@ -850,6 +909,32 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                     faqs.push({ question: '', answer: '' });
                     handleContentChange('faqs', faqs);
                   }} className="w-full"><Plus size={16} className="mr-2" />Add FAQ</Button>
+                </div>
+              )}
+
+              {/* Contact Form Settings */}
+              {section.section_type === 'contact_form' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Form Title</label>
+                    <Input
+                      value={section.content.form_title || ''}
+                      onChange={(e) => handleContentChange('form_title', e.target.value)}
+                      placeholder="Get in Touch"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Form Description</label>
+                    <Textarea
+                      value={section.content.form_description || ''}
+                      onChange={(e) => handleContentChange('form_description', e.target.value)}
+                      placeholder="Send us a message and we'll get back to you soon."
+                      rows={2}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Visitors can send you messages directly. You'll receive notifications via email.
+                  </p>
                 </div>
               )}
             </div>
