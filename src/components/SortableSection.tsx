@@ -146,6 +146,7 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
       case 'image_gallery': return ImageIcon;
       case 'service_card': return CreditCard;
       case 'product_catalog': return ShoppingBag;
+      case 'product_gallery': return ImageIcon;
       case 'video': return Video;
       case 'testimonial': return Quote;
       case 'social_proof': return Award;
@@ -935,6 +936,106 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                   <p className="text-xs text-muted-foreground">
                     Visitors can send you messages directly. You'll receive notifications via email.
                   </p>
+                </div>
+              )}
+
+              {/* Product Gallery */}
+              {section.section_type === 'product_gallery' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Add products with images. They'll be displayed in a beautiful grid gallery with lightbox zoom and sharing.
+                  </p>
+                  {(section.content.products || []).map((product: any, index: number) => (
+                    <div key={index} className="p-4 bg-muted/30 rounded-lg border border-border space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-muted-foreground">Product {index + 1}</span>
+                        <Button variant="ghost" size="icon" onClick={() => {
+                          const products = [...(section.content.products || [])];
+                          products.splice(index, 1);
+                          handleContentChange('products', products);
+                        }} className="h-7 w-7 text-destructive">
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                      
+                      {/* Product Image */}
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-muted border border-border flex-shrink-0">
+                          {product.image ? (
+                            <img src={product.image} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ImageIcon size={20} className="text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              if (file.size > 5 * 1024 * 1024) {
+                                toast({ title: 'File too large', description: 'Max 5MB', variant: 'destructive' });
+                                return;
+                              }
+                              try {
+                                const fileExt = file.name.split('.').pop();
+                                const fileName = `gallery/${section.id}/${Date.now()}-${index}.${fileExt}`;
+                                const { error: uploadError } = await supabase.storage.from('profile-photos').upload(fileName, file);
+                                if (uploadError) throw uploadError;
+                                const { data: { publicUrl } } = supabase.storage.from('profile-photos').getPublicUrl(fileName);
+                                const products = [...(section.content.products || [])];
+                                products[index] = { ...products[index], image: publicUrl };
+                                handleContentChange('products', products);
+                                toast({ title: 'Image uploaded!' });
+                              } catch (err) {
+                                toast({ title: 'Upload failed', variant: 'destructive' });
+                              }
+                            }}
+                            className="hidden"
+                            id={`gallery-image-${section.id}-${index}`}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => document.getElementById(`gallery-image-${section.id}-${index}`)?.click()}
+                          >
+                            <Camera size={14} className="mr-2" />
+                            {product.image ? 'Change' : 'Add Image'}
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <Input value={product.name || ''} onChange={(e) => {
+                        const products = [...(section.content.products || [])];
+                        products[index] = { ...products[index], name: e.target.value };
+                        handleContentChange('products', products);
+                      }} placeholder="Product name" />
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input value={product.price || ''} onChange={(e) => {
+                          const products = [...(section.content.products || [])];
+                          products[index] = { ...products[index], price: e.target.value };
+                          handleContentChange('products', products);
+                        }} placeholder="Price (e.g., ৳500)" />
+                        <Input value={product.description || ''} onChange={(e) => {
+                          const products = [...(section.content.products || [])];
+                          products[index] = { ...products[index], description: e.target.value };
+                          handleContentChange('products', products);
+                        }} placeholder="Short description" />
+                      </div>
+                    </div>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={() => {
+                    const products = [...(section.content.products || [])];
+                    products.push({ name: '', price: '', image: '', description: '' });
+                    handleContentChange('products', products);
+                  }} className="w-full">
+                    <Plus size={16} className="mr-2" />
+                    Add Product
+                  </Button>
                 </div>
               )}
             </div>
