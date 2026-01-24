@@ -47,8 +47,10 @@ import {
   HelpCircle,
   MessageSquare,
   Images,
+  ZoomIn,
 } from 'lucide-react';
 import type { CustomSection, SectionType } from './CustomSectionsEditor';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface SortableSectionProps {
   section: CustomSection;
@@ -61,6 +63,7 @@ interface SortableImageProps {
   url: string;
   index: number;
   onRemove: (index: number) => void;
+  onPreview: (url: string) => void;
 }
 
 // Debounced input component for smooth typing
@@ -165,7 +168,7 @@ function DebouncedTextarea({ value, onChange, placeholder, rows = 3, className }
   );
 }
 
-function SortableImage({ id, url, index, onRemove }: SortableImageProps) {
+function SortableImage({ id, url, index, onRemove, onPreview }: SortableImageProps) {
   const {
     attributes,
     listeners,
@@ -199,6 +202,15 @@ function SortableImage({ id, url, index, onRemove }: SortableImageProps) {
         <Move size={12} />
       </button>
       <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onPreview(url);
+        }}
+        className="absolute bottom-2 left-2 p-1.5 bg-white/90 text-gray-700 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <ZoomIn size={12} />
+      </button>
+      <button
         onClick={() => onRemove(index)}
         className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
       >
@@ -216,7 +228,10 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
   const [uploadingTestimonialAvatar, setUploadingTestimonialAvatar] = useState<number | null>(null);
   const [uploadingProductImage, setUploadingProductImage] = useState<number | null>(null);
   const [uploadingGalleryImage, setUploadingGalleryImage] = useState<number | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
   const serviceImageRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const testimonialAvatarRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const productImageRefs = useRef<Record<number, HTMLInputElement | null>>({});
@@ -704,51 +719,123 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
 
               {/* Image Gallery */}
               {section.section_type === 'image_gallery' && (
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-foreground">
                     ছবি <span className="text-muted-foreground font-normal">(ক্রম পরিবর্তনে ড্র্যাগ করুন)</span>
                   </label>
-                  <DndContext
-                    sensors={imageSensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleImageDragEnd}
+                  
+                  {/* Drag & Drop Zone */}
+                  <div
+                    ref={dropZoneRef}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(false);
+                    }}
+                    onDrop={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(false);
+                      
+                      const files = e.dataTransfer.files;
+                      if (!files || files.length === 0) return;
+                      
+                      setUploadingImage(true);
+                      const newImages: string[] = [...(section.content.images || [])];
+                      
+                      for (const file of Array.from(files)) {
+                        if (!file.type.startsWith('image/')) continue;
+                        if (file.size > 5 * 1024 * 1024) {
+                          toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 5MB', variant: 'destructive' });
+                          continue;
+                        }
+                        
+                        try {
+                          const fileExt = file.name.split('.').pop();
+                          const fileName = `sections/${section.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+                          
+                          const { error: uploadError } = await supabase.storage
+                            .from('profile-photos')
+                            .upload(fileName, file);
+                          
+                          if (uploadError) throw uploadError;
+                          
+                          const { data: { publicUrl } } = supabase.storage
+                            .from('profile-photos')
+                            .getPublicUrl(fileName);
+                          
+                          newImages.push(publicUrl);
+                        } catch (error: any) {
+                          toast({ title: 'আপলোড ব্যর্থ হয়েছে', variant: 'destructive' });
+                        }
+                      }
+                      
+                      handleContentChange('images', newImages);
+                      setUploadingImage(false);
+                      toast({ title: `${newImages.length - (section.content.images || []).length} টি ছবি যোগ হয়েছে!` });
+                    }}
+                    className={`p-4 rounded-lg border-2 border-dashed transition-all ${
+                      isDragOver 
+                        ? 'border-primary bg-primary/10' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
                   >
-                    <SortableContext
-                      items={(section.content.images || []).map((_: string, i: number) => `img-${i}`)}
-                      strategy={rectSortingStrategy}
+                    <DndContext
+                      sensors={imageSensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleImageDragEnd}
                     >
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 mb-3">
-                        {(section.content.images || []).map((url: string, index: number) => (
-                          <SortableImage
-                            key={`img-${index}`}
-                            id={`img-${index}`}
-                            url={url}
-                            index={index}
-                            onRemove={removeImage}
-                          />
-                        ))}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            fileInputRef.current?.click();
-                          }}
-                          onPointerDown={(e) => e.stopPropagation()}
-                          disabled={uploadingImage}
-                          className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-2 transition-colors min-h-[80px] cursor-pointer"
-                        >
-                          {uploadingImage ? (
-                            <Loader2 size={20} className="animate-spin text-muted-foreground" />
-                          ) : (
-                            <>
-                              <Upload size={18} className="text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">আপলোড</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </SortableContext>
-                  </DndContext>
+                      <SortableContext
+                        items={(section.content.images || []).map((_: string, i: number) => `img-${i}`)}
+                        strategy={rectSortingStrategy}
+                      >
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 mb-3">
+                          {(section.content.images || []).map((url: string, index: number) => (
+                            <SortableImage
+                              key={`img-${index}`}
+                              id={`img-${index}`}
+                              url={url}
+                              index={index}
+                              onRemove={removeImage}
+                              onPreview={(url) => setLightboxImage(url)}
+                            />
+                          ))}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              fileInputRef.current?.click();
+                            }}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            disabled={uploadingImage}
+                            className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-2 transition-colors min-h-[80px] cursor-pointer bg-muted/30"
+                          >
+                            {uploadingImage ? (
+                              <Loader2 size={20} className="animate-spin text-muted-foreground" />
+                            ) : (
+                              <>
+                                <Upload size={18} className="text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground">আপলোড</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                    
+                    {/* Drag & Drop hint */}
+                    <div className="text-center py-2">
+                      <p className="text-xs text-muted-foreground">
+                        📂 ছবি এখানে ড্র্যাগ করে ছেড়ে দিন অথবা ক্লিক করে আপলোড করুন
+                      </p>
+                    </div>
+                  </div>
+                  
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -759,7 +846,28 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                     onPointerDown={(e) => e.stopPropagation()}
                     className="hidden"
                   />
-                  <p className="text-xs text-muted-foreground">সর্বোচ্চ 5MB প্রতি ছবি।</p>
+                  <p className="text-xs text-muted-foreground">সর্বোচ্চ 5MB প্রতি ছবি। একাধিক ছবি একসাথে ড্র্যাগ করুন।</p>
+                  
+                  {/* Lightbox Modal */}
+                  <Dialog open={!!lightboxImage} onOpenChange={() => setLightboxImage(null)}>
+                    <DialogContent className="max-w-4xl p-0 bg-black/95 border-none">
+                      <div className="relative w-full h-[80vh] flex items-center justify-center">
+                        {lightboxImage && (
+                          <img 
+                            src={lightboxImage} 
+                            alt="Preview" 
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        )}
+                        <button
+                          onClick={() => setLightboxImage(null)}
+                          className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors"
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               )}
 
