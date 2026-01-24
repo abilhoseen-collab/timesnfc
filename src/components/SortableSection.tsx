@@ -42,7 +42,17 @@ import {
   Quote,
   Star,
   Camera,
+  ShoppingBag,
+  Award,
+  HelpCircle,
 } from 'lucide-react';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { CustomSection, SectionType } from './CustomSectionsEditor';
 
 interface SortableSectionProps {
@@ -135,8 +145,11 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
       case 'text': return Type;
       case 'image_gallery': return ImageIcon;
       case 'service_card': return CreditCard;
+      case 'product_catalog': return ShoppingBag;
       case 'video': return Video;
       case 'testimonial': return Quote;
+      case 'social_proof': return Award;
+      case 'faq': return HelpCircle;
     }
   };
 
@@ -732,6 +745,111 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                     <Plus size={16} className="mr-2" />
                     Add Testimonial
                   </Button>
+                </div>
+              )}
+
+              {/* Product Catalog */}
+              {section.section_type === 'product_catalog' && (
+                <div className="space-y-4">
+                  {(section.content.products || []).map((product: any, index: number) => (
+                    <div key={index} className="p-4 bg-muted/30 rounded-lg border border-border space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-muted-foreground">Product {index + 1}</span>
+                        <Button variant="ghost" size="icon" onClick={() => {
+                          const products = [...(section.content.products || [])];
+                          products.splice(index, 1);
+                          handleContentChange('products', products);
+                        }} className="h-7 w-7 text-destructive">
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                      <Input value={product.name || ''} onChange={(e) => {
+                        const products = [...(section.content.products || [])];
+                        products[index] = { ...products[index], name: e.target.value };
+                        handleContentChange('products', products);
+                      }} placeholder="Product name" />
+                      <Textarea value={product.description || ''} onChange={(e) => {
+                        const products = [...(section.content.products || [])];
+                        products[index] = { ...products[index], description: e.target.value };
+                        handleContentChange('products', products);
+                      }} placeholder="Description" rows={2} />
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input value={product.price || ''} onChange={(e) => {
+                          const products = [...(section.content.products || [])];
+                          products[index] = { ...products[index], price: e.target.value };
+                          handleContentChange('products', products);
+                        }} placeholder="৳500" />
+                        <Input value={product.category || ''} onChange={(e) => {
+                          const products = [...(section.content.products || [])];
+                          products[index] = { ...products[index], category: e.target.value };
+                          handleContentChange('products', products);
+                        }} placeholder="Category" />
+                      </div>
+                    </div>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={() => {
+                    const products = [...(section.content.products || [])];
+                    products.push({ name: '', description: '', price: '', category: '' });
+                    handleContentChange('products', products);
+                  }} className="w-full"><Plus size={16} className="mr-2" />Add Product</Button>
+                </div>
+              )}
+
+              {/* Social Proof Badges */}
+              {section.section_type === 'social_proof' && (
+                <div className="space-y-4">
+                  {(section.content.badges || []).map((badge: any, index: number) => (
+                    <div key={index} className="p-3 bg-muted/30 rounded-lg border border-border flex gap-3 items-center">
+                      <Input value={badge.text || ''} onChange={(e) => {
+                        const badges = [...(section.content.badges || [])];
+                        badges[index] = { ...badges[index], text: e.target.value };
+                        handleContentChange('badges', badges);
+                      }} placeholder="Verified Business" className="flex-1" />
+                      <Button variant="ghost" size="icon" onClick={() => {
+                        const badges = [...(section.content.badges || [])];
+                        badges.splice(index, 1);
+                        handleContentChange('badges', badges);
+                      }} className="h-8 w-8 text-destructive"><Trash2 size={14} /></Button>
+                    </div>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={() => {
+                    const badges = [...(section.content.badges || [])];
+                    badges.push({ icon: 'verified', text: '', color: 'blue' });
+                    handleContentChange('badges', badges);
+                  }} className="w-full"><Plus size={16} className="mr-2" />Add Badge</Button>
+                </div>
+              )}
+
+              {/* FAQ Section */}
+              {section.section_type === 'faq' && (
+                <div className="space-y-4">
+                  {(section.content.faqs || []).map((faq: any, index: number) => (
+                    <div key={index} className="p-4 bg-muted/30 rounded-lg border border-border space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-muted-foreground">FAQ {index + 1}</span>
+                        <Button variant="ghost" size="icon" onClick={() => {
+                          const faqs = [...(section.content.faqs || [])];
+                          faqs.splice(index, 1);
+                          handleContentChange('faqs', faqs);
+                        }} className="h-7 w-7 text-destructive"><Trash2 size={14} /></Button>
+                      </div>
+                      <Input value={faq.question || ''} onChange={(e) => {
+                        const faqs = [...(section.content.faqs || [])];
+                        faqs[index] = { ...faqs[index], question: e.target.value };
+                        handleContentChange('faqs', faqs);
+                      }} placeholder="Question?" />
+                      <Textarea value={faq.answer || ''} onChange={(e) => {
+                        const faqs = [...(section.content.faqs || [])];
+                        faqs[index] = { ...faqs[index], answer: e.target.value };
+                        handleContentChange('faqs', faqs);
+                      }} placeholder="Answer..." rows={3} />
+                    </div>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={() => {
+                    const faqs = [...(section.content.faqs || [])];
+                    faqs.push({ question: '', answer: '' });
+                    handleContentChange('faqs', faqs);
+                  }} className="w-full"><Plus size={16} className="mr-2" />Add FAQ</Button>
                 </div>
               )}
             </div>

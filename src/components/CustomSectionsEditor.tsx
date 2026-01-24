@@ -34,10 +34,13 @@ import {
   Video,
   Star,
   Quote,
+  ShoppingBag,
+  Award,
+  HelpCircle,
 } from 'lucide-react';
 import { SortableSection } from './SortableSection';
 
-export type SectionType = 'text' | 'image_gallery' | 'service_card' | 'video' | 'testimonial';
+export type SectionType = 'text' | 'image_gallery' | 'service_card' | 'video' | 'testimonial' | 'product_catalog' | 'social_proof' | 'faq';
 
 export interface CustomSection {
   id: string;
@@ -56,9 +59,12 @@ interface CustomSectionsEditorProps {
 const sectionTypes = [
   { type: 'text' as SectionType, icon: Type, label: 'Text Section', description: 'Headings, paragraphs, and formatted text' },
   { type: 'image_gallery' as SectionType, icon: ImageIcon, label: 'Image Gallery', description: 'Photo galleries and image carousels' },
-  { type: 'service_card' as SectionType, icon: CreditCard, label: 'Service Catalog', description: 'Services or products with pricing & images' },
+  { type: 'service_card' as SectionType, icon: CreditCard, label: 'Service Catalog', description: 'Services with pricing & WhatsApp checkout' },
+  { type: 'product_catalog' as SectionType, icon: ShoppingBag, label: 'Product Shop', description: 'Products with cart & mobile payment checkout' },
   { type: 'video' as SectionType, icon: Video, label: 'Video Embed', description: 'YouTube, Vimeo, or other video embeds' },
   { type: 'testimonial' as SectionType, icon: Quote, label: 'Testimonials', description: 'Client reviews and testimonials' },
+  { type: 'social_proof' as SectionType, icon: Award, label: 'Social Proof Badges', description: 'Trust badges like Verified, 100+ Clients' },
+  { type: 'faq' as SectionType, icon: HelpCircle, label: 'FAQ Section', description: 'Frequently asked questions accordion' },
 ];
 
 export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorProps) {
@@ -146,8 +152,11 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
       case 'text': return 'About Me';
       case 'image_gallery': return 'Gallery';
       case 'service_card': return 'Services';
+      case 'product_catalog': return 'Products';
       case 'video': return 'Video';
       case 'testimonial': return 'What Clients Say';
+      case 'social_proof': return 'Why Trust Us';
+      case 'faq': return 'FAQs';
     }
   };
 
@@ -159,10 +168,16 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
         return { images: [] };
       case 'service_card':
         return { services: [{ name: '', description: '', price: '', image: '', category: '' }] };
+      case 'product_catalog':
+        return { products: [{ name: '', description: '', price: '', image: '', category: '', originalPrice: '' }] };
       case 'video':
         return { video_url: '', video_type: 'youtube' };
       case 'testimonial':
         return { testimonials: [{ name: '', role: '', company: '', content: '', rating: 5, avatar: '' }] };
+      case 'social_proof':
+        return { badges: [{ icon: 'verified', text: 'Verified Business', color: 'blue' }] };
+      case 'faq':
+        return { faqs: [{ question: '', answer: '' }] };
     }
   };
 
