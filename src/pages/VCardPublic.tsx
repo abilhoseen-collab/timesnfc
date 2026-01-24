@@ -655,13 +655,19 @@ END:VCARD`;
                     />
                   )}
 
-                  {/* Service Cards Section - with Cart functionality */}
+                  {/* Service Cards Section - with Cart & Checkout functionality */}
                   {section.section_type === 'service_card' && section.content?.services && (
                     <ServiceCatalog
                       services={section.content.services as { name: string; price: string; description?: string; image?: string; category?: string }[]}
                       accentColor={style.accent}
                       ownerName={vcard.name}
+                      ownerPhone={vcard.phone}
+                      ownerEmail={vcard.email}
                       whatsappNumber={vcard.whatsapp_number}
+                      bkashNumber={vcard.payment_bkash}
+                      nagadNumber={vcard.payment_nagad}
+                      rocketNumber={vcard.payment_rocket}
+                      bankDetails={vcard.payment_bank_details}
                       onTrackClick={trackLinkClick}
                     />
                   )}

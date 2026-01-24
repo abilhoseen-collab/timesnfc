@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   DndContext,
   closestCenter,
@@ -32,13 +32,14 @@ import {
   Loader2,
   Save,
   Video,
-  Star,
   Quote,
   ShoppingBag,
   Award,
   HelpCircle,
   MessageSquare,
   Images,
+  Check,
+  Cloud,
 } from 'lucide-react';
 import { SortableSection } from './SortableSection';
 
@@ -58,17 +59,19 @@ interface CustomSectionsEditorProps {
   vcardId: string;
 }
 
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+
 const sectionTypes = [
-  { type: 'text' as SectionType, icon: Type, label: 'Text Section', description: 'Headings, paragraphs, and formatted text' },
-  { type: 'image_gallery' as SectionType, icon: ImageIcon, label: 'Image Gallery', description: 'Photo galleries and image carousels' },
-  { type: 'service_card' as SectionType, icon: CreditCard, label: 'Service Catalog', description: 'Services with pricing & WhatsApp checkout' },
-  { type: 'product_catalog' as SectionType, icon: ShoppingBag, label: 'Product Shop', description: 'Products with cart & mobile payment checkout' },
-  { type: 'product_gallery' as SectionType, icon: Images, label: 'Product Gallery', description: 'All products as a visual gallery with lightbox' },
-  { type: 'video' as SectionType, icon: Video, label: 'Video Embed', description: 'YouTube, Vimeo, or other video embeds' },
-  { type: 'testimonial' as SectionType, icon: Quote, label: 'Testimonials', description: 'Client reviews and testimonials' },
-  { type: 'social_proof' as SectionType, icon: Award, label: 'Social Proof Badges', description: 'Trust badges like Verified, 100+ Clients' },
-  { type: 'faq' as SectionType, icon: HelpCircle, label: 'FAQ Section', description: 'Frequently asked questions accordion' },
-  { type: 'contact_form' as SectionType, icon: MessageSquare, label: 'Contact Form', description: 'Let visitors send you messages directly' },
+  { type: 'text' as SectionType, icon: Type, label: 'টেক্সট সেকশন', description: 'হেডিং এবং প্যারাগ্রাফ টেক্সট' },
+  { type: 'image_gallery' as SectionType, icon: ImageIcon, label: 'ইমেজ গ্যালারি', description: 'ছবির গ্যালারি ও স্লাইডার' },
+  { type: 'service_card' as SectionType, icon: CreditCard, label: 'সার্ভিস ক্যাটালগ', description: 'সার্ভিস লিস্ট ও কার্ট চেকআউট' },
+  { type: 'product_catalog' as SectionType, icon: ShoppingBag, label: 'প্রোডাক্ট শপ', description: 'প্রোডাক্ট ও মোবাইল পেমেন্ট চেকআউট' },
+  { type: 'product_gallery' as SectionType, icon: Images, label: 'প্রোডাক্ট গ্যালারি', description: 'ভিজ্যুয়াল গ্যালারি ও লাইটবক্স' },
+  { type: 'video' as SectionType, icon: Video, label: 'ভিডিও এম্বেড', description: 'YouTube, Vimeo ভিডিও' },
+  { type: 'testimonial' as SectionType, icon: Quote, label: 'টেস্টিমোনিয়াল', description: 'ক্লায়েন্ট রিভিউ ও ফিডব্যাক' },
+  { type: 'social_proof' as SectionType, icon: Award, label: 'সোশ্যাল প্রুফ ব্যাজ', description: 'ভেরিফাইড বিজনেস ব্যাজ' },
+  { type: 'faq' as SectionType, icon: HelpCircle, label: 'FAQ সেকশন', description: 'সচরাচর জিজ্ঞাসিত প্রশ্নাবলী' },
+  { type: 'contact_form' as SectionType, icon: MessageSquare, label: 'যোগাযোগ ফর্ম', description: 'ভিজিটরদের মেসেজ পাঠানোর ফর্ম' },
 ];
 
 export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorProps) {
@@ -77,9 +80,11 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -90,6 +95,14 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
       fetchSections();
     }
   }, [vcardId]);
+
+  // Clear save status after showing "saved"
+  useEffect(() => {
+    if (saveStatus === 'saved') {
+      const timer = setTimeout(() => setSaveStatus('idle'), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [saveStatus]);
 
   const fetchSections = async () => {
     setLoading(true);
@@ -138,14 +151,14 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
 
       if (error) {
         console.error('Failed to add section:', error);
-        toast({ title: 'Failed to add section', description: error.message, variant: 'destructive' });
+        toast({ title: 'সেকশন যোগ করতে ব্যর্থ হয়েছে', description: error.message, variant: 'destructive' });
       } else if (data) {
         setSections(prev => [...prev, data as CustomSection]);
-        toast({ title: 'Section added successfully' });
+        toast({ title: 'সেকশন যোগ হয়েছে!' });
       }
     } catch (err) {
       console.error('Error adding section:', err);
-      toast({ title: 'Failed to add section', variant: 'destructive' });
+      toast({ title: 'সেকশন যোগ করতে ব্যর্থ', variant: 'destructive' });
     } finally {
       setAdding(false);
     }
@@ -153,16 +166,16 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
 
   const getDefaultTitle = (type: SectionType): string => {
     switch (type) {
-      case 'text': return 'About Me';
-      case 'image_gallery': return 'Gallery';
-      case 'service_card': return 'Services';
-      case 'product_catalog': return 'Products';
-      case 'product_gallery': return 'Product Gallery';
-      case 'video': return 'Video';
-      case 'testimonial': return 'What Clients Say';
-      case 'social_proof': return 'Why Trust Us';
-      case 'faq': return 'FAQs';
-      case 'contact_form': return 'Contact Us';
+      case 'text': return 'আমার সম্পর্কে';
+      case 'image_gallery': return 'গ্যালারি';
+      case 'service_card': return 'সার্ভিস সমূহ';
+      case 'product_catalog': return 'প্রোডাক্ট সমূহ';
+      case 'product_gallery': return 'প্রোডাক্ট গ্যালারি';
+      case 'video': return 'ভিডিও';
+      case 'testimonial': return 'ক্লায়েন্টদের মতামত';
+      case 'social_proof': return 'কেন আমাদের বিশ্বাস করবেন';
+      case 'faq': return 'সচরাচর জিজ্ঞাসিত প্রশ্ন';
+      case 'contact_form': return 'যোগাযোগ করুন';
     }
   };
 
@@ -183,24 +196,44 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
       case 'testimonial':
         return { testimonials: [{ name: '', role: '', company: '', content: '', rating: 5, avatar: '' }] };
       case 'social_proof':
-        return { badges: [{ icon: 'verified', text: 'Verified Business', color: 'blue' }] };
+        return { badges: [{ icon: 'verified', text: 'ভেরিফাইড বিজনেস', color: 'blue' }] };
       case 'faq':
         return { faqs: [{ question: '', answer: '' }] };
       case 'contact_form':
-        return { form_title: 'Get in Touch', form_description: 'Send us a message and we\'ll get back to you soon.' };
+        return { form_title: 'যোগাযোগ করুন', form_description: 'আমাদের মেসেজ পাঠান, আমরা শীঘ্রই উত্তর দেব।' };
     }
   };
 
-  const updateSection = async (id: string, updates: Partial<CustomSection>) => {
-    const { error } = await supabase
-      .from('vcard_custom_sections')
-      .update(updates)
-      .eq('id', id);
-
-    if (!error) {
-      setSections(sections.map(s => s.id === id ? { ...s, ...updates } : s));
+  const updateSection = useCallback(async (id: string, updates: Partial<CustomSection>) => {
+    // Update local state immediately
+    setSections(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+    
+    // Show saving indicator
+    setSaveStatus('saving');
+    
+    // Debounce the database update
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
-  };
+    
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const { error } = await supabase
+          .from('vcard_custom_sections')
+          .update(updates)
+          .eq('id', id);
+
+        if (error) {
+          setSaveStatus('error');
+          toast({ title: 'সেভ করতে সমস্যা হয়েছে', variant: 'destructive' });
+        } else {
+          setSaveStatus('saved');
+        }
+      } catch (err) {
+        setSaveStatus('error');
+      }
+    }, 500);
+  }, [toast]);
 
   const deleteSection = async (id: string) => {
     const { error } = await supabase
@@ -210,7 +243,7 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
 
     if (!error) {
       setSections(sections.filter(s => s.id !== id));
-      toast({ title: 'Section deleted' });
+      toast({ title: 'সেকশন মুছে ফেলা হয়েছে' });
     }
   };
 
@@ -228,8 +261,38 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
         .eq('id', update.id);
     }
 
-    toast({ title: 'Order saved' });
+    toast({ title: 'ক্রম সংরক্ষিত হয়েছে' });
     setSaving(false);
+  };
+
+  // Auto-save indicator component
+  const SaveIndicator = () => {
+    if (saveStatus === 'idle') return null;
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0 }}
+        className="flex items-center gap-2 text-sm"
+      >
+        {saveStatus === 'saving' && (
+          <>
+            <Loader2 size={14} className="animate-spin text-muted-foreground" />
+            <span className="text-muted-foreground">সেভ হচ্ছে...</span>
+          </>
+        )}
+        {saveStatus === 'saved' && (
+          <>
+            <Check size={14} className="text-green-500" />
+            <span className="text-green-600">সেভ হয়েছে</span>
+          </>
+        )}
+        {saveStatus === 'error' && (
+          <span className="text-destructive">সেভ ব্যর্থ</span>
+        )}
+      </motion.div>
+    );
   };
 
   if (loading) {
@@ -242,18 +305,24 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-foreground">Custom Sections</h2>
+          <h2 className="text-lg font-bold text-foreground">কাস্টম সেকশন</h2>
           <p className="text-sm text-muted-foreground">
-            Add and arrange custom content on your landing page
+            আপনার ল্যান্ডিং পেজে কাস্টম কন্টেন্ট যোগ করুন
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Auto-save indicator */}
+          <AnimatePresence>
+            <SaveIndicator />
+          </AnimatePresence>
+          
           {sections.length > 1 && (
             <Button variant="outline" size="sm" onClick={saveOrder} disabled={saving}>
               {saving ? <Loader2 size={16} className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
-              Save Order
+              <span className="hidden sm:inline">ক্রম সেভ করুন</span>
+              <span className="sm:hidden">সেভ</span>
             </Button>
           )}
           <DropdownMenu>
@@ -264,7 +333,8 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
                 ) : (
                   <Plus size={16} className="mr-2" />
                 )}
-                Add Section
+                <span className="hidden sm:inline">সেকশন যোগ করুন</span>
+                <span className="sm:hidden">যোগ</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
@@ -289,10 +359,10 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
       </div>
 
       {sections.length === 0 ? (
-        <div className="bg-muted/30 rounded-xl p-8 text-center border border-dashed border-border">
+        <div className="bg-muted/30 rounded-xl p-6 sm:p-8 text-center border border-dashed border-border">
           <Plus size={32} className="mx-auto text-muted-foreground mb-3" />
-          <p className="text-muted-foreground">No custom sections yet</p>
-          <p className="text-sm text-muted-foreground mb-4">Add text, images, or service cards to your landing page</p>
+          <p className="text-muted-foreground">এখনো কোনো কাস্টম সেকশন নেই</p>
+          <p className="text-sm text-muted-foreground mb-4">টেক্সট, ছবি, সার্ভিস বা প্রোডাক্ট যোগ করুন</p>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" size="sm" disabled={adding}>
@@ -301,7 +371,7 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
                 ) : (
                   <Plus size={16} className="mr-2" />
                 )}
-                Add Your First Section
+                প্রথম সেকশন যোগ করুন
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" className="w-64">
