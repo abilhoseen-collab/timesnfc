@@ -728,9 +728,14 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                           />
                         ))}
                         <button
-                          onClick={() => fileInputRef.current?.click()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            fileInputRef.current?.click();
+                          }}
+                          onPointerDown={(e) => e.stopPropagation()}
                           disabled={uploadingImage}
-                          className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-2 transition-colors min-h-[80px]"
+                          className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-2 transition-colors min-h-[80px] cursor-pointer"
                         >
                           {uploadingImage ? (
                             <Loader2 size={20} className="animate-spin text-muted-foreground" />
@@ -750,6 +755,8 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                     accept="image/*"
                     multiple
                     onChange={handleImageUpload}
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
                     className="hidden"
                   />
                   <p className="text-xs text-muted-foreground">সর্বোচ্চ 5MB প্রতি ছবি।</p>
