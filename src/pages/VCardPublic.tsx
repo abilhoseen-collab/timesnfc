@@ -25,9 +25,14 @@ import {
   Wallet,
   X,
   Copy,
-  Check
+  Check,
+  Calendar,
+  Clock,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 
 interface VCard {
@@ -59,6 +64,15 @@ interface VCard {
   payment_rocket: string | null;
   payment_bank_details: string | null;
   payment_button_text: string | null;
+  // Appointment fields
+  appointment_enabled: boolean;
+  appointment_title: string | null;
+  appointment_description: string | null;
+  appointment_duration_minutes: number;
+  appointment_available_days: string[];
+  appointment_start_time: string | null;
+  appointment_end_time: string | null;
+  appointment_email: string | null;
 }
 
 interface CustomSection {
@@ -94,6 +108,16 @@ export default function VCardPublic() {
   const [notFound, setNotFound] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [copiedPayment, setCopiedPayment] = useState<string | null>(null);
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [appointmentForm, setAppointmentForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    date: '',
+    time: '',
+    notes: ''
+  });
+  const [bookingAppointment, setBookingAppointment] = useState(false);
 
   useEffect(() => {
     if (slug) {
@@ -113,7 +137,14 @@ export default function VCardPublic() {
     if (error || !data) {
       setNotFound(true);
     } else {
-      setVcard(data);
+      // Parse appointment_available_days from JSON
+      const parsedData: VCard = {
+        ...data,
+        appointment_available_days: Array.isArray(data.appointment_available_days)
+          ? (data.appointment_available_days as string[])
+          : ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+      };
+      setVcard(parsedData);
       // Fetch custom sections
       const { data: sectionsData } = await supabase
         .from('vcard_custom_sections')
@@ -309,22 +340,78 @@ END:VCARD`;
     { url: vcard.github_url, icon: Github, name: 'GitHub' },
   ].filter(link => link.url);
 
+  // Generate Google Maps embed URL
+  const getGoogleMapsEmbedUrl = (address: string) => {
+    const encodedAddress = encodeURIComponent(address);
+    return `https://www.google.com/maps?q=${encodedAddress}&output=embed`;
+  };
+
+  // Handle appointment booking
+  const handleBookAppointment = async () => {
+    if (!appointmentForm.name || !appointmentForm.email || !appointmentForm.date || !appointmentForm.time) {
+      toast({ title: 'Please fill all required fields', variant: 'destructive' });
+      return;
+    }
+
+    setBookingAppointment(true);
+    try {
+      const { error } = await supabase.from('vcard_appointments').insert({
+        vcard_id: vcard.id,
+        visitor_name: appointmentForm.name,
+        visitor_email: appointmentForm.email,
+        visitor_phone: appointmentForm.phone || null,
+        appointment_date: appointmentForm.date,
+        appointment_time: appointmentForm.time,
+        notes: appointmentForm.notes || null,
+      });
+
+      if (error) throw error;
+
+      toast({ title: 'Appointment booked successfully!' });
+      setShowAppointmentModal(false);
+      setAppointmentForm({ name: '', email: '', phone: '', date: '', time: '', notes: '' });
+      trackLinkClick('appointment_booked');
+    } catch (error: any) {
+      toast({ title: 'Failed to book appointment', variant: 'destructive' });
+    } finally {
+      setBookingAppointment(false);
+    }
+  };
+
+  // Generate available time slots
+  const getTimeSlots = () => {
+    if (!vcard.appointment_start_time || !vcard.appointment_end_time) return [];
+    const slots: string[] = [];
+    const [startHour] = vcard.appointment_start_time.split(':').map(Number);
+    const [endHour] = vcard.appointment_end_time.split(':').map(Number);
+    const duration = vcard.appointment_duration_minutes || 30;
+    
+    for (let hour = startHour; hour < endHour; hour++) {
+      for (let min = 0; min < 60; min += duration) {
+        const time = `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
+        slots.push(time);
+      }
+    }
+    return slots;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md mx-auto"
+        className="max-w-md mx-auto pb-8"
       >
-        {/* Header with gradient or cover image - Fixed spacing */}
+        {/* Cover Image - Separate from profile */}
         <div 
-          className={`${vcard.cover_image_url ? '' : `bg-gradient-to-br ${style.bg}`} h-40 md:h-48 px-6 text-white relative`}
+          className={`${vcard.cover_image_url ? '' : `bg-gradient-to-br ${style.bg}`} h-44 md:h-52 relative rounded-b-3xl overflow-hidden`}
           style={vcard.cover_image_url ? {
-            backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.4)), url(${vcard.cover_image_url})`,
+            backgroundImage: `url(${vcard.cover_image_url})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           } : undefined}
         >
+          <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30" />
           <div className="absolute top-4 right-4 flex gap-2">
             <Button
               size="icon"
@@ -337,11 +424,11 @@ END:VCARD`;
           </div>
         </div>
 
-        {/* Profile Card - Fixed spacing with proper margin */}
-        <div className="bg-white rounded-3xl shadow-xl mx-4 -mt-20 relative z-10 overflow-hidden">
-          {/* Avatar - Properly positioned */}
-          <div className="flex justify-center pt-0">
-            <div className={`w-28 h-28 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gradient-to-br ${style.bg} flex items-center justify-center -mt-14`}>
+        {/* Profile Card - Positioned below cover with avatar overlap */}
+        <div className="bg-white rounded-3xl shadow-xl mx-4 -mt-16 relative z-10 overflow-visible">
+          {/* Avatar - Overlapping cover and card */}
+          <div className="flex justify-center">
+            <div className={`w-32 h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-gradient-to-br ${style.bg} flex items-center justify-center -mt-16`}>
               {vcard.photo_url ? (
                 <img 
                   src={vcard.photo_url} 
@@ -349,15 +436,15 @@ END:VCARD`;
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-4xl font-bold text-white">
+                <span className="text-5xl font-bold text-white">
                   {vcard.name.charAt(0).toUpperCase()}
                 </span>
               )}
             </div>
           </div>
 
-          {/* Name & Title - Added proper top spacing */}
-          <div className="text-center px-6 pt-5 pb-6">
+          {/* Name & Title - Clear spacing below avatar */}
+          <div className="text-center px-6 pt-4 pb-6">
             <h1 className="text-2xl font-bold text-gray-900">{vcard.name}</h1>
             {vcard.job_title && (
               <p className={`${style.text} font-medium mt-1`}>{vcard.job_title}</p>
@@ -434,6 +521,54 @@ END:VCARD`;
               </div>
             )}
           </div>
+
+          {/* Google Maps - Show if address exists */}
+          {vcard.address && (
+            <div className="px-6 pb-6">
+              <div className="rounded-xl overflow-hidden border border-gray-200">
+                <iframe
+                  src={getGoogleMapsEmbedUrl(vcard.address)}
+                  width="100%"
+                  height="200"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Location Map"
+                  className="w-full"
+                />
+              </div>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(vcard.address)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackLinkClick('google_maps')}
+                className={`flex items-center justify-center gap-2 mt-3 text-sm ${style.text} hover:underline`}
+              >
+                <MapPin size={14} />
+                Open in Google Maps
+              </a>
+            </div>
+          )}
+
+          {/* Appointment Booking Button */}
+          {vcard.appointment_enabled && (
+            <div className="px-6 pb-4">
+              <Button
+                onClick={() => {
+                  setShowAppointmentModal(true);
+                  trackLinkClick('appointment_button');
+                }}
+                className={`w-full bg-gradient-to-r ${style.bg} hover:opacity-90 text-white font-semibold py-6`}
+              >
+                <Calendar size={18} className="mr-2" />
+                {vcard.appointment_title || 'Book an Appointment'}
+              </Button>
+              {vcard.appointment_description && (
+                <p className="text-xs text-center text-gray-500 mt-2">{vcard.appointment_description}</p>
+              )}
+            </div>
+          )}
 
           {/* Social Links */}
           {socialLinks.length > 0 && (
@@ -728,6 +863,126 @@ END:VCARD`;
                     </Button>
                   </div>
                 )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* Appointment Booking Modal */}
+        {showAppointmentModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+            onClick={() => setShowAppointmentModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden max-h-[90vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className={`bg-gradient-to-r ${style.bg} p-6 text-white`}>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold">{vcard.appointment_title || 'Book Appointment'}</h3>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-white/80 hover:text-white hover:bg-white/20"
+                    onClick={() => setShowAppointmentModal(false)}
+                  >
+                    <X size={20} />
+                  </Button>
+                </div>
+                <p className="text-white/80 text-sm mt-1">Schedule a meeting with {vcard.name}</p>
+              </div>
+              
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Your Name *</label>
+                  <Input
+                    value={appointmentForm.name}
+                    onChange={(e) => setAppointmentForm(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Enter your name"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <Input
+                    type="email"
+                    value={appointmentForm.email}
+                    onChange={(e) => setAppointmentForm(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="your@email.com"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone (Optional)</label>
+                  <Input
+                    value={appointmentForm.phone}
+                    onChange={(e) => setAppointmentForm(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="Your phone number"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                    <Input
+                      type="date"
+                      value={appointmentForm.date}
+                      onChange={(e) => setAppointmentForm(prev => ({ ...prev, date: e.target.value }))}
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
+                    <select
+                      value={appointmentForm.time}
+                      onChange={(e) => setAppointmentForm(prev => ({ ...prev, time: e.target.value }))}
+                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    >
+                      <option value="">Select</option>
+                      {getTimeSlots().map(time => (
+                        <option key={time} value={time}>{time}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
+                  <Textarea
+                    value={appointmentForm.notes}
+                    onChange={(e) => setAppointmentForm(prev => ({ ...prev, notes: e.target.value }))}
+                    placeholder="Any message for the meeting..."
+                    rows={3}
+                  />
+                </div>
+                
+                <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
+                  <Clock size={16} />
+                  <span>Duration: {vcard.appointment_duration_minutes || 30} minutes</span>
+                </div>
+                
+                <Button
+                  onClick={handleBookAppointment}
+                  disabled={bookingAppointment}
+                  className={`w-full bg-gradient-to-r ${style.bg} hover:opacity-90 text-white font-semibold py-6`}
+                >
+                  {bookingAppointment ? (
+                    <>
+                      <Loader2 size={18} className="mr-2 animate-spin" />
+                      Booking...
+                    </>
+                  ) : (
+                    <>
+                      <Calendar size={18} className="mr-2" />
+                      Confirm Booking
+                    </>
+                  )}
+                </Button>
               </div>
             </motion.div>
           </motion.div>

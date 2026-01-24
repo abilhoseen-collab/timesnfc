@@ -32,7 +32,8 @@ import {
   Layout,
   MessageCircle,
   Wallet,
-  Send
+  Send,
+  Calendar
 } from 'lucide-react';
 import CustomSectionsEditor from '@/components/CustomSectionsEditor';
 import VCardPreview from '@/components/vcard/VCardPreview';
@@ -102,6 +103,15 @@ interface FormData {
   payment_rocket: string;
   payment_bank_details: string;
   payment_button_text: string;
+  // Appointment fields
+  appointment_enabled: boolean;
+  appointment_title: string;
+  appointment_description: string;
+  appointment_duration_minutes: number;
+  appointment_available_days: string[];
+  appointment_start_time: string;
+  appointment_end_time: string;
+  appointment_email: string;
 }
 
 const initialFormData: FormData = {
@@ -140,6 +150,15 @@ const initialFormData: FormData = {
   payment_rocket: '',
   payment_bank_details: '',
   payment_button_text: 'Send Payment / Donate',
+  // Appointment
+  appointment_enabled: false,
+  appointment_title: 'Book an Appointment',
+  appointment_description: '',
+  appointment_duration_minutes: 30,
+  appointment_available_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+  appointment_start_time: '09:00',
+  appointment_end_time: '17:00',
+  appointment_email: '',
 };
 
 export default function VCardEditor() {
@@ -275,13 +294,24 @@ export default function VCardEditor() {
         payment_rocket: (data as any).payment_rocket || '',
         payment_bank_details: (data as any).payment_bank_details || '',
         payment_button_text: (data as any).payment_button_text || 'Send Payment / Donate',
+        // Appointment
+        appointment_enabled: (data as any).appointment_enabled ?? false,
+        appointment_title: (data as any).appointment_title || 'Book an Appointment',
+        appointment_description: (data as any).appointment_description || '',
+        appointment_duration_minutes: (data as any).appointment_duration_minutes || 30,
+        appointment_available_days: Array.isArray((data as any).appointment_available_days) 
+          ? (data as any).appointment_available_days 
+          : ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+        appointment_start_time: (data as any).appointment_start_time || '09:00',
+        appointment_end_time: (data as any).appointment_end_time || '17:00',
+        appointment_email: (data as any).appointment_email || '',
       });
       setCurrentVcardId(data.id);
     }
     setLoading(false);
   };
 
-  const handleChange = (field: keyof FormData, value: string | boolean) => {
+  const handleChange = (field: keyof FormData, value: string | boolean | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -1122,6 +1152,118 @@ export default function VCardEditor() {
                         className="bg-background"
                         rows={3}
                       />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Appointment Booking Settings */}
+            <div className="bg-card rounded-2xl p-6 border border-border">
+              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <Calendar size={20} className="text-primary" />
+                Appointment Booking
+              </h2>
+              <div className="space-y-4">
+                <label className="flex items-center gap-3 cursor-pointer p-3 bg-muted/50 rounded-xl">
+                  <input
+                    type="checkbox"
+                    checked={formData.appointment_enabled}
+                    onChange={(e) => handleChange('appointment_enabled', e.target.checked)}
+                    className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-foreground">Enable Appointment Booking</span>
+                    <p className="text-xs text-muted-foreground">Let visitors schedule meetings with you</p>
+                  </div>
+                </label>
+                
+                {formData.appointment_enabled && (
+                  <div className="space-y-4 pt-2">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Button Text
+                      </label>
+                      <Input
+                        placeholder="Book an Appointment"
+                        value={formData.appointment_title}
+                        onChange={(e) => handleChange('appointment_title', e.target.value)}
+                        className="bg-background"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Description (Optional)
+                      </label>
+                      <Textarea
+                        placeholder="Schedule a free consultation..."
+                        value={formData.appointment_description}
+                        onChange={(e) => handleChange('appointment_description', e.target.value)}
+                        className="bg-background"
+                        rows={2}
+                      />
+                    </div>
+                    
+                    <div className="grid sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          Duration (minutes)
+                        </label>
+                        <select
+                          value={formData.appointment_duration_minutes}
+                          onChange={(e) => handleChange('appointment_duration_minutes', e.target.value)}
+                          className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                        >
+                          <option value={15}>15 min</option>
+                          <option value={30}>30 min</option>
+                          <option value={45}>45 min</option>
+                          <option value={60}>1 hour</option>
+                          <option value={90}>1.5 hours</option>
+                          <option value={120}>2 hours</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          Start Time
+                        </label>
+                        <Input
+                          type="time"
+                          value={formData.appointment_start_time}
+                          onChange={(e) => handleChange('appointment_start_time', e.target.value)}
+                          className="bg-background"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          End Time
+                        </label>
+                        <Input
+                          type="time"
+                          value={formData.appointment_end_time}
+                          onChange={(e) => handleChange('appointment_end_time', e.target.value)}
+                          className="bg-background"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Notification Email
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                        <Input
+                          type="email"
+                          placeholder="Receive booking notifications at..."
+                          value={formData.appointment_email}
+                          onChange={(e) => handleChange('appointment_email', e.target.value)}
+                          className="pl-10 bg-background"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Get notified when someone books an appointment
+                      </p>
                     </div>
                   </div>
                 )}
