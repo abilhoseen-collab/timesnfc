@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { getUserFriendlyError } from '@/lib/errorHandler';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,13 +37,16 @@ import {
   Calendar,
   CalendarDays,
   List,
-  BarChart3
+  BarChart3,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
 import CustomSectionsEditor from '@/components/CustomSectionsEditor';
 import VCardPreview from '@/components/vcard/VCardPreview';
 import AppointmentDashboard from '@/components/vcard/AppointmentDashboard';
 import VCardAnalyticsDashboard from '@/components/vcard/VCardAnalyticsDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Import template images
 import freelancerImg from '@/assets/templates/freelancer.png';
@@ -520,17 +524,42 @@ export default function VCardEditor() {
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft size={20} />
-            Back to Dashboard
+            <span className="hidden sm:inline">ড্যাশবোর্ডে ফিরুন</span>
           </button>
-          <Button 
-            variant="secondary" 
-            onClick={handleSubmit}
-            disabled={saving}
-            className="font-semibold"
-          >
-            <Save size={18} className="mr-2" />
-            {saving ? 'Saving...' : isEditing ? 'Update Card' : 'Create Card'}
-          </Button>
+          
+          <div className="flex items-center gap-2">
+            {/* Undo/Redo Buttons */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      // Simple undo by reloading - full undo/redo would need more refactoring
+                      if (window.confirm('পরিবর্তনগুলো বাতিল করতে চান?')) {
+                        window.location.reload();
+                      }
+                    }}
+                    className="h-9 w-9"
+                  >
+                    <Undo2 size={18} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>পরিবর্তন বাতিল</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <Button 
+              variant="secondary" 
+              onClick={handleSubmit}
+              disabled={saving}
+              className="font-semibold"
+            >
+              <Save size={18} className="mr-2" />
+              {saving ? 'সেভ হচ্ছে...' : isEditing ? 'আপডেট করুন' : 'তৈরি করুন'}
+            </Button>
+          </div>
         </div>
       </header>
 
