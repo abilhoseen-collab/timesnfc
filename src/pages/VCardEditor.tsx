@@ -32,6 +32,7 @@ import {
   Layout
 } from 'lucide-react';
 import CustomSectionsEditor from '@/components/CustomSectionsEditor';
+import VCardPreview from '@/components/vcard/VCardPreview';
 
 // Import template images
 import freelancerImg from '@/assets/templates/freelancer.png';
@@ -87,6 +88,7 @@ interface FormData {
   notification_email: string;
   notify_on_view: boolean;
   notify_on_click: boolean;
+  slug: string;
 }
 
 const initialFormData: FormData = {
@@ -114,6 +116,7 @@ const initialFormData: FormData = {
   notification_email: '',
   notify_on_view: false,
   notify_on_click: false,
+  slug: '',
 };
 
 export default function VCardEditor() {
@@ -238,6 +241,7 @@ export default function VCardEditor() {
         notification_email: data.notification_email || '',
         notify_on_view: data.notify_on_view ?? false,
         notify_on_click: data.notify_on_click ?? false,
+        slug: data.slug || '',
       });
       setCurrentVcardId(data.id);
     }
@@ -462,11 +466,12 @@ export default function VCardEditor() {
       </header>
 
       <main className="container-custom py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-4xl mx-auto"
-        >
+        <div className="grid lg:grid-cols-[1fr_320px] gap-8">
+          {/* Editor Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
           <h1 className="text-3xl font-bold text-foreground mb-2">
             {isEditing ? 'Edit Business Card' : 'Create New Business Card'}
           </h1>
@@ -998,7 +1003,13 @@ export default function VCardEditor() {
               </Button>
             </div>
           </form>
-        </motion.div>
+          </motion.div>
+
+          {/* Preview Section - Desktop Only */}
+          <div className="hidden lg:block">
+            <VCardPreview formData={formData} />
+          </div>
+        </div>
       </main>
     </div>
   );

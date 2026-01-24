@@ -48,6 +48,8 @@ import SEOSettings from '@/components/landing-builder/SEOSettings';
 import ThemeSettings from '@/components/landing-builder/ThemeSettings';
 import HeaderEditor from '@/components/landing-builder/HeaderEditor';
 import FooterEditor from '@/components/landing-builder/FooterEditor';
+import LandingPageAnalytics from '@/components/landing-builder/LandingPageAnalytics';
+import { BarChart3 } from 'lucide-react';
 
 interface NavItem {
   label: string;
@@ -581,6 +583,10 @@ export default function LandingPageBuilder() {
               <Palette size={16} />
               Theme
             </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 size={16} />
+              Analytics
+            </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings size={16} />
               Settings
@@ -746,6 +752,23 @@ export default function LandingPageBuilder() {
               <ThemeSettings
                 landingPage={landingPage}
                 onUpdate={(updates) => setLandingPage({ ...landingPage, ...updates })}
+              />
+            )}
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics">
+            {landingPage && (
+              <LandingPageAnalytics
+                landingPageId={landingPage.id}
+                totalViews={landingPage.total_views || 0}
+                sections={sections.map(s => ({
+                  id: s.id,
+                  section_type: s.section_type,
+                  title: s.title,
+                  is_visible: s.is_visible,
+                }))}
+                createdAt={landingPage.created_at}
               />
             )}
           </TabsContent>
