@@ -39,6 +39,9 @@ import {
   Upload,
   Move,
   Video,
+  Quote,
+  Star,
+  Camera,
 } from 'lucide-react';
 import type { CustomSection, SectionType } from './CustomSectionsEditor';
 
@@ -102,7 +105,11 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
   const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(true);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingServiceImage, setUploadingServiceImage] = useState<number | null>(null);
+  const [uploadingTestimonialAvatar, setUploadingTestimonialAvatar] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const serviceImageRefs = useRef<Record<number, HTMLInputElement | null>>({});
+  const testimonialAvatarRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   const imageSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -129,6 +136,7 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
       case 'image_gallery': return ImageIcon;
       case 'service_card': return CreditCard;
       case 'video': return Video;
+      case 'testimonial': return Quote;
     }
   };
 
@@ -197,7 +205,7 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
 
   const addService = () => {
     const services = [...(section.content.services || [])];
-    services.push({ name: '', description: '', price: '' });
+    services.push({ name: '', description: '', price: '', image: '', category: '' });
     handleContentChange('services', services);
   };
 
@@ -211,6 +219,103 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
     const services = [...(section.content.services || [])];
     services.splice(index, 1);
     handleContentChange('services', services);
+  };
+
+  // Upload service image
+  const handleServiceImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Invalid file type', variant: 'destructive' });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Max 5MB', variant: 'destructive' });
+      return;
+    }
+
+    setUploadingServiceImage(index);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `services/${section.id}/${Date.now()}-${index}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profile-photos')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-photos')
+        .getPublicUrl(fileName);
+
+      updateService(index, 'image', publicUrl);
+      toast({ title: 'Image uploaded!' });
+    } catch (error) {
+      toast({ title: 'Upload failed', variant: 'destructive' });
+    } finally {
+      setUploadingServiceImage(null);
+    }
+  };
+
+  // Testimonial functions
+  const addTestimonial = () => {
+    const testimonials = [...(section.content.testimonials || [])];
+    testimonials.push({ name: '', role: '', company: '', content: '', rating: 5, avatar: '' });
+    handleContentChange('testimonials', testimonials);
+  };
+
+  const updateTestimonial = (index: number, field: string, value: string | number) => {
+    const testimonials = [...(section.content.testimonials || [])];
+    testimonials[index] = { ...testimonials[index], [field]: value };
+    handleContentChange('testimonials', testimonials);
+  };
+
+  const removeTestimonial = (index: number) => {
+    const testimonials = [...(section.content.testimonials || [])];
+    testimonials.splice(index, 1);
+    handleContentChange('testimonials', testimonials);
+  };
+
+  // Upload testimonial avatar
+  const handleTestimonialAvatarUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Invalid file type', variant: 'destructive' });
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Max 2MB', variant: 'destructive' });
+      return;
+    }
+
+    setUploadingTestimonialAvatar(index);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `testimonials/${section.id}/${Date.now()}-${index}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profile-photos')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-photos')
+        .getPublicUrl(fileName);
+
+      updateTestimonial(index, 'avatar', publicUrl);
+      toast({ title: 'Avatar uploaded!' });
+    } catch (error) {
+      toast({ title: 'Upload failed', variant: 'destructive' });
+    } finally {
+      setUploadingTestimonialAvatar(null);
+    }
   };
 
   // Helper function to parse video URLs and generate embed
@@ -415,7 +520,7 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                 </div>
               )}
 
-              {/* Service Cards */}
+              {/* Service Cards with Image Upload */}
               {section.section_type === 'service_card' && (
                 <div className="space-y-4">
                   {(section.content.services || []).map((service: any, index: number) => (
@@ -431,6 +536,45 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                           <Trash2 size={14} />
                         </Button>
                       </div>
+                      
+                      {/* Service Image */}
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-muted border border-border flex-shrink-0">
+                          {service.image ? (
+                            <img src={service.image} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ImageIcon size={20} className="text-muted-foreground" />
+                            </div>
+                          )}
+                          {uploadingServiceImage === index && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                              <Loader2 size={16} className="animate-spin text-white" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            ref={(el) => { serviceImageRefs.current[index] = el; }}
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleServiceImageUpload(index, e)}
+                            className="hidden"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => serviceImageRefs.current[index]?.click()}
+                            disabled={uploadingServiceImage === index}
+                          >
+                            <Camera size={14} className="mr-2" />
+                            {service.image ? 'Change Image' : 'Add Image'}
+                          </Button>
+                          <p className="text-xs text-muted-foreground mt-1">Optional product/service photo</p>
+                        </div>
+                      </div>
+                      
                       <Input
                         value={service.name || ''}
                         onChange={(e) => updateService(index, 'name', e.target.value)}
@@ -442,11 +586,18 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                         placeholder="Description"
                         rows={2}
                       />
-                      <Input
-                        value={service.price || ''}
-                        onChange={(e) => updateService(index, 'price', e.target.value)}
-                        placeholder="Price (e.g., ৳500 or From ৳1000)"
-                      />
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input
+                          value={service.price || ''}
+                          onChange={(e) => updateService(index, 'price', e.target.value)}
+                          placeholder="Price (e.g., ৳500)"
+                        />
+                        <Input
+                          value={service.category || ''}
+                          onChange={(e) => updateService(index, 'category', e.target.value)}
+                          placeholder="Category (optional)"
+                        />
+                      </div>
                     </div>
                   ))}
                   <Button variant="outline" size="sm" onClick={addService} className="w-full">
@@ -476,6 +627,111 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                       {getVideoEmbed(section.content.video_url)}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Testimonials Section */}
+              {section.section_type === 'testimonial' && (
+                <div className="space-y-4">
+                  {(section.content.testimonials || []).map((testimonial: any, index: number) => (
+                    <div key={index} className="p-4 bg-muted/30 rounded-lg border border-border space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-muted-foreground">Review {index + 1}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeTestimonial(index)}
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                      
+                      {/* Avatar & Rating */}
+                      <div className="flex items-center gap-4">
+                        <div className="relative w-14 h-14 rounded-full overflow-hidden bg-muted border border-border flex-shrink-0">
+                          {testimonial.avatar ? (
+                            <img src={testimonial.avatar} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-lg font-bold">
+                              {testimonial.name?.charAt(0)?.toUpperCase() || '?'}
+                            </div>
+                          )}
+                          {uploadingTestimonialAvatar === index && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                              <Loader2 size={14} className="animate-spin text-white" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            ref={(el) => { testimonialAvatarRefs.current[index] = el; }}
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleTestimonialAvatarUpload(index, e)}
+                            className="hidden"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => testimonialAvatarRefs.current[index]?.click()}
+                            disabled={uploadingTestimonialAvatar === index}
+                          >
+                            <Camera size={14} className="mr-1" />
+                            Avatar
+                          </Button>
+                        </div>
+                        
+                        {/* Rating Stars */}
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => updateTestimonial(index, 'rating', star)}
+                              className="p-0.5"
+                            >
+                              <Star
+                                size={18}
+                                className={star <= (testimonial.rating || 5) 
+                                  ? 'fill-yellow-400 text-yellow-400' 
+                                  : 'text-gray-300'}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input
+                          value={testimonial.name || ''}
+                          onChange={(e) => updateTestimonial(index, 'name', e.target.value)}
+                          placeholder="Client Name"
+                        />
+                        <Input
+                          value={testimonial.role || ''}
+                          onChange={(e) => updateTestimonial(index, 'role', e.target.value)}
+                          placeholder="Role/Title"
+                        />
+                      </div>
+                      <Input
+                        value={testimonial.company || ''}
+                        onChange={(e) => updateTestimonial(index, 'company', e.target.value)}
+                        placeholder="Company (optional)"
+                      />
+                      <Textarea
+                        value={testimonial.content || ''}
+                        onChange={(e) => updateTestimonial(index, 'content', e.target.value)}
+                        placeholder="Write the review/testimonial..."
+                        rows={3}
+                      />
+                    </div>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={addTestimonial} className="w-full">
+                    <Plus size={16} className="mr-2" />
+                    Add Testimonial
+                  </Button>
                 </div>
               )}
             </div>
