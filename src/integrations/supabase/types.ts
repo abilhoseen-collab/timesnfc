@@ -182,6 +182,11 @@ export type Database = {
           domain_verified: boolean | null
           favicon_url: string | null
           font_family: string | null
+          footer_additional_links: Json | null
+          footer_background_color: string | null
+          footer_copyright_text: string | null
+          footer_show_powered_by: boolean | null
+          footer_social_links: Json | null
           header_cta_link: string | null
           header_cta_text: string | null
           header_logo_url: string | null
@@ -211,6 +216,11 @@ export type Database = {
           domain_verified?: boolean | null
           favicon_url?: string | null
           font_family?: string | null
+          footer_additional_links?: Json | null
+          footer_background_color?: string | null
+          footer_copyright_text?: string | null
+          footer_show_powered_by?: boolean | null
+          footer_social_links?: Json | null
           header_cta_link?: string | null
           header_cta_text?: string | null
           header_logo_url?: string | null
@@ -240,6 +250,11 @@ export type Database = {
           domain_verified?: boolean | null
           favicon_url?: string | null
           font_family?: string | null
+          footer_additional_links?: Json | null
+          footer_background_color?: string | null
+          footer_copyright_text?: string | null
+          footer_show_powered_by?: boolean | null
+          footer_social_links?: Json | null
           header_cta_link?: string | null
           header_cta_text?: string | null
           header_logo_url?: string | null

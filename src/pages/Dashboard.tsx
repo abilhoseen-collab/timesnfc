@@ -61,6 +61,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import logo from '@/assets/logo.png';
 import UpgradePackageForm from '@/components/UpgradePackageForm';
+import AnalyticsExport from '@/components/dashboard/AnalyticsExport';
 
 interface LandingPage {
   id: string;
@@ -706,9 +707,32 @@ export default function Dashboard() {
         >
           {/* Combined Chart */}
           <div className="bg-card rounded-2xl p-6 border border-border">
-            <div className="flex items-center gap-2 mb-6">
-              <TrendingUp size={20} className="text-primary" />
-              <h3 className="font-bold text-foreground">Combined Analytics (Last 7 Days)</h3>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <TrendingUp size={20} className="text-primary" />
+                <h3 className="font-bold text-foreground">Combined Analytics (Last 7 Days)</h3>
+              </div>
+              <AnalyticsExport
+                data={{
+                  totalViews: analytics.total_views,
+                  totalClicks: analytics.total_clicks,
+                  qrScans: analytics.qr_scans,
+                  nfcTaps: analytics.nfc_taps,
+                  landingPageViews: totalLandingViews,
+                  dailyStats,
+                  topLinks,
+                  vcards: filteredVcards.map(v => ({
+                    name: v.name,
+                    views: analyticsEvents.filter(e => e.vcard_id === v.id && e.event_type === 'view').length,
+                    template: v.template,
+                  })),
+                  landingPages: filteredLandingPages.map(p => ({
+                    name: p.name,
+                    views: p.total_views,
+                    status: p.is_published ? 'Published' : 'Draft',
+                  })),
+                }}
+              />
             </div>
             <div className="flex items-end justify-between h-40 gap-2">
               {dailyStats.map((day, index) => {

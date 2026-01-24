@@ -47,6 +47,7 @@ import DomainManager from '@/components/landing-builder/DomainManager';
 import SEOSettings from '@/components/landing-builder/SEOSettings';
 import ThemeSettings from '@/components/landing-builder/ThemeSettings';
 import HeaderEditor from '@/components/landing-builder/HeaderEditor';
+import FooterEditor from '@/components/landing-builder/FooterEditor';
 
 interface NavItem {
   label: string;
@@ -82,6 +83,12 @@ interface LandingPage {
   header_show_cta: boolean;
   header_cta_text: string | null;
   header_cta_link: string | null;
+  // Footer settings
+  footer_copyright_text: string | null;
+  footer_social_links: { platform: string; url: string }[];
+  footer_additional_links: { label: string; url: string }[];
+  footer_show_powered_by: boolean;
+  footer_background_color: string | null;
 }
 
 interface LandingPageSection {
@@ -155,11 +162,17 @@ export default function LandingPageBuilder() {
       return;
     }
 
-    // Parse header_nav_items from JSON
+    // Parse JSON fields
     const parsedData: LandingPage = {
       ...data,
       header_nav_items: Array.isArray(data.header_nav_items) 
         ? (data.header_nav_items as unknown as NavItem[])
+        : [],
+      footer_social_links: Array.isArray(data.footer_social_links)
+        ? (data.footer_social_links as unknown as { platform: string; url: string }[])
+        : [],
+      footer_additional_links: Array.isArray(data.footer_additional_links)
+        ? (data.footer_additional_links as unknown as { label: string; url: string }[])
         : [],
     };
 
@@ -552,6 +565,10 @@ export default function LandingPageBuilder() {
               <Layers size={16} />
               Header
             </TabsTrigger>
+            <TabsTrigger value="footer" className="flex items-center gap-2">
+              <FileText size={16} />
+              Footer
+            </TabsTrigger>
             <TabsTrigger value="domain" className="flex items-center gap-2">
               <Globe size={16} />
               Domain & SSL
@@ -663,6 +680,42 @@ export default function LandingPageBuilder() {
                     onUpdate={(updates) => setLandingPage({ ...landingPage, ...updates })}
                   />
                 </div>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Footer Tab */}
+          <TabsContent value="footer">
+            {landingPage && (
+              <div className="max-w-2xl">
+                <FooterEditor
+                  settings={{
+                    footer_copyright_text: landingPage.footer_copyright_text || '© 2024 All rights reserved.',
+                    footer_social_links: landingPage.footer_social_links || [],
+                    footer_additional_links: landingPage.footer_additional_links || [],
+                    footer_show_powered_by: landingPage.footer_show_powered_by ?? true,
+                    footer_background_color: landingPage.footer_background_color,
+                  }}
+                  onUpdate={async (updates) => {
+                    const dbUpdates = {
+                      footer_copyright_text: updates.footer_copyright_text,
+                      footer_social_links: updates.footer_social_links as unknown as any,
+                      footer_additional_links: updates.footer_additional_links as unknown as any,
+                      footer_show_powered_by: updates.footer_show_powered_by,
+                      footer_background_color: updates.footer_background_color,
+                    };
+                    const { error } = await supabase
+                      .from('landing_pages')
+                      .update(dbUpdates)
+                      .eq('id', landingPage.id);
+                    
+                    if (!error) {
+                      setLandingPage({ ...landingPage, ...updates });
+                      toast({ title: 'Footer settings saved' });
+                    }
+                  }}
+                  saving={saving}
+                />
               </div>
             )}
           </TabsContent>
