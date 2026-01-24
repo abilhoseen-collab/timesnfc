@@ -127,6 +127,68 @@ export type Database = {
         }
         Relationships: []
       }
+      landing_page_analytics: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string
+          event_type: string
+          id: string
+          is_unique: boolean | null
+          landing_page_id: string
+          referrer: string | null
+          section_id: string | null
+          section_type: string | null
+          session_id: string | null
+          time_on_page: number | null
+          user_agent: string | null
+          visitor_id: string | null
+          visitor_ip: string | null
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          is_unique?: boolean | null
+          landing_page_id: string
+          referrer?: string | null
+          section_id?: string | null
+          section_type?: string | null
+          session_id?: string | null
+          time_on_page?: number | null
+          user_agent?: string | null
+          visitor_id?: string | null
+          visitor_ip?: string | null
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          is_unique?: boolean | null
+          landing_page_id?: string
+          referrer?: string | null
+          section_id?: string | null
+          section_type?: string | null
+          session_id?: string | null
+          time_on_page?: number | null
+          user_agent?: string | null
+          visitor_id?: string | null
+          visitor_ip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_analytics_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       landing_page_sections: {
         Row: {
           content: Json | null
@@ -678,33 +740,51 @@ export type Database = {
       }
       vcard_analytics: {
         Row: {
+          city: string | null
+          country: string | null
           created_at: string
           event_type: string
           id: string
+          is_unique: boolean | null
           link_name: string | null
           referrer: string | null
+          session_id: string | null
+          time_on_page: number | null
           user_agent: string | null
           vcard_id: string
+          visitor_id: string | null
           visitor_ip: string | null
         }
         Insert: {
+          city?: string | null
+          country?: string | null
           created_at?: string
           event_type: string
           id?: string
+          is_unique?: boolean | null
           link_name?: string | null
           referrer?: string | null
+          session_id?: string | null
+          time_on_page?: number | null
           user_agent?: string | null
           vcard_id: string
+          visitor_id?: string | null
           visitor_ip?: string | null
         }
         Update: {
+          city?: string | null
+          country?: string | null
           created_at?: string
           event_type?: string
           id?: string
+          is_unique?: boolean | null
           link_name?: string | null
           referrer?: string | null
+          session_id?: string | null
+          time_on_page?: number | null
           user_agent?: string | null
           vcard_id?: string
+          visitor_id?: string | null
           visitor_ip?: string | null
         }
         Relationships: [

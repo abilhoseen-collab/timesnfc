@@ -133,7 +133,6 @@ export default function LandingPagePublic() {
   };
 
   const trackView = async () => {
-    // Track page view (could be expanded to include analytics)
     const { data } = await supabase
       .from('landing_pages')
       .select('id, total_views')
@@ -141,10 +140,41 @@ export default function LandingPagePublic() {
       .maybeSingle();
 
     if (data) {
+      // Update total views
       await supabase
         .from('landing_pages')
         .update({ total_views: (data.total_views || 0) + 1 })
         .eq('id', data.id);
+
+      // Generate visitor/session IDs
+      let visitorId = localStorage.getItem('visitor_id');
+      if (!visitorId) {
+        visitorId = `v_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('visitor_id', visitorId);
+      }
+      
+      let sessionId = sessionStorage.getItem('session_id');
+      if (!sessionId) {
+        sessionId = `s_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        sessionStorage.setItem('session_id', sessionId);
+      }
+      
+      const visitedKey = `visited_landing_${data.id}`;
+      const isUnique = !sessionStorage.getItem(visitedKey);
+      if (isUnique) {
+        sessionStorage.setItem(visitedKey, 'true');
+      }
+
+      // Insert detailed analytics
+      await supabase.from('landing_page_analytics').insert({
+        landing_page_id: data.id,
+        event_type: 'view',
+        visitor_id: visitorId,
+        session_id: sessionId,
+        is_unique: isUnique,
+        referrer: document.referrer || null,
+        user_agent: navigator.userAgent,
+      });
     }
   };
 
