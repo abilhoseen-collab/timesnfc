@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import {
   DndContext,
@@ -63,6 +63,108 @@ interface SortableImageProps {
   onRemove: (index: number) => void;
 }
 
+// Debounced input component for smooth typing
+interface DebouncedInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+  type?: string;
+}
+
+function DebouncedInput({ value, onChange, placeholder, className, type = 'text' }: DebouncedInputProps) {
+  const [localValue, setLocalValue] = useState(value);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setLocalValue(newValue);
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    timeoutRef.current = setTimeout(() => {
+      onChange(newValue);
+    }, 300);
+  };
+
+  const handleBlur = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    if (localValue !== value) {
+      onChange(localValue);
+    }
+  };
+
+  return (
+    <Input
+      type={type}
+      value={localValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      placeholder={placeholder}
+      className={className}
+    />
+  );
+}
+
+// Debounced textarea component
+interface DebouncedTextareaProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  rows?: number;
+  className?: string;
+}
+
+function DebouncedTextarea({ value, onChange, placeholder, rows = 3, className }: DebouncedTextareaProps) {
+  const [localValue, setLocalValue] = useState(value);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    setLocalValue(newValue);
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    timeoutRef.current = setTimeout(() => {
+      onChange(newValue);
+    }, 300);
+  };
+
+  const handleBlur = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    if (localValue !== value) {
+      onChange(localValue);
+    }
+  };
+
+  return (
+    <Textarea
+      value={localValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      placeholder={placeholder}
+      rows={rows}
+      className={`resize-none ${className || ''}`}
+    />
+  );
+}
+
 function SortableImage({ id, url, index, onRemove }: SortableImageProps) {
   const {
     attributes,
@@ -121,7 +223,7 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
   const galleryImageRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   const imageSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -161,6 +263,10 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
       content: { ...section.content, [key]: value } 
     });
   }, [section.id, section.content, onUpdate]);
+
+  const handleTitleChange = useCallback((title: string) => {
+    onUpdate(section.id, { title });
+  }, [section.id, onUpdate]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -219,17 +325,17 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
   };
 
   // Service functions
-  const addService = () => {
-    const services = [...(section.content.services || [])];
-    services.push({ name: '', description: '', price: '', image: '', category: '' });
-    handleContentChange('services', services);
-  };
-
   const updateService = useCallback((index: number, field: string, value: string) => {
     const services = [...(section.content.services || [])];
     services[index] = { ...services[index], [field]: value };
     handleContentChange('services', services);
   }, [section.content.services, handleContentChange]);
+
+  const addService = () => {
+    const services = [...(section.content.services || [])];
+    services.push({ name: '', description: '', price: '', image: '', category: '' });
+    handleContentChange('services', services);
+  };
 
   const removeService = (index: number) => {
     const services = [...(section.content.services || [])];
@@ -277,17 +383,17 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
   };
 
   // Testimonial functions
-  const addTestimonial = () => {
-    const testimonials = [...(section.content.testimonials || [])];
-    testimonials.push({ name: '', role: '', company: '', content: '', rating: 5, avatar: '' });
-    handleContentChange('testimonials', testimonials);
-  };
-
   const updateTestimonial = useCallback((index: number, field: string, value: string | number) => {
     const testimonials = [...(section.content.testimonials || [])];
     testimonials[index] = { ...testimonials[index], [field]: value };
     handleContentChange('testimonials', testimonials);
   }, [section.content.testimonials, handleContentChange]);
+
+  const addTestimonial = () => {
+    const testimonials = [...(section.content.testimonials || [])];
+    testimonials.push({ name: '', role: '', company: '', content: '', rating: 5, avatar: '' });
+    handleContentChange('testimonials', testimonials);
+  };
 
   const removeTestimonial = (index: number) => {
     const testimonials = [...(section.content.testimonials || [])];
@@ -341,15 +447,15 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
     handleContentChange('products', products);
   }, [section.content.products, handleContentChange]);
 
-  const removeProduct = (index: number) => {
-    const products = [...(section.content.products || [])];
-    products.splice(index, 1);
-    handleContentChange('products', products);
-  };
-
   const addProduct = () => {
     const products = [...(section.content.products || [])];
     products.push({ name: '', description: '', price: '', image: '', category: '', originalPrice: '' });
+    handleContentChange('products', products);
+  };
+
+  const removeProduct = (index: number) => {
+    const products = [...(section.content.products || [])];
+    products.splice(index, 1);
     handleContentChange('products', products);
   };
 
@@ -380,12 +486,6 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
   };
 
   // Gallery product functions
-  const updateGalleryProduct = useCallback((index: number, field: string, value: string) => {
-    const products = [...(section.content.products || [])];
-    products[index] = { ...products[index], [field]: value };
-    handleContentChange('products', products);
-  }, [section.content.products, handleContentChange]);
-
   const addGalleryProduct = () => {
     const products = [...(section.content.products || [])];
     products.push({ name: '', price: '', image: '', description: '' });
@@ -408,7 +508,7 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
       const { error: uploadError } = await supabase.storage.from('profile-photos').upload(fileName, file);
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('profile-photos').getPublicUrl(fileName);
-      updateGalleryProduct(index, 'image', publicUrl);
+      updateProduct(index, 'image', publicUrl);
       toast({ title: 'ছবি আপলোড হয়েছে!' });
     } catch (err) {
       toast({ title: 'আপলোড ব্যর্থ', variant: 'destructive' });
@@ -425,15 +525,15 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
     handleContentChange('badges', badges);
   }, [section.content.badges, handleContentChange]);
 
-  const removeBadge = (index: number) => {
-    const badges = [...(section.content.badges || [])];
-    badges.splice(index, 1);
-    handleContentChange('badges', badges);
-  };
-
   const addBadge = () => {
     const badges = [...(section.content.badges || [])];
     badges.push({ icon: 'verified', text: '', color: 'blue' });
+    handleContentChange('badges', badges);
+  };
+
+  const removeBadge = (index: number) => {
+    const badges = [...(section.content.badges || [])];
+    badges.splice(index, 1);
     handleContentChange('badges', badges);
   };
 
@@ -444,15 +544,15 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
     handleContentChange('faqs', faqs);
   }, [section.content.faqs, handleContentChange]);
 
-  const removeFAQ = (index: number) => {
-    const faqs = [...(section.content.faqs || [])];
-    faqs.splice(index, 1);
-    handleContentChange('faqs', faqs);
-  };
-
   const addFAQ = () => {
     const faqs = [...(section.content.faqs || [])];
     faqs.push({ question: '', answer: '' });
+    handleContentChange('faqs', faqs);
+  };
+
+  const removeFAQ = (index: number) => {
+    const faqs = [...(section.content.faqs || [])];
+    faqs.splice(index, 1);
     handleContentChange('faqs', faqs);
   };
 
@@ -501,11 +601,6 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
     );
   };
 
-  // Stop propagation for form inputs
-  const stopPropagation = (e: React.PointerEvent | React.MouseEvent | React.TouchEvent) => {
-    e.stopPropagation();
-  };
-
   return (
     <motion.div
       ref={setNodeRef}
@@ -529,14 +624,14 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
           <Icon size={14} className="text-primary sm:w-4 sm:h-4" />
         </div>
 
-        <Input
-          value={section.title || ''}
-          onChange={(e) => onUpdate(section.id, { title: e.target.value })}
-          onPointerDown={stopPropagation}
-          onClick={stopPropagation}
-          placeholder="সেকশন টাইটেল"
-          className="flex-1 bg-transparent border-0 font-medium focus-visible:ring-1 focus-visible:ring-primary/50 px-2 text-sm sm:text-base min-w-0"
-        />
+        <div className="flex-1 min-w-0">
+          <DebouncedInput
+            value={section.title || ''}
+            onChange={handleTitleChange}
+            placeholder="সেকশন টাইটেল"
+            className="bg-transparent border-0 font-medium focus-visible:ring-1 focus-visible:ring-primary/50 px-2 text-sm sm:text-base"
+          />
+        </div>
 
         <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
           <Button
@@ -582,7 +677,6 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
-            onPointerDown={stopPropagation}
           >
             <div className="p-3 sm:p-4 space-y-4">
               {/* Text Section */}
@@ -590,22 +684,19 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">হেডিং</label>
-                    <Input
+                    <DebouncedInput
                       value={section.content.heading || ''}
-                      onChange={(e) => handleContentChange('heading', e.target.value)}
-                      onPointerDown={stopPropagation}
+                      onChange={(val) => handleContentChange('heading', val)}
                       placeholder="হেডিং লিখুন..."
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">বডি টেক্সট</label>
-                    <Textarea
+                    <DebouncedTextarea
                       value={section.content.body || ''}
-                      onChange={(e) => handleContentChange('body', e.target.value)}
-                      onPointerDown={stopPropagation}
+                      onChange={(val) => handleContentChange('body', val)}
                       placeholder="আপনার টেক্সট কন্টেন্ট লিখুন..."
                       rows={4}
-                      className="resize-none"
                     />
                   </div>
                 </div>
@@ -721,31 +812,26 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                         </div>
                       </div>
                       
-                      <Input
+                      <DebouncedInput
                         value={service.name || ''}
-                        onChange={(e) => updateService(index, 'name', e.target.value)}
-                        onPointerDown={stopPropagation}
+                        onChange={(val) => updateService(index, 'name', val)}
                         placeholder="সার্ভিসের নাম"
                       />
-                      <Textarea
+                      <DebouncedTextarea
                         value={service.description || ''}
-                        onChange={(e) => updateService(index, 'description', e.target.value)}
-                        onPointerDown={stopPropagation}
+                        onChange={(val) => updateService(index, 'description', val)}
                         placeholder="বিবরণ"
                         rows={2}
-                        className="resize-none"
                       />
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <Input
+                        <DebouncedInput
                           value={service.price || ''}
-                          onChange={(e) => updateService(index, 'price', e.target.value)}
-                          onPointerDown={stopPropagation}
+                          onChange={(val) => updateService(index, 'price', val)}
                           placeholder="মূল্য (যেমন: ৳500)"
                         />
-                        <Input
+                        <DebouncedInput
                           value={service.category || ''}
-                          onChange={(e) => updateService(index, 'category', e.target.value)}
-                          onPointerDown={stopPropagation}
+                          onChange={(val) => updateService(index, 'category', val)}
                           placeholder="ক্যাটাগরি (ঐচ্ছিক)"
                         />
                       </div>
@@ -763,10 +849,9 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">ভিডিও URL</label>
-                    <Input
+                    <DebouncedInput
                       value={section.content.video_url || ''}
-                      onChange={(e) => handleContentChange('video_url', e.target.value)}
-                      onPointerDown={stopPropagation}
+                      onChange={(val) => handleContentChange('video_url', val)}
                       placeholder="https://www.youtube.com/watch?v=... বা https://vimeo.com/..."
                     />
                     <p className="text-xs text-muted-foreground mt-1">
@@ -858,32 +943,27 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                       </div>
                       
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <Input
+                        <DebouncedInput
                           value={testimonial.name || ''}
-                          onChange={(e) => updateTestimonial(index, 'name', e.target.value)}
-                          onPointerDown={stopPropagation}
+                          onChange={(val) => updateTestimonial(index, 'name', val)}
                           placeholder="ক্লায়েন্টের নাম"
                         />
-                        <Input
+                        <DebouncedInput
                           value={testimonial.role || ''}
-                          onChange={(e) => updateTestimonial(index, 'role', e.target.value)}
-                          onPointerDown={stopPropagation}
+                          onChange={(val) => updateTestimonial(index, 'role', val)}
                           placeholder="পদবী/টাইটেল"
                         />
                       </div>
-                      <Input
+                      <DebouncedInput
                         value={testimonial.company || ''}
-                        onChange={(e) => updateTestimonial(index, 'company', e.target.value)}
-                        onPointerDown={stopPropagation}
+                        onChange={(val) => updateTestimonial(index, 'company', val)}
                         placeholder="কোম্পানি (ঐচ্ছিক)"
                       />
-                      <Textarea
+                      <DebouncedTextarea
                         value={testimonial.content || ''}
-                        onChange={(e) => updateTestimonial(index, 'content', e.target.value)}
-                        onPointerDown={stopPropagation}
+                        onChange={(val) => updateTestimonial(index, 'content', val)}
                         placeholder="রিভিউ/টেস্টিমোনিয়াল লিখুন..."
                         rows={3}
-                        className="resize-none"
                       />
                     </div>
                   ))}
@@ -950,37 +1030,31 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                         </div>
                       </div>
                       
-                      <Input 
+                      <DebouncedInput 
                         value={product.name || ''} 
-                        onChange={(e) => updateProduct(index, 'name', e.target.value)}
-                        onPointerDown={stopPropagation}
+                        onChange={(val) => updateProduct(index, 'name', val)}
                         placeholder="প্রোডাক্টের নাম" 
                       />
-                      <Textarea 
+                      <DebouncedTextarea 
                         value={product.description || ''} 
-                        onChange={(e) => updateProduct(index, 'description', e.target.value)}
-                        onPointerDown={stopPropagation}
+                        onChange={(val) => updateProduct(index, 'description', val)}
                         placeholder="বিবরণ" 
                         rows={2}
-                        className="resize-none"
                       />
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <Input 
+                        <DebouncedInput 
                           value={product.price || ''} 
-                          onChange={(e) => updateProduct(index, 'price', e.target.value)}
-                          onPointerDown={stopPropagation}
+                          onChange={(val) => updateProduct(index, 'price', val)}
                           placeholder="৳500" 
                         />
-                        <Input 
+                        <DebouncedInput 
                           value={product.originalPrice || ''} 
-                          onChange={(e) => updateProduct(index, 'originalPrice', e.target.value)}
-                          onPointerDown={stopPropagation}
+                          onChange={(val) => updateProduct(index, 'originalPrice', val)}
                           placeholder="৳800 (পূর্বমূল্য)" 
                         />
-                        <Input 
+                        <DebouncedInput 
                           value={product.category || ''} 
-                          onChange={(e) => updateProduct(index, 'category', e.target.value)}
-                          onPointerDown={stopPropagation}
+                          onChange={(val) => updateProduct(index, 'category', val)}
                           placeholder="ক্যাটাগরি" 
                         />
                       </div>
@@ -998,10 +1072,9 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                 <div className="space-y-4">
                   {(section.content.badges || []).map((badge: any, index: number) => (
                     <div key={index} className="p-3 bg-muted/30 rounded-lg border border-border flex gap-3 items-center">
-                      <Input 
+                      <DebouncedInput 
                         value={badge.text || ''} 
-                        onChange={(e) => updateBadge(index, 'text', e.target.value)}
-                        onPointerDown={stopPropagation}
+                        onChange={(val) => updateBadge(index, 'text', val)}
                         placeholder="ভেরিফাইড বিজনেস" 
                         className="flex-1" 
                       />
@@ -1038,19 +1111,16 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                           <Trash2 size={14} />
                         </Button>
                       </div>
-                      <Input 
+                      <DebouncedInput 
                         value={faq.question || ''} 
-                        onChange={(e) => updateFAQ(index, 'question', e.target.value)}
-                        onPointerDown={stopPropagation}
+                        onChange={(val) => updateFAQ(index, 'question', val)}
                         placeholder="প্রশ্ন?" 
                       />
-                      <Textarea 
+                      <DebouncedTextarea 
                         value={faq.answer || ''} 
-                        onChange={(e) => updateFAQ(index, 'answer', e.target.value)}
-                        onPointerDown={stopPropagation}
+                        onChange={(val) => updateFAQ(index, 'answer', val)}
                         placeholder="উত্তর..." 
                         rows={3}
-                        className="resize-none"
                       />
                     </div>
                   ))}
@@ -1066,22 +1136,19 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">ফর্ম টাইটেল</label>
-                    <Input
+                    <DebouncedInput
                       value={section.content.form_title || ''}
-                      onChange={(e) => handleContentChange('form_title', e.target.value)}
-                      onPointerDown={stopPropagation}
+                      onChange={(val) => handleContentChange('form_title', val)}
                       placeholder="যোগাযোগ করুন"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">ফর্ম বিবরণ</label>
-                    <Textarea
+                    <DebouncedTextarea
                       value={section.content.form_description || ''}
-                      onChange={(e) => handleContentChange('form_description', e.target.value)}
-                      onPointerDown={stopPropagation}
+                      onChange={(val) => handleContentChange('form_description', val)}
                       placeholder="আমাদের মেসেজ পাঠান, আমরা শীঘ্রই উত্তর দেব।"
                       rows={2}
-                      className="resize-none"
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -1148,23 +1215,20 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                         </div>
                       </div>
                       
-                      <Input 
+                      <DebouncedInput 
                         value={product.name || ''} 
-                        onChange={(e) => updateGalleryProduct(index, 'name', e.target.value)}
-                        onPointerDown={stopPropagation}
+                        onChange={(val) => updateProduct(index, 'name', val)}
                         placeholder="প্রোডাক্টের নাম" 
                       />
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <Input 
+                        <DebouncedInput 
                           value={product.price || ''} 
-                          onChange={(e) => updateGalleryProduct(index, 'price', e.target.value)}
-                          onPointerDown={stopPropagation}
+                          onChange={(val) => updateProduct(index, 'price', val)}
                           placeholder="মূল্য (যেমন: ৳500)" 
                         />
-                        <Input 
+                        <DebouncedInput 
                           value={product.description || ''} 
-                          onChange={(e) => updateGalleryProduct(index, 'description', e.target.value)}
-                          onPointerDown={stopPropagation}
+                          onChange={(val) => updateProduct(index, 'description', val)}
                           placeholder="সংক্ষিপ্ত বিবরণ" 
                         />
                       </div>
