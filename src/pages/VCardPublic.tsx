@@ -19,7 +19,13 @@ import {
   FileText,
   Image,
   ShoppingBag,
-  Video
+  Video,
+  MessageCircle,
+  Send,
+  Wallet,
+  X,
+  Copy,
+  Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -43,6 +49,16 @@ interface VCard {
   github_url: string | null;
   photo_url: string | null;
   cover_image_url: string | null;
+  // Chat & Payment fields
+  whatsapp_number: string | null;
+  telegram_username: string | null;
+  chat_enabled: boolean;
+  payment_enabled: boolean;
+  payment_bkash: string | null;
+  payment_nagad: string | null;
+  payment_rocket: string | null;
+  payment_bank_details: string | null;
+  payment_button_text: string | null;
 }
 
 interface CustomSection {
@@ -76,6 +92,8 @@ export default function VCardPublic() {
   const [customSections, setCustomSections] = useState<CustomSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [copiedPayment, setCopiedPayment] = useState<string | null>(null);
 
   useEffect(() => {
     if (slug) {
@@ -298,11 +316,11 @@ END:VCARD`;
         animate={{ opacity: 1, y: 0 }}
         className="max-w-md mx-auto"
       >
-        {/* Header with gradient or cover image */}
+        {/* Header with gradient or cover image - Fixed spacing */}
         <div 
-          className={`${vcard.cover_image_url ? '' : `bg-gradient-to-br ${style.bg}`} pt-12 pb-20 px-6 text-white relative`}
+          className={`${vcard.cover_image_url ? '' : `bg-gradient-to-br ${style.bg}`} h-40 md:h-48 px-6 text-white relative`}
           style={vcard.cover_image_url ? {
-            backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.5)), url(${vcard.cover_image_url})`,
+            backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.4)), url(${vcard.cover_image_url})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           } : undefined}
@@ -319,10 +337,10 @@ END:VCARD`;
           </div>
         </div>
 
-        {/* Profile Card */}
-        <div className="bg-white rounded-3xl shadow-xl mx-4 -mt-16 relative z-10 overflow-hidden">
-          {/* Avatar */}
-          <div className="flex justify-center -mt-0">
+        {/* Profile Card - Fixed spacing with proper margin */}
+        <div className="bg-white rounded-3xl shadow-xl mx-4 -mt-20 relative z-10 overflow-hidden">
+          {/* Avatar - Properly positioned */}
+          <div className="flex justify-center pt-0">
             <div className={`w-28 h-28 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gradient-to-br ${style.bg} flex items-center justify-center -mt-14`}>
               {vcard.photo_url ? (
                 <img 
@@ -338,8 +356,8 @@ END:VCARD`;
             </div>
           </div>
 
-          {/* Name & Title */}
-          <div className="text-center px-6 pt-4 pb-6">
+          {/* Name & Title - Added proper top spacing */}
+          <div className="text-center px-6 pt-5 pb-6">
             <h1 className="text-2xl font-bold text-gray-900">{vcard.name}</h1>
             {vcard.job_title && (
               <p className={`${style.text} font-medium mt-1`}>{vcard.job_title}</p>
@@ -518,6 +536,23 @@ END:VCARD`;
             </div>
           )}
 
+          {/* Payment/Donation Button */}
+          {vcard.payment_enabled && (vcard.payment_bkash || vcard.payment_nagad || vcard.payment_rocket || vcard.payment_bank_details) && (
+            <div className="px-6 pb-4">
+              <Button
+                onClick={() => {
+                  setShowPaymentModal(true);
+                  trackLinkClick('payment_button');
+                }}
+                variant="outline"
+                className={`w-full border-2 ${style.text} font-semibold py-6 hover:bg-gray-50`}
+              >
+                <Wallet size={18} className="mr-2" />
+                {vcard.payment_button_text || 'Send Payment / Donate'}
+              </Button>
+            </div>
+          )}
+
           {/* Download Button */}
           <div className="px-6 pb-6">
             <Button
@@ -529,6 +564,174 @@ END:VCARD`;
             </Button>
           </div>
         </div>
+
+        {/* Live Chat Widget - Floating Buttons */}
+        {vcard.chat_enabled && (vcard.whatsapp_number || vcard.telegram_username) && (
+          <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+            {vcard.whatsapp_number && (
+              <motion.a
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.3 }}
+                href={`https://wa.me/${vcard.whatsapp_number.replace(/[^0-9]/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackLinkClick('whatsapp_chat')}
+                className="w-14 h-14 rounded-full bg-green-500 flex items-center justify-center shadow-lg hover:bg-green-600 transition-colors"
+                title="Chat on WhatsApp"
+              >
+                <svg viewBox="0 0 24 24" className="w-7 h-7 text-white" fill="currentColor">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+              </motion.a>
+            )}
+            {vcard.telegram_username && (
+              <motion.a
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.4 }}
+                href={`https://t.me/${vcard.telegram_username.replace('@', '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackLinkClick('telegram_chat')}
+                className="w-14 h-14 rounded-full bg-blue-500 flex items-center justify-center shadow-lg hover:bg-blue-600 transition-colors"
+                title="Chat on Telegram"
+              >
+                <Send size={24} className="text-white" />
+              </motion.a>
+            )}
+          </div>
+        )}
+
+        {/* Payment Modal */}
+        {showPaymentModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+            onClick={() => setShowPaymentModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className={`bg-gradient-to-r ${style.bg} p-6 text-white`}>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold">Payment Methods</h3>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-white/80 hover:text-white hover:bg-white/20"
+                    onClick={() => setShowPaymentModal(false)}
+                  >
+                    <X size={20} />
+                  </Button>
+                </div>
+                <p className="text-white/80 text-sm mt-1">Send payment to {vcard.name}</p>
+              </div>
+              
+              <div className="p-6 space-y-4">
+                {vcard.payment_bkash && (
+                  <div className="flex items-center gap-3 p-4 bg-pink-50 rounded-xl border border-pink-200">
+                    <div className="w-12 h-12 rounded-full bg-pink-500 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold text-lg">b</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-pink-600 font-medium">bKash</p>
+                      <p className="font-bold text-gray-900">{vcard.payment_bkash}</p>
+                    </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="shrink-0"
+                      onClick={() => {
+                        navigator.clipboard.writeText(vcard.payment_bkash!);
+                        setCopiedPayment('bkash');
+                        setTimeout(() => setCopiedPayment(null), 2000);
+                        trackLinkClick('copy_bkash');
+                      }}
+                    >
+                      {copiedPayment === 'bkash' ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
+                    </Button>
+                  </div>
+                )}
+                
+                {vcard.payment_nagad && (
+                  <div className="flex items-center gap-3 p-4 bg-orange-50 rounded-xl border border-orange-200">
+                    <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold text-lg">N</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-orange-600 font-medium">Nagad</p>
+                      <p className="font-bold text-gray-900">{vcard.payment_nagad}</p>
+                    </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="shrink-0"
+                      onClick={() => {
+                        navigator.clipboard.writeText(vcard.payment_nagad!);
+                        setCopiedPayment('nagad');
+                        setTimeout(() => setCopiedPayment(null), 2000);
+                        trackLinkClick('copy_nagad');
+                      }}
+                    >
+                      {copiedPayment === 'nagad' ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
+                    </Button>
+                  </div>
+                )}
+                
+                {vcard.payment_rocket && (
+                  <div className="flex items-center gap-3 p-4 bg-purple-50 rounded-xl border border-purple-200">
+                    <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold text-lg">R</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-purple-600 font-medium">Rocket</p>
+                      <p className="font-bold text-gray-900">{vcard.payment_rocket}</p>
+                    </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="shrink-0"
+                      onClick={() => {
+                        navigator.clipboard.writeText(vcard.payment_rocket!);
+                        setCopiedPayment('rocket');
+                        setTimeout(() => setCopiedPayment(null), 2000);
+                        trackLinkClick('copy_rocket');
+                      }}
+                    >
+                      {copiedPayment === 'rocket' ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
+                    </Button>
+                  </div>
+                )}
+                
+                {vcard.payment_bank_details && (
+                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                    <p className="text-sm text-gray-600 font-medium mb-2">Bank Details</p>
+                    <p className="text-gray-900 text-sm whitespace-pre-wrap">{vcard.payment_bank_details}</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-3 w-full"
+                      onClick={() => {
+                        navigator.clipboard.writeText(vcard.payment_bank_details!);
+                        setCopiedPayment('bank');
+                        setTimeout(() => setCopiedPayment(null), 2000);
+                        trackLinkClick('copy_bank');
+                      }}
+                    >
+                      {copiedPayment === 'bank' ? <Check size={14} className="mr-2" /> : <Copy size={14} className="mr-2" />}
+                      {copiedPayment === 'bank' ? 'Copied!' : 'Copy Details'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
 
         {/* Footer */}
         <div className="text-center py-8 text-gray-500 text-sm">

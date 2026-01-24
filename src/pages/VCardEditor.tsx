@@ -29,7 +29,10 @@ import {
   Loader2,
   QrCode,
   Bell,
-  Layout
+  Layout,
+  MessageCircle,
+  Wallet,
+  Send
 } from 'lucide-react';
 import CustomSectionsEditor from '@/components/CustomSectionsEditor';
 import VCardPreview from '@/components/vcard/VCardPreview';
@@ -89,6 +92,16 @@ interface FormData {
   notify_on_view: boolean;
   notify_on_click: boolean;
   slug: string;
+  // Chat & Payment fields
+  whatsapp_number: string;
+  telegram_username: string;
+  chat_enabled: boolean;
+  payment_enabled: boolean;
+  payment_bkash: string;
+  payment_nagad: string;
+  payment_rocket: string;
+  payment_bank_details: string;
+  payment_button_text: string;
 }
 
 const initialFormData: FormData = {
@@ -117,6 +130,16 @@ const initialFormData: FormData = {
   notify_on_view: false,
   notify_on_click: false,
   slug: '',
+  // Chat & Payment
+  whatsapp_number: '',
+  telegram_username: '',
+  chat_enabled: false,
+  payment_enabled: false,
+  payment_bkash: '',
+  payment_nagad: '',
+  payment_rocket: '',
+  payment_bank_details: '',
+  payment_button_text: 'Send Payment / Donate',
 };
 
 export default function VCardEditor() {
@@ -242,6 +265,16 @@ export default function VCardEditor() {
         notify_on_view: data.notify_on_view ?? false,
         notify_on_click: data.notify_on_click ?? false,
         slug: data.slug || '',
+        // Chat & Payment
+        whatsapp_number: (data as any).whatsapp_number || '',
+        telegram_username: (data as any).telegram_username || '',
+        chat_enabled: (data as any).chat_enabled ?? false,
+        payment_enabled: (data as any).payment_enabled ?? false,
+        payment_bkash: (data as any).payment_bkash || '',
+        payment_nagad: (data as any).payment_nagad || '',
+        payment_rocket: (data as any).payment_rocket || '',
+        payment_bank_details: (data as any).payment_bank_details || '',
+        payment_button_text: (data as any).payment_button_text || 'Send Payment / Donate',
       });
       setCurrentVcardId(data.id);
     }
@@ -931,6 +964,170 @@ export default function VCardEditor() {
                 </div>
               </div>
             </div>
+
+            {/* Live Chat Widget Settings */}
+            <div className="bg-card rounded-2xl p-6 border border-border">
+              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <MessageCircle size={20} className="text-primary" />
+                Live Chat Widget
+              </h2>
+              <div className="space-y-4">
+                <label className="flex items-center gap-3 cursor-pointer p-3 bg-muted/50 rounded-xl">
+                  <input
+                    type="checkbox"
+                    checked={formData.chat_enabled}
+                    onChange={(e) => handleChange('chat_enabled', e.target.checked)}
+                    className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-foreground">Enable Chat Widget</span>
+                    <p className="text-xs text-muted-foreground">Show floating WhatsApp/Telegram buttons on your card</p>
+                  </div>
+                </label>
+                
+                {formData.chat_enabled && (
+                  <div className="space-y-4 pt-2">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        WhatsApp Number
+                      </label>
+                      <div className="relative">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">W</span>
+                        </div>
+                        <Input
+                          placeholder="+880 1XXXXXXXXX"
+                          value={formData.whatsapp_number}
+                          onChange={(e) => handleChange('whatsapp_number', e.target.value)}
+                          className="pl-11 bg-background"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Include country code (e.g., +880)</p>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Telegram Username
+                      </label>
+                      <div className="relative">
+                        <Send className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" size={16} />
+                        <Input
+                          placeholder="@yourusername"
+                          value={formData.telegram_username}
+                          onChange={(e) => handleChange('telegram_username', e.target.value)}
+                          className="pl-10 bg-background"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Payment/Donation Settings */}
+            <div className="bg-card rounded-2xl p-6 border border-border">
+              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <Wallet size={20} className="text-primary" />
+                Payment / Donation
+              </h2>
+              <div className="space-y-4">
+                <label className="flex items-center gap-3 cursor-pointer p-3 bg-muted/50 rounded-xl">
+                  <input
+                    type="checkbox"
+                    checked={formData.payment_enabled}
+                    onChange={(e) => handleChange('payment_enabled', e.target.checked)}
+                    className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-foreground">Enable Payment Button</span>
+                    <p className="text-xs text-muted-foreground">Let visitors send you payments or donations</p>
+                  </div>
+                </label>
+                
+                {formData.payment_enabled && (
+                  <div className="space-y-4 pt-2">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Button Text
+                      </label>
+                      <Input
+                        placeholder="Send Payment / Donate"
+                        value={formData.payment_button_text}
+                        onChange={(e) => handleChange('payment_button_text', e.target.value)}
+                        className="bg-background"
+                      />
+                    </div>
+                    
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          bKash Number
+                        </label>
+                        <div className="relative">
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-pink-500 flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">b</span>
+                          </div>
+                          <Input
+                            placeholder="01XXXXXXXXX"
+                            value={formData.payment_bkash}
+                            onChange={(e) => handleChange('payment_bkash', e.target.value)}
+                            className="pl-11 bg-background"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          Nagad Number
+                        </label>
+                        <div className="relative">
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">N</span>
+                          </div>
+                          <Input
+                            placeholder="01XXXXXXXXX"
+                            value={formData.payment_nagad}
+                            onChange={(e) => handleChange('payment_nagad', e.target.value)}
+                            className="pl-11 bg-background"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          Rocket Number
+                        </label>
+                        <div className="relative">
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">R</span>
+                          </div>
+                          <Input
+                            placeholder="01XXXXXXXXX"
+                            value={formData.payment_rocket}
+                            onChange={(e) => handleChange('payment_rocket', e.target.value)}
+                            className="pl-11 bg-background"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Bank Details (Optional)
+                      </label>
+                      <Textarea
+                        placeholder="Bank: XYZ Bank&#10;Account: 1234567890&#10;Branch: Dhaka"
+                        value={formData.payment_bank_details}
+                        onChange={(e) => handleChange('payment_bank_details', e.target.value)}
+                        className="bg-background"
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="bg-card rounded-2xl p-6 border border-border">
               <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
                 <Eye size={20} className="text-primary" />
