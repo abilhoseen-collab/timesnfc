@@ -851,6 +851,7 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
+          className="mb-8"
         >
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
@@ -877,22 +878,18 @@ export default function Dashboard() {
               className="font-semibold"
             >
               <Plus size={18} className="mr-2" />
-              Create New Card
+              Create Business Card
             </Button>
           </div>
 
           {vcards.length === 0 ? (
-            <motion.div 
-              className="bg-card rounded-2xl p-12 border border-border text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
+            <div className="bg-card rounded-2xl p-8 border border-border text-center">
               <div className="w-16 h-16 rounded-full bg-accent mx-auto mb-4 flex items-center justify-center">
                 <CreditCard size={32} className="text-primary" />
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">No cards yet</h3>
+              <h3 className="text-lg font-bold text-foreground mb-2">No business cards yet</h3>
               <p className="text-muted-foreground mb-6">
-                Create your first digital business card to get started
+                Create professional digital business cards with QR codes
               </p>
               <Button 
                 variant="secondary" 
@@ -914,127 +911,109 @@ export default function Dashboard() {
                 className="font-semibold"
               >
                 <Plus size={18} className="mr-2" />
-                Create Your First Card
+                Create Your First Business Card
               </Button>
-            </motion.div>
+            </div>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {vcards.map((card, index) => (
-                <motion.div
-                  key={card.id}
-                  className="bg-card rounded-2xl border border-border overflow-hidden"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + index * 0.05 }}
-                  whileHover={{ y: -5, boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)' }}
-                >
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="font-bold text-foreground">{card.name}</h3>
-                        <p className="text-sm text-muted-foreground">{card.job_title}</p>
-                        {card.company && (
-                          <p className="text-sm text-muted-foreground">{card.company}</p>
-                        )}
+              {vcards.map((card, index) => {
+                // Get analytics for this card
+                const cardViews = analyticsEvents.filter(e => e.vcard_id === card.id && e.event_type === 'view').length;
+                
+                return (
+                  <motion.div
+                    key={card.id}
+                    className="bg-card rounded-2xl border border-border overflow-hidden"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 + index * 0.05 }}
+                    whileHover={{ y: -5, boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)' }}
+                  >
+                    <div className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                            <CreditCard size={20} className="text-primary" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-foreground">{card.name}</h3>
+                            <p className="text-xs text-muted-foreground">/c/{card.slug}</p>
+                          </div>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          card.is_active 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {card.is_active ? 'Active' : 'Inactive'}
+                        </span>
                       </div>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        card.is_active 
-                          ? 'bg-green-100 text-green-700' 
-                          : 'bg-muted text-muted-foreground'
-                      }`}>
-                        {card.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                    
-                    <div className="text-xs text-muted-foreground mb-4">
-                      Template: <span className="capitalize">{card.template}</span>
-                    </div>
 
-                    {/* QR Code Preview */}
-                    {card.slug && (
-                      <div 
-                        className="flex justify-center mb-4 cursor-pointer"
-                        onClick={() => {
-                          setSelectedCard(card);
-                          setShowQRModal(true);
-                        }}
-                      >
-                        <div className="p-3 bg-white rounded-xl shadow-sm border border-border relative">
-                          <QRCodeSVG 
-                            id={`qr-${card.id}`}
-                            value={getCardUrl(card.slug)} 
-                            size={80}
-                            level="M"
-                            fgColor={card.qr_foreground_color || '#000000'}
-                            bgColor={card.qr_background_color || '#FFFFFF'}
-                            imageSettings={card.qr_logo_url ? {
-                              src: card.qr_logo_url,
-                              height: 20,
-                              width: 20,
-                              excavate: true,
-                            } : undefined}
-                          />
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+                        <div className="flex items-center gap-1">
+                          <BarChart3 size={14} />
+                          <span>{cardViews} views</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar size={14} />
+                          <span>{new Date(card.created_at).toLocaleDateString()}</span>
                         </div>
                       </div>
-                    )}
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-2 mb-3">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={() => navigate(`/vcard/${card.id}`)}
-                      >
-                        <Edit size={14} className="mr-1" />
-                        Edit
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          setSelectedCard(card);
-                          setShowQRModal(true);
-                        }}
-                      >
-                        <QrCode size={14} />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleDelete(card.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
+                      {/* Template Badge */}
+                      <div className="mb-4">
+                        <span className="px-2 py-1 bg-accent text-accent-foreground text-xs font-medium rounded-md capitalize">
+                          {card.template} Template
+                        </span>
+                      </div>
 
-                    {/* Share Links */}
-                    {card.slug && (
                       <div className="flex gap-2">
                         <Button 
-                          variant="ghost" 
+                          variant="outline" 
                           size="sm" 
-                          className="flex-1 text-xs"
-                          onClick={() => copyCardUrl(card.slug)}
+                          className="flex-1"
+                          onClick={() => navigate(`/vcard/${card.id}`)}
                         >
-                          <Copy size={12} className="mr-1" />
-                          Copy Link
+                          <Edit size={14} className="mr-1" />
+                          Edit
                         </Button>
                         <Button 
                           variant="ghost" 
-                          size="sm" 
-                          className="flex-1 text-xs"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedCard(card);
+                            setShowQRModal(true);
+                          }}
+                        >
+                          <QrCode size={14} />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => copyCardUrl(card.slug)}
+                        >
+                          <Copy size={14} />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
                           onClick={() => window.open(getCardUrl(card.slug), '_blank')}
                         >
-                          <ExternalLink size={12} className="mr-1" />
-                          View
+                          <ExternalLink size={14} />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDelete(card.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 size={14} />
                         </Button>
                       </div>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </motion.div>
