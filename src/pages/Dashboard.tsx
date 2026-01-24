@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdmin } from '@/hooks/useAdmin';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { QRCodeSVG } from 'qrcode.react';
 import { 
   Plus, 
@@ -35,7 +36,9 @@ import {
   Share2,
   Globe,
   Layout,
-  BarChart3
+  BarChart3,
+  Search,
+  Filter
 } from 'lucide-react';
 import {
   Dialog,
@@ -43,6 +46,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from '@/components/ui/hover-card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import logo from '@/assets/logo.png';
 import UpgradePackageForm from '@/components/UpgradePackageForm';
@@ -96,6 +111,7 @@ interface DailyStats {
   date: string;
   views: number;
   clicks: number;
+  landingViews: number;
 }
 
 export default function Dashboard() {
@@ -117,6 +133,12 @@ export default function Dashboard() {
   const [showQRModal, setShowQRModal] = useState(false);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [landingPages, setLandingPages] = useState<LandingPage[]>([]);
+  
+  // Search and Filter States
+  const [vcardSearch, setVcardSearch] = useState('');
+  const [vcardFilter, setVcardFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [landingSearch, setLandingSearch] = useState('');
+  const [landingFilter, setLandingFilter] = useState<'all' | 'published' | 'draft'>('all');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -174,7 +196,6 @@ export default function Dashboard() {
       .from('vcards')
       .select('*')
       .eq('user_id', user?.id)
-      .eq('is_active', true) // Only show active cards, not drafts
       .order('created_at', { ascending: false });
 
     if (!error && data) {
@@ -210,7 +231,7 @@ export default function Dashboard() {
         nfc_taps: data.filter(a => a.event_type === 'nfc_tap').length,
       });
 
-      // Calculate daily stats for last 7 days
+      // Calculate daily stats for last 7 days (with landing page views)
       const last7Days: DailyStats[] = [];
       for (let i = 6; i >= 0; i--) {
         const date = new Date();
@@ -222,6 +243,7 @@ export default function Dashboard() {
           date: dateStr,
           views: dayEvents.filter(e => e.event_type === 'view').length,
           clicks: dayEvents.filter(e => e.event_type === 'link_click').length,
+          landingViews: 0, // Will be calculated from landing pages total
         });
       }
       setDailyStats(last7Days);
@@ -238,6 +260,20 @@ export default function Dashboard() {
       if (!error) {
         setVcards(vcards.filter(v => v.id !== id));
         toast({ title: 'Card deleted successfully' });
+      }
+    }
+  };
+
+  const handleDeleteLandingPage = async (id: string) => {
+    if (confirm('Are you sure you want to delete this landing page?')) {
+      const { error } = await supabase
+        .from('landing_pages')
+        .delete()
+        .eq('id', id);
+
+      if (!error) {
+        setLandingPages(landingPages.filter(p => p.id !== id));
+        toast({ title: 'Landing page deleted successfully' });
       }
     }
   };
@@ -278,6 +314,30 @@ export default function Dashboard() {
 
     img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
   };
+
+  // Filter VCards
+  const filteredVcards = vcards.filter(card => {
+    const matchesSearch = card.name.toLowerCase().includes(vcardSearch.toLowerCase()) ||
+      card.slug?.toLowerCase().includes(vcardSearch.toLowerCase()) ||
+      card.template?.toLowerCase().includes(vcardSearch.toLowerCase());
+    const matchesFilter = vcardFilter === 'all' || 
+      (vcardFilter === 'active' && card.is_active) ||
+      (vcardFilter === 'inactive' && !card.is_active);
+    return matchesSearch && matchesFilter;
+  });
+
+  // Filter Landing Pages
+  const filteredLandingPages = landingPages.filter(page => {
+    const matchesSearch = page.name.toLowerCase().includes(landingSearch.toLowerCase()) ||
+      page.slug?.toLowerCase().includes(landingSearch.toLowerCase());
+    const matchesFilter = landingFilter === 'all' || 
+      (landingFilter === 'published' && page.is_published) ||
+      (landingFilter === 'draft' && !page.is_published);
+    return matchesSearch && matchesFilter;
+  });
+
+  // Calculate total landing page views
+  const totalLandingViews = landingPages.reduce((sum, page) => sum + (page.total_views || 0), 0);
 
   if (authLoading || loading) {
     return (
@@ -637,96 +697,110 @@ export default function Dashboard() {
           ))}
         </motion.div>
 
-        {/* Analytics Section */}
-        {analyticsEvents.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="grid lg:grid-cols-2 gap-6 mb-8"
-          >
-            {/* Weekly Chart */}
-            <div className="bg-card rounded-2xl p-6 border border-border">
-              <div className="flex items-center gap-2 mb-6">
-                <TrendingUp size={20} className="text-primary" />
-                <h3 className="font-bold text-foreground">Last 7 Days</h3>
-              </div>
-              <div className="flex items-end justify-between h-40 gap-2">
-                {dailyStats.map((day, index) => {
-                  const total = day.views + day.clicks;
-                  const height = (total / maxDailyValue) * 100;
-                  const viewHeight = total > 0 ? (day.views / total) * height : 0;
-                  const clickHeight = total > 0 ? (day.clicks / total) * height : 0;
-                  
-                  return (
-                    <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
-                      <div className="w-full flex flex-col-reverse h-32">
-                        <div 
-                          className="w-full bg-primary/80 rounded-t transition-all"
-                          style={{ height: `${viewHeight}%` }}
-                          title={`${day.views} views`}
-                        />
-                        <div 
-                          className="w-full bg-secondary/80 rounded-t transition-all"
-                          style={{ height: `${clickHeight}%` }}
-                          title={`${day.clicks} clicks`}
-                        />
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(day.date).toLocaleDateString('en', { weekday: 'short' })}
-                      </span>
+        {/* Combined Analytics Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="grid lg:grid-cols-2 gap-6 mb-8"
+        >
+          {/* Combined Chart */}
+          <div className="bg-card rounded-2xl p-6 border border-border">
+            <div className="flex items-center gap-2 mb-6">
+              <TrendingUp size={20} className="text-primary" />
+              <h3 className="font-bold text-foreground">Combined Analytics (Last 7 Days)</h3>
+            </div>
+            <div className="flex items-end justify-between h-40 gap-2">
+              {dailyStats.map((day, index) => {
+                const total = day.views + day.clicks;
+                const height = maxDailyValue > 0 ? (total / maxDailyValue) * 100 : 0;
+                const viewHeight = total > 0 ? (day.views / total) * height : 0;
+                const clickHeight = total > 0 ? (day.clicks / total) * height : 0;
+                
+                return (
+                  <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
+                    <div className="w-full flex flex-col-reverse h-32">
+                      <div 
+                        className="w-full bg-primary/80 rounded-t transition-all"
+                        style={{ height: `${viewHeight}%` }}
+                        title={`${day.views} card views`}
+                      />
+                      <div 
+                        className="w-full bg-secondary/80 rounded-t transition-all"
+                        style={{ height: `${clickHeight}%` }}
+                        title={`${day.clicks} link clicks`}
+                      />
                     </div>
-                  );
-                })}
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(day.date).toLocaleDateString('en', { weekday: 'short' })}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-4 mt-4 justify-center flex-wrap">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-primary/80" />
+                <span className="text-xs text-muted-foreground">Card Views</span>
               </div>
-              <div className="flex items-center gap-4 mt-4 justify-center">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-primary/80" />
-                  <span className="text-xs text-muted-foreground">Views</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-secondary/80" />
-                  <span className="text-xs text-muted-foreground">Clicks</span>
-                </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-secondary/80" />
+                <span className="text-xs text-muted-foreground">Link Clicks</span>
               </div>
             </div>
+            
+            {/* Summary Stats */}
+            <div className="mt-6 pt-4 border-t border-border grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <p className="text-lg font-bold text-foreground">{analytics.total_views}</p>
+                <p className="text-xs text-muted-foreground">Business Card Views</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold text-foreground">{totalLandingViews}</p>
+                <p className="text-xs text-muted-foreground">Landing Page Views</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold text-foreground">{analytics.total_views + totalLandingViews}</p>
+                <p className="text-xs text-muted-foreground">Total Views</p>
+              </div>
+            </div>
+          </div>
 
-            {/* Top Links */}
-            <div className="bg-card rounded-2xl p-6 border border-border">
-              <div className="flex items-center gap-2 mb-6">
-                <MousePointer size={20} className="text-primary" />
-                <h3 className="font-bold text-foreground">Top Clicked Links</h3>
-              </div>
-              {topLinks.length > 0 ? (
-                <div className="space-y-3">
-                  {topLinks.map(([name, count], index) => (
-                    <div key={name} className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-full bg-accent flex items-center justify-center text-xs font-bold text-foreground">
-                        {index + 1}
-                      </span>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-medium text-foreground capitalize">{name}</span>
-                          <span className="text-sm text-muted-foreground">{count} clicks</span>
-                        </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-gradient-to-r from-primary to-secondary rounded-full"
-                            style={{ width: `${(count / topLinks[0][1]) * 100}%` }}
-                          />
-                        </div>
+          {/* Top Links */}
+          <div className="bg-card rounded-2xl p-6 border border-border">
+            <div className="flex items-center gap-2 mb-6">
+              <MousePointer size={20} className="text-primary" />
+              <h3 className="font-bold text-foreground">Top Clicked Links</h3>
+            </div>
+            {topLinks.length > 0 ? (
+              <div className="space-y-3">
+                {topLinks.map(([name, count], index) => (
+                  <div key={name} className="flex items-center gap-3">
+                    <span className="w-6 h-6 rounded-full bg-accent flex items-center justify-center text-xs font-bold text-foreground">
+                      {index + 1}
+                    </span>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-foreground capitalize">{name}</span>
+                        <span className="text-sm text-muted-foreground">{count} clicks</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-primary to-secondary rounded-full"
+                          style={{ width: `${(count / topLinks[0][1]) * 100}%` }}
+                        />
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No link clicks yet
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No link clicks yet
+              </div>
+            )}
+          </div>
+        </motion.div>
 
         {/* Landing Pages Section */}
         <motion.div
@@ -735,7 +809,7 @@ export default function Dashboard() {
           transition={{ delay: 0.18 }}
           className="mb-8"
         >
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
               <Globe size={24} className="text-primary" />
               Your Landing Pages
@@ -750,7 +824,31 @@ export default function Dashboard() {
             </Button>
           </div>
 
-          {landingPages.length === 0 ? (
+          {/* Search and Filter */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search landing pages..."
+                value={landingSearch}
+                onChange={(e) => setLandingSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={landingFilter} onValueChange={(v) => setLandingFilter(v as any)}>
+              <SelectTrigger className="w-full sm:w-40">
+                <Filter size={14} className="mr-2" />
+                <SelectValue placeholder="Filter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="published">Published</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {filteredLandingPages.length === 0 && landingPages.length === 0 ? (
             <div className="bg-card rounded-2xl p-8 border border-border text-center">
               <div className="w-16 h-16 rounded-full bg-accent mx-auto mb-4 flex items-center justify-center">
                 <Layout size={32} className="text-primary" />
@@ -768,9 +866,13 @@ export default function Dashboard() {
                 Create Your First Landing Page
               </Button>
             </div>
+          ) : filteredLandingPages.length === 0 ? (
+            <div className="bg-card rounded-2xl p-8 border border-border text-center">
+              <p className="text-muted-foreground">No landing pages match your search</p>
+            </div>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {landingPages.map((page, index) => (
+              {filteredLandingPages.map((page, index) => (
                 <motion.div
                   key={page.id}
                   className="bg-card rounded-2xl border border-border overflow-hidden"
@@ -838,6 +940,14 @@ export default function Dashboard() {
                       >
                         <ExternalLink size={14} />
                       </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleDeleteLandingPage(page.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 size={14} />
+                      </Button>
                     </div>
                   </div>
                 </motion.div>
@@ -853,7 +963,7 @@ export default function Dashboard() {
           transition={{ delay: 0.2 }}
           className="mb-8"
         >
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
               <CreditCard size={24} className="text-primary" />
               Your Business Cards
@@ -882,7 +992,31 @@ export default function Dashboard() {
             </Button>
           </div>
 
-          {vcards.length === 0 ? (
+          {/* Search and Filter */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search business cards..."
+                value={vcardSearch}
+                onChange={(e) => setVcardSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={vcardFilter} onValueChange={(v) => setVcardFilter(v as any)}>
+              <SelectTrigger className="w-full sm:w-40">
+                <Filter size={14} className="mr-2" />
+                <SelectValue placeholder="Filter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {filteredVcards.length === 0 && vcards.length === 0 ? (
             <div className="bg-card rounded-2xl p-8 border border-border text-center">
               <div className="w-16 h-16 rounded-full bg-accent mx-auto mb-4 flex items-center justify-center">
                 <CreditCard size={32} className="text-primary" />
@@ -914,16 +1048,20 @@ export default function Dashboard() {
                 Create Your First Business Card
               </Button>
             </div>
+          ) : filteredVcards.length === 0 ? (
+            <div className="bg-card rounded-2xl p-8 border border-border text-center">
+              <p className="text-muted-foreground">No business cards match your search</p>
+            </div>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {vcards.map((card, index) => {
+              {filteredVcards.map((card, index) => {
                 // Get analytics for this card
                 const cardViews = analyticsEvents.filter(e => e.vcard_id === card.id && e.event_type === 'view').length;
                 
                 return (
                   <motion.div
                     key={card.id}
-                    className="bg-card rounded-2xl border border-border overflow-hidden"
+                    className="bg-card rounded-2xl border border-border overflow-hidden group"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 + index * 0.05 }}
@@ -932,9 +1070,36 @@ export default function Dashboard() {
                     <div className="p-6">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <CreditCard size={20} className="text-primary" />
-                          </div>
+                          {/* QR Code Hover Preview */}
+                          <HoverCard openDelay={200} closeDelay={100}>
+                            <HoverCardTrigger asChild>
+                              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center cursor-pointer hover:bg-primary/20 transition-colors">
+                                <CreditCard size={20} className="text-primary" />
+                              </div>
+                            </HoverCardTrigger>
+                            <HoverCardContent className="w-auto p-4" side="right" align="start">
+                              <div className="flex flex-col items-center gap-3">
+                                <QRCodeSVG 
+                                  id={`qr-hover-${card.id}`}
+                                  value={getCardUrl(card.slug)} 
+                                  size={120}
+                                  level="H"
+                                  includeMargin
+                                  fgColor={card.qr_foreground_color || '#000000'}
+                                  bgColor={card.qr_background_color || '#FFFFFF'}
+                                  imageSettings={card.qr_logo_url ? {
+                                    src: card.qr_logo_url,
+                                    height: 30,
+                                    width: 30,
+                                    excavate: true,
+                                  } : undefined}
+                                />
+                                <p className="text-xs text-muted-foreground text-center">
+                                  Scan to view card
+                                </p>
+                              </div>
+                            </HoverCardContent>
+                          </HoverCard>
                           <div>
                             <h3 className="font-bold text-foreground">{card.name}</h3>
                             <p className="text-xs text-muted-foreground">/c/{card.slug}</p>
