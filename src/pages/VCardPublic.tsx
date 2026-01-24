@@ -37,9 +37,11 @@ import { useToast } from '@/hooks/use-toast';
 import GalleryCarousel from '@/components/vcard/GalleryCarousel';
 import ServiceCatalog from '@/components/vcard/ServiceCatalog';
 import ProductCatalog from '@/components/vcard/ProductCatalog';
+import ProductGallery from '@/components/vcard/ProductGallery';
 import SocialProofBadges from '@/components/vcard/SocialProofBadges';
 import FAQSection from '@/components/vcard/FAQSection';
 import ContactForm from '@/components/vcard/ContactForm';
+import AddToCalendarButton from '@/components/vcard/AddToCalendarButton';
 
 interface VCard {
   id: string;
@@ -730,6 +732,20 @@ END:VCARD`;
                   {/* FAQ Section */}
                   {section.section_type === 'faq' && section.content?.faqs && (
                     <FAQSection faqs={section.content.faqs} accentColor={style.accent} />
+                  )}
+
+                  {/* Product Gallery Section */}
+                  {section.section_type === 'product_gallery' && section.content?.products && (
+                    <ProductGallery
+                      products={section.content.products.map((p: any) => ({
+                        name: p.name,
+                        price: p.price,
+                        description: p.description,
+                        image: p.image,
+                      }))}
+                      accentColor={style.accent}
+                      onTrackClick={trackLinkClick}
+                    />
                   )}
 
                   {/* Contact Form Section */}

@@ -38,10 +38,11 @@ import {
   Award,
   HelpCircle,
   MessageSquare,
+  Images,
 } from 'lucide-react';
 import { SortableSection } from './SortableSection';
 
-export type SectionType = 'text' | 'image_gallery' | 'service_card' | 'video' | 'testimonial' | 'product_catalog' | 'social_proof' | 'faq' | 'contact_form';
+export type SectionType = 'text' | 'image_gallery' | 'service_card' | 'video' | 'testimonial' | 'product_catalog' | 'product_gallery' | 'social_proof' | 'faq' | 'contact_form';
 
 export interface CustomSection {
   id: string;
@@ -62,6 +63,7 @@ const sectionTypes = [
   { type: 'image_gallery' as SectionType, icon: ImageIcon, label: 'Image Gallery', description: 'Photo galleries and image carousels' },
   { type: 'service_card' as SectionType, icon: CreditCard, label: 'Service Catalog', description: 'Services with pricing & WhatsApp checkout' },
   { type: 'product_catalog' as SectionType, icon: ShoppingBag, label: 'Product Shop', description: 'Products with cart & mobile payment checkout' },
+  { type: 'product_gallery' as SectionType, icon: Images, label: 'Product Gallery', description: 'All products as a visual gallery with lightbox' },
   { type: 'video' as SectionType, icon: Video, label: 'Video Embed', description: 'YouTube, Vimeo, or other video embeds' },
   { type: 'testimonial' as SectionType, icon: Quote, label: 'Testimonials', description: 'Client reviews and testimonials' },
   { type: 'social_proof' as SectionType, icon: Award, label: 'Social Proof Badges', description: 'Trust badges like Verified, 100+ Clients' },
@@ -155,6 +157,7 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
       case 'image_gallery': return 'Gallery';
       case 'service_card': return 'Services';
       case 'product_catalog': return 'Products';
+      case 'product_gallery': return 'Product Gallery';
       case 'video': return 'Video';
       case 'testimonial': return 'What Clients Say';
       case 'social_proof': return 'Why Trust Us';
@@ -173,6 +176,8 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
         return { services: [{ name: '', description: '', price: '', image: '', category: '' }] };
       case 'product_catalog':
         return { products: [{ name: '', description: '', price: '', image: '', category: '', originalPrice: '' }] };
+      case 'product_gallery':
+        return { products: [{ name: '', price: '', image: '', description: '' }] };
       case 'video':
         return { video_url: '', video_type: 'youtube' };
       case 'testimonial':
