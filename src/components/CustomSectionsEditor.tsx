@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import {
   DndContext,
   closestCenter,
@@ -18,8 +18,12 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Plus,
   Type,
@@ -59,7 +63,7 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
   const [sections, setSections] = useState<CustomSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -101,29 +105,37 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
   };
 
   const addSection = async (type: SectionType) => {
+    setAdding(true);
     const defaultContent = getDefaultContent(type);
     const newSortOrder = sections.length;
 
-    const { data, error } = await supabase
-      .from('vcard_custom_sections')
-      .insert({
-        vcard_id: vcardId,
-        section_type: type,
-        title: getDefaultTitle(type),
-        content: defaultContent,
-        sort_order: newSortOrder,
-        is_visible: true,
-      })
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('vcard_custom_sections')
+        .insert({
+          vcard_id: vcardId,
+          section_type: type,
+          title: getDefaultTitle(type),
+          content: defaultContent,
+          sort_order: newSortOrder,
+          is_visible: true,
+        })
+        .select()
+        .single();
 
-    if (error) {
+      if (error) {
+        console.error('Failed to add section:', error);
+        toast({ title: 'Failed to add section', description: error.message, variant: 'destructive' });
+      } else if (data) {
+        setSections(prev => [...prev, data as CustomSection]);
+        toast({ title: 'Section added successfully' });
+      }
+    } catch (err) {
+      console.error('Error adding section:', err);
       toast({ title: 'Failed to add section', variant: 'destructive' });
-    } else if (data) {
-      setSections([...sections, data as CustomSection]);
-      toast({ title: 'Section added' });
+    } finally {
+      setAdding(false);
     }
-    setShowAddMenu(false);
   };
 
   const getDefaultTitle = (type: SectionType): string => {
@@ -213,42 +225,35 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
               Save Order
             </Button>
           )}
-          <div className="relative">
-            <Button 
-              variant="secondary" 
-              size="sm" 
-              onClick={() => setShowAddMenu(!showAddMenu)}
-            >
-              <Plus size={16} className="mr-2" />
-              Add Section
-            </Button>
-            <AnimatePresence>
-              {showAddMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  className="absolute right-0 top-full mt-2 w-64 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden"
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="sm" disabled={adding}>
+                {adding ? (
+                  <Loader2 size={16} className="animate-spin mr-2" />
+                ) : (
+                  <Plus size={16} className="mr-2" />
+                )}
+                Add Section
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              {sectionTypes.map((item) => (
+                <DropdownMenuItem
+                  key={item.type}
+                  onClick={() => addSection(item.type)}
+                  className="flex items-start gap-3 p-3 cursor-pointer"
                 >
-                  {sectionTypes.map((item) => (
-                    <button
-                      key={item.type}
-                      onClick={() => addSection(item.type)}
-                      className="w-full p-4 flex items-start gap-3 hover:bg-muted transition-colors text-left"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <item.icon size={20} className="text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">{item.label}</p>
-                        <p className="text-xs text-muted-foreground">{item.description}</p>
-                      </div>
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <item.icon size={16} className="text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground text-sm">{item.label}</p>
+                    <p className="text-xs text-muted-foreground">{item.description}</p>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -257,10 +262,35 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
           <Plus size={32} className="mx-auto text-muted-foreground mb-3" />
           <p className="text-muted-foreground">No custom sections yet</p>
           <p className="text-sm text-muted-foreground mb-4">Add text, images, or service cards to your landing page</p>
-          <Button variant="secondary" size="sm" onClick={() => setShowAddMenu(true)}>
-            <Plus size={16} className="mr-2" />
-            Add Your First Section
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="sm" disabled={adding}>
+                {adding ? (
+                  <Loader2 size={16} className="animate-spin mr-2" />
+                ) : (
+                  <Plus size={16} className="mr-2" />
+                )}
+                Add Your First Section
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-64">
+              {sectionTypes.map((item) => (
+                <DropdownMenuItem
+                  key={item.type}
+                  onClick={() => addSection(item.type)}
+                  className="flex items-start gap-3 p-3 cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <item.icon size={16} className="text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground text-sm">{item.label}</p>
+                    <p className="text-xs text-muted-foreground">{item.description}</p>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       ) : (
         <DndContext
