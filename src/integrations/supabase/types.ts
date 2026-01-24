@@ -797,6 +797,56 @@ export type Database = {
           },
         ]
       }
+      vcard_appointments: {
+        Row: {
+          appointment_date: string
+          appointment_time: string
+          created_at: string
+          id: string
+          notes: string | null
+          status: string | null
+          updated_at: string
+          vcard_id: string
+          visitor_email: string
+          visitor_name: string
+          visitor_phone: string | null
+        }
+        Insert: {
+          appointment_date: string
+          appointment_time: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string | null
+          updated_at?: string
+          vcard_id: string
+          visitor_email: string
+          visitor_name: string
+          visitor_phone?: string | null
+        }
+        Update: {
+          appointment_date?: string
+          appointment_time?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string | null
+          updated_at?: string
+          vcard_id?: string
+          visitor_email?: string
+          visitor_name?: string
+          visitor_phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vcard_appointments_vcard_id_fkey"
+            columns: ["vcard_id"]
+            isOneToOne: false
+            referencedRelation: "vcards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vcard_custom_sections: {
         Row: {
           content: Json
@@ -844,6 +894,14 @@ export type Database = {
       vcards: {
         Row: {
           address: string | null
+          appointment_available_days: Json | null
+          appointment_description: string | null
+          appointment_duration_minutes: number | null
+          appointment_email: string | null
+          appointment_enabled: boolean | null
+          appointment_end_time: string | null
+          appointment_start_time: string | null
+          appointment_title: string | null
           bio: string | null
           chat_enabled: boolean | null
           company: string | null
@@ -884,6 +942,14 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          appointment_available_days?: Json | null
+          appointment_description?: string | null
+          appointment_duration_minutes?: number | null
+          appointment_email?: string | null
+          appointment_enabled?: boolean | null
+          appointment_end_time?: string | null
+          appointment_start_time?: string | null
+          appointment_title?: string | null
           bio?: string | null
           chat_enabled?: boolean | null
           company?: string | null
@@ -924,6 +990,14 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          appointment_available_days?: Json | null
+          appointment_description?: string | null
+          appointment_duration_minutes?: number | null
+          appointment_email?: string | null
+          appointment_enabled?: boolean | null
+          appointment_end_time?: string | null
+          appointment_start_time?: string | null
+          appointment_title?: string | null
           bio?: string | null
           chat_enabled?: boolean | null
           company?: string | null
