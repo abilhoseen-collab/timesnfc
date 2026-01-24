@@ -32,10 +32,12 @@ import {
   Loader2,
   Save,
   Video,
+  Star,
+  Quote,
 } from 'lucide-react';
 import { SortableSection } from './SortableSection';
 
-export type SectionType = 'text' | 'image_gallery' | 'service_card' | 'video';
+export type SectionType = 'text' | 'image_gallery' | 'service_card' | 'video' | 'testimonial';
 
 export interface CustomSection {
   id: string;
@@ -54,8 +56,9 @@ interface CustomSectionsEditorProps {
 const sectionTypes = [
   { type: 'text' as SectionType, icon: Type, label: 'Text Section', description: 'Headings, paragraphs, and formatted text' },
   { type: 'image_gallery' as SectionType, icon: ImageIcon, label: 'Image Gallery', description: 'Photo galleries and image carousels' },
-  { type: 'service_card' as SectionType, icon: CreditCard, label: 'Service Card', description: 'Services or products with pricing' },
+  { type: 'service_card' as SectionType, icon: CreditCard, label: 'Service Catalog', description: 'Services or products with pricing & images' },
   { type: 'video' as SectionType, icon: Video, label: 'Video Embed', description: 'YouTube, Vimeo, or other video embeds' },
+  { type: 'testimonial' as SectionType, icon: Quote, label: 'Testimonials', description: 'Client reviews and testimonials' },
 ];
 
 export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorProps) {
@@ -144,6 +147,7 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
       case 'image_gallery': return 'Gallery';
       case 'service_card': return 'Services';
       case 'video': return 'Video';
+      case 'testimonial': return 'What Clients Say';
     }
   };
 
@@ -154,9 +158,11 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
       case 'image_gallery':
         return { images: [] };
       case 'service_card':
-        return { services: [{ name: '', description: '', price: '' }] };
+        return { services: [{ name: '', description: '', price: '', image: '', category: '' }] };
       case 'video':
         return { video_url: '', video_type: 'youtube' };
+      case 'testimonial':
+        return { testimonials: [{ name: '', role: '', company: '', content: '', rating: 5, avatar: '' }] };
     }
   };
 
