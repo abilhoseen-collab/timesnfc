@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import {
   DndContext,
@@ -45,14 +45,9 @@ import {
   ShoppingBag,
   Award,
   HelpCircle,
+  MessageSquare,
+  Images,
 } from 'lucide-react';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import type { CustomSection, SectionType } from './CustomSectionsEditor';
 
 interface SortableSectionProps {
@@ -117,12 +112,16 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingServiceImage, setUploadingServiceImage] = useState<number | null>(null);
   const [uploadingTestimonialAvatar, setUploadingTestimonialAvatar] = useState<number | null>(null);
+  const [uploadingProductImage, setUploadingProductImage] = useState<number | null>(null);
+  const [uploadingGalleryImage, setUploadingGalleryImage] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const serviceImageRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const testimonialAvatarRefs = useRef<Record<number, HTMLInputElement | null>>({});
+  const productImageRefs = useRef<Record<number, HTMLInputElement | null>>({});
+  const galleryImageRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   const imageSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -146,22 +145,22 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
       case 'image_gallery': return ImageIcon;
       case 'service_card': return CreditCard;
       case 'product_catalog': return ShoppingBag;
-      case 'product_gallery': return ImageIcon;
+      case 'product_gallery': return Images;
       case 'video': return Video;
       case 'testimonial': return Quote;
       case 'social_proof': return Award;
       case 'faq': return HelpCircle;
-      case 'contact_form': return Type;
+      case 'contact_form': return MessageSquare;
     }
   };
 
   const Icon = getIcon(section.section_type);
 
-  const handleContentChange = (key: string, value: any) => {
+  const handleContentChange = useCallback((key: string, value: any) => {
     onUpdate(section.id, { 
       content: { ...section.content, [key]: value } 
     });
-  };
+  }, [section.id, section.content, onUpdate]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -173,7 +172,7 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
     for (const file of Array.from(files)) {
       if (!file.type.startsWith('image/')) continue;
       if (file.size > 5 * 1024 * 1024) {
-        toast({ title: 'File too large', description: 'Max 5MB per image', variant: 'destructive' });
+        toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 5MB', variant: 'destructive' });
         continue;
       }
 
@@ -193,12 +192,13 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
 
         newImages.push(publicUrl);
       } catch (error: any) {
-        toast({ title: 'Upload failed', variant: 'destructive' });
+        toast({ title: 'আপলোড ব্যর্থ হয়েছে', variant: 'destructive' });
       }
     }
 
     handleContentChange('images', newImages);
     setUploadingImage(false);
+    if (e.target) e.target.value = '';
   };
 
   const removeImage = (index: number) => {
@@ -218,17 +218,18 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
     }
   };
 
+  // Service functions
   const addService = () => {
     const services = [...(section.content.services || [])];
     services.push({ name: '', description: '', price: '', image: '', category: '' });
     handleContentChange('services', services);
   };
 
-  const updateService = (index: number, field: string, value: string) => {
+  const updateService = useCallback((index: number, field: string, value: string) => {
     const services = [...(section.content.services || [])];
     services[index] = { ...services[index], [field]: value };
     handleContentChange('services', services);
-  };
+  }, [section.content.services, handleContentChange]);
 
   const removeService = (index: number) => {
     const services = [...(section.content.services || [])];
@@ -236,18 +237,17 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
     handleContentChange('services', services);
   };
 
-  // Upload service image
   const handleServiceImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      toast({ title: 'Invalid file type', variant: 'destructive' });
+      toast({ title: 'ভুল ফাইল টাইপ', variant: 'destructive' });
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'File too large', description: 'Max 5MB', variant: 'destructive' });
+      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 5MB', variant: 'destructive' });
       return;
     }
 
@@ -267,11 +267,12 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
         .getPublicUrl(fileName);
 
       updateService(index, 'image', publicUrl);
-      toast({ title: 'Image uploaded!' });
+      toast({ title: 'ছবি আপলোড হয়েছে!' });
     } catch (error) {
-      toast({ title: 'Upload failed', variant: 'destructive' });
+      toast({ title: 'আপলোড ব্যর্থ', variant: 'destructive' });
     } finally {
       setUploadingServiceImage(null);
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -282,11 +283,11 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
     handleContentChange('testimonials', testimonials);
   };
 
-  const updateTestimonial = (index: number, field: string, value: string | number) => {
+  const updateTestimonial = useCallback((index: number, field: string, value: string | number) => {
     const testimonials = [...(section.content.testimonials || [])];
     testimonials[index] = { ...testimonials[index], [field]: value };
     handleContentChange('testimonials', testimonials);
-  };
+  }, [section.content.testimonials, handleContentChange]);
 
   const removeTestimonial = (index: number) => {
     const testimonials = [...(section.content.testimonials || [])];
@@ -294,18 +295,17 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
     handleContentChange('testimonials', testimonials);
   };
 
-  // Upload testimonial avatar
   const handleTestimonialAvatarUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      toast({ title: 'Invalid file type', variant: 'destructive' });
+      toast({ title: 'ভুল ফাইল টাইপ', variant: 'destructive' });
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      toast({ title: 'File too large', description: 'Max 2MB', variant: 'destructive' });
+      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 2MB', variant: 'destructive' });
       return;
     }
 
@@ -325,19 +325,141 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
         .getPublicUrl(fileName);
 
       updateTestimonial(index, 'avatar', publicUrl);
-      toast({ title: 'Avatar uploaded!' });
+      toast({ title: 'অ্যাভাটার আপলোড হয়েছে!' });
     } catch (error) {
-      toast({ title: 'Upload failed', variant: 'destructive' });
+      toast({ title: 'আপলোড ব্যর্থ', variant: 'destructive' });
     } finally {
       setUploadingTestimonialAvatar(null);
+      if (e.target) e.target.value = '';
     }
   };
 
-  // Helper function to parse video URLs and generate embed
+  // Product functions
+  const updateProduct = useCallback((index: number, field: string, value: string) => {
+    const products = [...(section.content.products || [])];
+    products[index] = { ...products[index], [field]: value };
+    handleContentChange('products', products);
+  }, [section.content.products, handleContentChange]);
+
+  const removeProduct = (index: number) => {
+    const products = [...(section.content.products || [])];
+    products.splice(index, 1);
+    handleContentChange('products', products);
+  };
+
+  const addProduct = () => {
+    const products = [...(section.content.products || [])];
+    products.push({ name: '', description: '', price: '', image: '', category: '', originalPrice: '' });
+    handleContentChange('products', products);
+  };
+
+  const handleProductImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 5MB', variant: 'destructive' });
+      return;
+    }
+
+    setUploadingProductImage(index);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `products/${section.id}/${Date.now()}-${index}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('profile-photos').upload(fileName, file);
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('profile-photos').getPublicUrl(fileName);
+      updateProduct(index, 'image', publicUrl);
+      toast({ title: 'ছবি আপলোড হয়েছে!' });
+    } catch (err) {
+      toast({ title: 'আপলোড ব্যর্থ', variant: 'destructive' });
+    } finally {
+      setUploadingProductImage(null);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  // Gallery product functions
+  const updateGalleryProduct = useCallback((index: number, field: string, value: string) => {
+    const products = [...(section.content.products || [])];
+    products[index] = { ...products[index], [field]: value };
+    handleContentChange('products', products);
+  }, [section.content.products, handleContentChange]);
+
+  const addGalleryProduct = () => {
+    const products = [...(section.content.products || [])];
+    products.push({ name: '', price: '', image: '', description: '' });
+    handleContentChange('products', products);
+  };
+
+  const handleGalleryImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 5MB', variant: 'destructive' });
+      return;
+    }
+
+    setUploadingGalleryImage(index);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `gallery/${section.id}/${Date.now()}-${index}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('profile-photos').upload(fileName, file);
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('profile-photos').getPublicUrl(fileName);
+      updateGalleryProduct(index, 'image', publicUrl);
+      toast({ title: 'ছবি আপলোড হয়েছে!' });
+    } catch (err) {
+      toast({ title: 'আপলোড ব্যর্থ', variant: 'destructive' });
+    } finally {
+      setUploadingGalleryImage(null);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  // Badge functions
+  const updateBadge = useCallback((index: number, field: string, value: string) => {
+    const badges = [...(section.content.badges || [])];
+    badges[index] = { ...badges[index], [field]: value };
+    handleContentChange('badges', badges);
+  }, [section.content.badges, handleContentChange]);
+
+  const removeBadge = (index: number) => {
+    const badges = [...(section.content.badges || [])];
+    badges.splice(index, 1);
+    handleContentChange('badges', badges);
+  };
+
+  const addBadge = () => {
+    const badges = [...(section.content.badges || [])];
+    badges.push({ icon: 'verified', text: '', color: 'blue' });
+    handleContentChange('badges', badges);
+  };
+
+  // FAQ functions
+  const updateFAQ = useCallback((index: number, field: string, value: string) => {
+    const faqs = [...(section.content.faqs || [])];
+    faqs[index] = { ...faqs[index], [field]: value };
+    handleContentChange('faqs', faqs);
+  }, [section.content.faqs, handleContentChange]);
+
+  const removeFAQ = (index: number) => {
+    const faqs = [...(section.content.faqs || [])];
+    faqs.splice(index, 1);
+    handleContentChange('faqs', faqs);
+  };
+
+  const addFAQ = () => {
+    const faqs = [...(section.content.faqs || [])];
+    faqs.push({ question: '', answer: '' });
+    handleContentChange('faqs', faqs);
+  };
+
+  // Video embed helper
   const getVideoEmbed = (url: string) => {
     if (!url) return null;
     
-    // YouTube
     const youtubeMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
     if (youtubeMatch) {
       return (
@@ -351,7 +473,6 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
       );
     }
     
-    // Vimeo
     const vimeoMatch = url.match(/vimeo\.com\/(?:.*\/)?(\d+)/);
     if (vimeoMatch) {
       return (
@@ -365,21 +486,24 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
       );
     }
     
-    // Direct video link
     if (url.match(/\.(mp4|webm|ogg)$/i)) {
       return (
         <video controls className="w-full h-full">
           <source src={url} />
-          Your browser does not support the video tag.
         </video>
       );
     }
     
     return (
-      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
-        Invalid video URL. Please use YouTube, Vimeo, or direct video links.
+      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm p-4 text-center">
+        Invalid video URL. YouTube, Vimeo বা সরাসরি ভিডিও লিঙ্ক ব্যবহার করুন।
       </div>
     );
+  };
+
+  // Stop propagation for form inputs
+  const stopPropagation = (e: React.PointerEvent | React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
   };
 
   return (
@@ -392,58 +516,60 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
       layout
     >
       {/* Header */}
-      <div className="p-4 border-b border-border flex items-center gap-3 bg-muted/30">
+      <div className="p-3 sm:p-4 border-b border-border flex items-center gap-2 sm:gap-3 bg-muted/30">
         <button
           {...attributes}
           {...listeners}
-          className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded touch-none"
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded touch-none flex-shrink-0"
         >
-          <GripVertical size={20} className="text-muted-foreground" />
+          <GripVertical size={18} className="text-muted-foreground" />
         </button>
         
-        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Icon size={16} className="text-primary" />
+        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <Icon size={14} className="text-primary sm:w-4 sm:h-4" />
         </div>
 
         <Input
           value={section.title || ''}
           onChange={(e) => onUpdate(section.id, { title: e.target.value })}
-          placeholder="Section title"
-          className="flex-1 bg-transparent border-0 font-medium focus-visible:ring-0 px-0"
+          onPointerDown={stopPropagation}
+          onClick={stopPropagation}
+          placeholder="সেকশন টাইটেল"
+          className="flex-1 bg-transparent border-0 font-medium focus-visible:ring-1 focus-visible:ring-primary/50 px-2 text-sm sm:text-base min-w-0"
         />
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onUpdate(section.id, { is_visible: !section.is_visible })}
-            className="h-8 w-8"
+            className="h-7 w-7 sm:h-8 sm:w-8"
           >
             {section.is_visible ? (
-              <Eye size={16} className="text-muted-foreground" />
+              <Eye size={14} className="text-muted-foreground sm:w-4 sm:h-4" />
             ) : (
-              <EyeOff size={16} className="text-muted-foreground" />
+              <EyeOff size={14} className="text-muted-foreground sm:w-4 sm:h-4" />
             )}
           </Button>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="h-8 w-8"
+            className="h-7 w-7 sm:h-8 sm:w-8"
           >
             {isExpanded ? (
-              <ChevronUp size={16} className="text-muted-foreground" />
+              <ChevronUp size={14} className="text-muted-foreground sm:w-4 sm:h-4" />
             ) : (
-              <ChevronDown size={16} className="text-muted-foreground" />
+              <ChevronDown size={14} className="text-muted-foreground sm:w-4 sm:h-4" />
             )}
           </Button>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onDelete(section.id)}
-            className="h-8 w-8 text-destructive hover:text-destructive"
+            className="h-7 w-7 sm:h-8 sm:w-8 text-destructive hover:text-destructive"
           >
-            <Trash2 size={16} />
+            <Trash2 size={14} className="sm:w-4 sm:h-4" />
           </Button>
         </div>
       </div>
@@ -456,36 +582,40 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
+            onPointerDown={stopPropagation}
           >
-            <div className="p-4 space-y-4">
+            <div className="p-3 sm:p-4 space-y-4">
               {/* Text Section */}
               {section.section_type === 'text' && (
-                <>
+                <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Heading</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">হেডিং</label>
                     <Input
                       value={section.content.heading || ''}
                       onChange={(e) => handleContentChange('heading', e.target.value)}
-                      placeholder="Enter heading..."
+                      onPointerDown={stopPropagation}
+                      placeholder="হেডিং লিখুন..."
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Body Text</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">বডি টেক্সট</label>
                     <Textarea
                       value={section.content.body || ''}
                       onChange={(e) => handleContentChange('body', e.target.value)}
-                      placeholder="Enter your text content..."
+                      onPointerDown={stopPropagation}
+                      placeholder="আপনার টেক্সট কন্টেন্ট লিখুন..."
                       rows={4}
+                      className="resize-none"
                     />
                   </div>
-                </>
+                </div>
               )}
 
               {/* Image Gallery */}
               {section.section_type === 'image_gallery' && (
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Images <span className="text-muted-foreground font-normal">(drag to reorder)</span>
+                    ছবি <span className="text-muted-foreground font-normal">(ক্রম পরিবর্তনে ড্র্যাগ করুন)</span>
                   </label>
                   <DndContext
                     sensors={imageSensors}
@@ -496,7 +626,7 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                       items={(section.content.images || []).map((_: string, i: number) => `img-${i}`)}
                       strategy={rectSortingStrategy}
                     >
-                      <div className="grid grid-cols-3 gap-3 mb-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 mb-3">
                         {(section.content.images || []).map((url: string, index: number) => (
                           <SortableImage
                             key={`img-${index}`}
@@ -509,14 +639,14 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                         <button
                           onClick={() => fileInputRef.current?.click()}
                           disabled={uploadingImage}
-                          className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-2 transition-colors"
+                          className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-2 transition-colors min-h-[80px]"
                         >
                           {uploadingImage ? (
                             <Loader2 size={20} className="animate-spin text-muted-foreground" />
                           ) : (
                             <>
-                              <Upload size={20} className="text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">Upload</span>
+                              <Upload size={18} className="text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">আপলোড</span>
                             </>
                           )}
                         </button>
@@ -531,17 +661,17 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                     onChange={handleImageUpload}
                     className="hidden"
                   />
-                  <p className="text-xs text-muted-foreground">Max 5MB per image. Drag images to reorder.</p>
+                  <p className="text-xs text-muted-foreground">সর্বোচ্চ 5MB প্রতি ছবি।</p>
                 </div>
               )}
 
-              {/* Service Cards with Image Upload */}
+              {/* Service Cards */}
               {section.section_type === 'service_card' && (
                 <div className="space-y-4">
                   {(section.content.services || []).map((service: any, index: number) => (
-                    <div key={index} className="p-4 bg-muted/30 rounded-lg border border-border space-y-3">
+                    <div key={index} className="p-3 sm:p-4 bg-muted/30 rounded-lg border border-border space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-muted-foreground">Service {index + 1}</span>
+                        <span className="text-sm font-medium text-muted-foreground">সার্ভিস {index + 1}</span>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -553,22 +683,22 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                       </div>
                       
                       {/* Service Image */}
-                      <div className="flex items-center gap-3">
-                        <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-muted border border-border flex-shrink-0">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-muted border border-border flex-shrink-0">
                           {service.image ? (
                             <img src={service.image} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <ImageIcon size={20} className="text-muted-foreground" />
+                              <ImageIcon size={18} className="text-muted-foreground" />
                             </div>
                           )}
                           {uploadingServiceImage === index && (
                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                              <Loader2 size={16} className="animate-spin text-white" />
+                              <Loader2 size={14} className="animate-spin text-white" />
                             </div>
                           )}
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 w-full sm:w-auto">
                           <input
                             ref={(el) => { serviceImageRefs.current[index] = el; }}
                             type="file"
@@ -582,42 +712,48 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                             size="sm"
                             onClick={() => serviceImageRefs.current[index]?.click()}
                             disabled={uploadingServiceImage === index}
+                            className="w-full sm:w-auto"
                           >
                             <Camera size={14} className="mr-2" />
-                            {service.image ? 'Change Image' : 'Add Image'}
+                            {service.image ? 'ছবি পরিবর্তন' : 'ছবি যোগ করুন'}
                           </Button>
-                          <p className="text-xs text-muted-foreground mt-1">Optional product/service photo</p>
+                          <p className="text-xs text-muted-foreground mt-1">ঐচ্ছিক</p>
                         </div>
                       </div>
                       
                       <Input
                         value={service.name || ''}
                         onChange={(e) => updateService(index, 'name', e.target.value)}
-                        placeholder="Service name"
+                        onPointerDown={stopPropagation}
+                        placeholder="সার্ভিসের নাম"
                       />
                       <Textarea
                         value={service.description || ''}
                         onChange={(e) => updateService(index, 'description', e.target.value)}
-                        placeholder="Description"
+                        onPointerDown={stopPropagation}
+                        placeholder="বিবরণ"
                         rows={2}
+                        className="resize-none"
                       />
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Input
                           value={service.price || ''}
                           onChange={(e) => updateService(index, 'price', e.target.value)}
-                          placeholder="Price (e.g., ৳500)"
+                          onPointerDown={stopPropagation}
+                          placeholder="মূল্য (যেমন: ৳500)"
                         />
                         <Input
                           value={service.category || ''}
                           onChange={(e) => updateService(index, 'category', e.target.value)}
-                          placeholder="Category (optional)"
+                          onPointerDown={stopPropagation}
+                          placeholder="ক্যাটাগরি (ঐচ্ছিক)"
                         />
                       </div>
                     </div>
                   ))}
                   <Button variant="outline" size="sm" onClick={addService} className="w-full">
                     <Plus size={16} className="mr-2" />
-                    Add Service
+                    সার্ভিস যোগ করুন
                   </Button>
                 </div>
               )}
@@ -626,14 +762,15 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
               {section.section_type === 'video' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Video URL</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">ভিডিও URL</label>
                     <Input
                       value={section.content.video_url || ''}
                       onChange={(e) => handleContentChange('video_url', e.target.value)}
-                      placeholder="https://www.youtube.com/watch?v=... or https://vimeo.com/..."
+                      onPointerDown={stopPropagation}
+                      placeholder="https://www.youtube.com/watch?v=... বা https://vimeo.com/..."
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Supports YouTube, Vimeo, and direct video links
+                      YouTube, Vimeo এবং সরাসরি ভিডিও লিঙ্ক সাপোর্টেড
                     </p>
                   </div>
                   
@@ -649,9 +786,9 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
               {section.section_type === 'testimonial' && (
                 <div className="space-y-4">
                   {(section.content.testimonials || []).map((testimonial: any, index: number) => (
-                    <div key={index} className="p-4 bg-muted/30 rounded-lg border border-border space-y-3">
+                    <div key={index} className="p-3 sm:p-4 bg-muted/30 rounded-lg border border-border space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-muted-foreground">Review {index + 1}</span>
+                        <span className="text-sm font-medium text-muted-foreground">রিভিউ {index + 1}</span>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -663,39 +800,41 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                       </div>
                       
                       {/* Avatar & Rating */}
-                      <div className="flex items-center gap-4">
-                        <div className="relative w-14 h-14 rounded-full overflow-hidden bg-muted border border-border flex-shrink-0">
-                          {testimonial.avatar ? (
-                            <img src={testimonial.avatar} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-lg font-bold">
-                              {testimonial.name?.charAt(0)?.toUpperCase() || '?'}
-                            </div>
-                          )}
-                          {uploadingTestimonialAvatar === index && (
-                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                              <Loader2 size={14} className="animate-spin text-white" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <input
-                            ref={(el) => { testimonialAvatarRefs.current[index] = el; }}
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleTestimonialAvatarUpload(index, e)}
-                            className="hidden"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => testimonialAvatarRefs.current[index]?.click()}
-                            disabled={uploadingTestimonialAvatar === index}
-                          >
-                            <Camera size={14} className="mr-1" />
-                            Avatar
-                          </Button>
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-muted border border-border flex-shrink-0">
+                            {testimonial.avatar ? (
+                              <img src={testimonial.avatar} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-base sm:text-lg font-bold">
+                                {testimonial.name?.charAt(0)?.toUpperCase() || '?'}
+                              </div>
+                            )}
+                            {uploadingTestimonialAvatar === index && (
+                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                <Loader2 size={12} className="animate-spin text-white" />
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <input
+                              ref={(el) => { testimonialAvatarRefs.current[index] = el; }}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleTestimonialAvatarUpload(index, e)}
+                              className="hidden"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => testimonialAvatarRefs.current[index]?.click()}
+                              disabled={uploadingTestimonialAvatar === index}
+                            >
+                              <Camera size={12} className="mr-1" />
+                              ছবি
+                            </Button>
+                          </div>
                         </div>
                         
                         {/* Rating Stars */}
@@ -705,153 +844,152 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                               key={star}
                               type="button"
                               onClick={() => updateTestimonial(index, 'rating', star)}
-                              className="p-0.5"
+                              className="p-0.5 touch-manipulation"
                             >
                               <Star
-                                size={18}
+                                size={20}
                                 className={star <= (testimonial.rating || 5) 
                                   ? 'fill-yellow-400 text-yellow-400' 
-                                  : 'text-gray-300'}
+                                  : 'text-muted-foreground/30'}
                               />
                             </button>
                           ))}
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Input
                           value={testimonial.name || ''}
                           onChange={(e) => updateTestimonial(index, 'name', e.target.value)}
-                          placeholder="Client Name"
+                          onPointerDown={stopPropagation}
+                          placeholder="ক্লায়েন্টের নাম"
                         />
                         <Input
                           value={testimonial.role || ''}
                           onChange={(e) => updateTestimonial(index, 'role', e.target.value)}
-                          placeholder="Role/Title"
+                          onPointerDown={stopPropagation}
+                          placeholder="পদবী/টাইটেল"
                         />
                       </div>
                       <Input
                         value={testimonial.company || ''}
                         onChange={(e) => updateTestimonial(index, 'company', e.target.value)}
-                        placeholder="Company (optional)"
+                        onPointerDown={stopPropagation}
+                        placeholder="কোম্পানি (ঐচ্ছিক)"
                       />
                       <Textarea
                         value={testimonial.content || ''}
                         onChange={(e) => updateTestimonial(index, 'content', e.target.value)}
-                        placeholder="Write the review/testimonial..."
+                        onPointerDown={stopPropagation}
+                        placeholder="রিভিউ/টেস্টিমোনিয়াল লিখুন..."
                         rows={3}
+                        className="resize-none"
                       />
                     </div>
                   ))}
                   <Button variant="outline" size="sm" onClick={addTestimonial} className="w-full">
                     <Plus size={16} className="mr-2" />
-                    Add Testimonial
+                    টেস্টিমোনিয়াল যোগ করুন
                   </Button>
                 </div>
               )}
 
-              {/* Product Catalog with Image Upload */}
+              {/* Product Catalog */}
               {section.section_type === 'product_catalog' && (
                 <div className="space-y-4">
                   {(section.content.products || []).map((product: any, index: number) => (
-                    <div key={index} className="p-4 bg-muted/30 rounded-lg border border-border space-y-3">
+                    <div key={index} className="p-3 sm:p-4 bg-muted/30 rounded-lg border border-border space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-muted-foreground">Product {index + 1}</span>
-                        <Button variant="ghost" size="icon" onClick={() => {
-                          const products = [...(section.content.products || [])];
-                          products.splice(index, 1);
-                          handleContentChange('products', products);
-                        }} className="h-7 w-7 text-destructive">
+                        <span className="text-sm font-medium text-muted-foreground">প্রোডাক্ট {index + 1}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => removeProduct(index)} 
+                          className="h-7 w-7 text-destructive"
+                        >
                           <Trash2 size={14} />
                         </Button>
                       </div>
                       
                       {/* Product Image */}
-                      <div className="flex items-center gap-3">
-                        <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-muted border border-border flex-shrink-0">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-muted border border-border flex-shrink-0">
                           {product.image ? (
                             <img src={product.image} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <ImageIcon size={20} className="text-muted-foreground" />
+                              <ImageIcon size={18} className="text-muted-foreground" />
+                            </div>
+                          )}
+                          {uploadingProductImage === index && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                              <Loader2 size={14} className="animate-spin text-white" />
                             </div>
                           )}
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 w-full sm:w-auto">
                           <input
+                            ref={(el) => { productImageRefs.current[index] = el; }}
                             type="file"
                             accept="image/*"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              if (file.size > 5 * 1024 * 1024) {
-                                toast({ title: 'File too large', description: 'Max 5MB', variant: 'destructive' });
-                                return;
-                              }
-                              try {
-                                const fileExt = file.name.split('.').pop();
-                                const fileName = `products/${section.id}/${Date.now()}-${index}.${fileExt}`;
-                                const { error: uploadError } = await supabase.storage.from('profile-photos').upload(fileName, file);
-                                if (uploadError) throw uploadError;
-                                const { data: { publicUrl } } = supabase.storage.from('profile-photos').getPublicUrl(fileName);
-                                const products = [...(section.content.products || [])];
-                                products[index] = { ...products[index], image: publicUrl };
-                                handleContentChange('products', products);
-                                toast({ title: 'Image uploaded!' });
-                              } catch (err) {
-                                toast({ title: 'Upload failed', variant: 'destructive' });
-                              }
-                            }}
+                            onChange={(e) => handleProductImageUpload(index, e)}
                             className="hidden"
-                            id={`product-image-${section.id}-${index}`}
                           />
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => document.getElementById(`product-image-${section.id}-${index}`)?.click()}
+                            onClick={() => productImageRefs.current[index]?.click()}
+                            disabled={uploadingProductImage === index}
+                            className="w-full sm:w-auto"
                           >
                             <Camera size={14} className="mr-2" />
-                            {product.image ? 'Change Image' : 'Add Image'}
+                            {product.image ? 'ছবি পরিবর্তন' : 'ছবি যোগ করুন'}
                           </Button>
-                          <p className="text-xs text-muted-foreground mt-1">Product photo (optional)</p>
+                          <p className="text-xs text-muted-foreground mt-1">প্রোডাক্টের ছবি (ঐচ্ছিক)</p>
                         </div>
                       </div>
                       
-                      <Input value={product.name || ''} onChange={(e) => {
-                        const products = [...(section.content.products || [])];
-                        products[index] = { ...products[index], name: e.target.value };
-                        handleContentChange('products', products);
-                      }} placeholder="Product name" />
-                      <Textarea value={product.description || ''} onChange={(e) => {
-                        const products = [...(section.content.products || [])];
-                        products[index] = { ...products[index], description: e.target.value };
-                        handleContentChange('products', products);
-                      }} placeholder="Description" rows={2} />
-                      <div className="grid grid-cols-3 gap-3">
-                        <Input value={product.price || ''} onChange={(e) => {
-                          const products = [...(section.content.products || [])];
-                          products[index] = { ...products[index], price: e.target.value };
-                          handleContentChange('products', products);
-                        }} placeholder="৳500" />
-                        <Input value={product.originalPrice || ''} onChange={(e) => {
-                          const products = [...(section.content.products || [])];
-                          products[index] = { ...products[index], originalPrice: e.target.value };
-                          handleContentChange('products', products);
-                        }} placeholder="৳800 (original)" />
-                        <Input value={product.category || ''} onChange={(e) => {
-                          const products = [...(section.content.products || [])];
-                          products[index] = { ...products[index], category: e.target.value };
-                          handleContentChange('products', products);
-                        }} placeholder="Category" />
+                      <Input 
+                        value={product.name || ''} 
+                        onChange={(e) => updateProduct(index, 'name', e.target.value)}
+                        onPointerDown={stopPropagation}
+                        placeholder="প্রোডাক্টের নাম" 
+                      />
+                      <Textarea 
+                        value={product.description || ''} 
+                        onChange={(e) => updateProduct(index, 'description', e.target.value)}
+                        onPointerDown={stopPropagation}
+                        placeholder="বিবরণ" 
+                        rows={2}
+                        className="resize-none"
+                      />
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <Input 
+                          value={product.price || ''} 
+                          onChange={(e) => updateProduct(index, 'price', e.target.value)}
+                          onPointerDown={stopPropagation}
+                          placeholder="৳500" 
+                        />
+                        <Input 
+                          value={product.originalPrice || ''} 
+                          onChange={(e) => updateProduct(index, 'originalPrice', e.target.value)}
+                          onPointerDown={stopPropagation}
+                          placeholder="৳800 (পূর্বমূল্য)" 
+                        />
+                        <Input 
+                          value={product.category || ''} 
+                          onChange={(e) => updateProduct(index, 'category', e.target.value)}
+                          onPointerDown={stopPropagation}
+                          placeholder="ক্যাটাগরি" 
+                        />
                       </div>
                     </div>
                   ))}
-                  <Button variant="outline" size="sm" onClick={() => {
-                    const products = [...(section.content.products || [])];
-                    products.push({ name: '', description: '', price: '', image: '', category: '', originalPrice: '' });
-                    handleContentChange('products', products);
-                  }} className="w-full"><Plus size={16} className="mr-2" />Add Product</Button>
+                  <Button variant="outline" size="sm" onClick={addProduct} className="w-full">
+                    <Plus size={16} className="mr-2" />
+                    প্রোডাক্ট যোগ করুন
+                  </Button>
                 </div>
               )}
 
@@ -860,23 +998,27 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                 <div className="space-y-4">
                   {(section.content.badges || []).map((badge: any, index: number) => (
                     <div key={index} className="p-3 bg-muted/30 rounded-lg border border-border flex gap-3 items-center">
-                      <Input value={badge.text || ''} onChange={(e) => {
-                        const badges = [...(section.content.badges || [])];
-                        badges[index] = { ...badges[index], text: e.target.value };
-                        handleContentChange('badges', badges);
-                      }} placeholder="Verified Business" className="flex-1" />
-                      <Button variant="ghost" size="icon" onClick={() => {
-                        const badges = [...(section.content.badges || [])];
-                        badges.splice(index, 1);
-                        handleContentChange('badges', badges);
-                      }} className="h-8 w-8 text-destructive"><Trash2 size={14} /></Button>
+                      <Input 
+                        value={badge.text || ''} 
+                        onChange={(e) => updateBadge(index, 'text', e.target.value)}
+                        onPointerDown={stopPropagation}
+                        placeholder="ভেরিফাইড বিজনেস" 
+                        className="flex-1" 
+                      />
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => removeBadge(index)}
+                        className="h-8 w-8 text-destructive flex-shrink-0"
+                      >
+                        <Trash2 size={14} />
+                      </Button>
                     </div>
                   ))}
-                  <Button variant="outline" size="sm" onClick={() => {
-                    const badges = [...(section.content.badges || [])];
-                    badges.push({ icon: 'verified', text: '', color: 'blue' });
-                    handleContentChange('badges', badges);
-                  }} className="w-full"><Plus size={16} className="mr-2" />Add Badge</Button>
+                  <Button variant="outline" size="sm" onClick={addBadge} className="w-full">
+                    <Plus size={16} className="mr-2" />
+                    ব্যাজ যোগ করুন
+                  </Button>
                 </div>
               )}
 
@@ -884,32 +1026,38 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
               {section.section_type === 'faq' && (
                 <div className="space-y-4">
                   {(section.content.faqs || []).map((faq: any, index: number) => (
-                    <div key={index} className="p-4 bg-muted/30 rounded-lg border border-border space-y-3">
+                    <div key={index} className="p-3 sm:p-4 bg-muted/30 rounded-lg border border-border space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-muted-foreground">FAQ {index + 1}</span>
-                        <Button variant="ghost" size="icon" onClick={() => {
-                          const faqs = [...(section.content.faqs || [])];
-                          faqs.splice(index, 1);
-                          handleContentChange('faqs', faqs);
-                        }} className="h-7 w-7 text-destructive"><Trash2 size={14} /></Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => removeFAQ(index)} 
+                          className="h-7 w-7 text-destructive"
+                        >
+                          <Trash2 size={14} />
+                        </Button>
                       </div>
-                      <Input value={faq.question || ''} onChange={(e) => {
-                        const faqs = [...(section.content.faqs || [])];
-                        faqs[index] = { ...faqs[index], question: e.target.value };
-                        handleContentChange('faqs', faqs);
-                      }} placeholder="Question?" />
-                      <Textarea value={faq.answer || ''} onChange={(e) => {
-                        const faqs = [...(section.content.faqs || [])];
-                        faqs[index] = { ...faqs[index], answer: e.target.value };
-                        handleContentChange('faqs', faqs);
-                      }} placeholder="Answer..." rows={3} />
+                      <Input 
+                        value={faq.question || ''} 
+                        onChange={(e) => updateFAQ(index, 'question', e.target.value)}
+                        onPointerDown={stopPropagation}
+                        placeholder="প্রশ্ন?" 
+                      />
+                      <Textarea 
+                        value={faq.answer || ''} 
+                        onChange={(e) => updateFAQ(index, 'answer', e.target.value)}
+                        onPointerDown={stopPropagation}
+                        placeholder="উত্তর..." 
+                        rows={3}
+                        className="resize-none"
+                      />
                     </div>
                   ))}
-                  <Button variant="outline" size="sm" onClick={() => {
-                    const faqs = [...(section.content.faqs || [])];
-                    faqs.push({ question: '', answer: '' });
-                    handleContentChange('faqs', faqs);
-                  }} className="w-full"><Plus size={16} className="mr-2" />Add FAQ</Button>
+                  <Button variant="outline" size="sm" onClick={addFAQ} className="w-full">
+                    <Plus size={16} className="mr-2" />
+                    FAQ যোগ করুন
+                  </Button>
                 </div>
               )}
 
@@ -917,24 +1065,27 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
               {section.section_type === 'contact_form' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Form Title</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">ফর্ম টাইটেল</label>
                     <Input
                       value={section.content.form_title || ''}
                       onChange={(e) => handleContentChange('form_title', e.target.value)}
-                      placeholder="Get in Touch"
+                      onPointerDown={stopPropagation}
+                      placeholder="যোগাযোগ করুন"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Form Description</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">ফর্ম বিবরণ</label>
                     <Textarea
                       value={section.content.form_description || ''}
                       onChange={(e) => handleContentChange('form_description', e.target.value)}
-                      placeholder="Send us a message and we'll get back to you soon."
+                      onPointerDown={stopPropagation}
+                      placeholder="আমাদের মেসেজ পাঠান, আমরা শীঘ্রই উত্তর দেব।"
                       rows={2}
+                      className="resize-none"
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Visitors can send you messages directly. You'll receive notifications via email.
+                    ভিজিটররা সরাসরি মেসেজ পাঠাতে পারবে। আপনি ইমেইলে নোটিফিকেশন পাবেন।
                   </p>
                 </div>
               )}
@@ -943,98 +1094,85 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
               {section.section_type === 'product_gallery' && (
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    Add products with images. They'll be displayed in a beautiful grid gallery with lightbox zoom and sharing.
+                    ছবিসহ প্রোডাক্ট যোগ করুন। এগুলো সুন্দর গ্রিড গ্যালারিতে লাইটবক্স জুম সহ প্রদর্শিত হবে।
                   </p>
                   {(section.content.products || []).map((product: any, index: number) => (
-                    <div key={index} className="p-4 bg-muted/30 rounded-lg border border-border space-y-3">
+                    <div key={index} className="p-3 sm:p-4 bg-muted/30 rounded-lg border border-border space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-muted-foreground">Product {index + 1}</span>
-                        <Button variant="ghost" size="icon" onClick={() => {
-                          const products = [...(section.content.products || [])];
-                          products.splice(index, 1);
-                          handleContentChange('products', products);
-                        }} className="h-7 w-7 text-destructive">
+                        <span className="text-sm font-medium text-muted-foreground">প্রোডাক্ট {index + 1}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => removeProduct(index)} 
+                          className="h-7 w-7 text-destructive"
+                        >
                           <Trash2 size={14} />
                         </Button>
                       </div>
                       
                       {/* Product Image */}
-                      <div className="flex items-center gap-3">
-                        <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-muted border border-border flex-shrink-0">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-muted border border-border flex-shrink-0">
                           {product.image ? (
                             <img src={product.image} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <ImageIcon size={20} className="text-muted-foreground" />
+                              <ImageIcon size={18} className="text-muted-foreground" />
+                            </div>
+                          )}
+                          {uploadingGalleryImage === index && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                              <Loader2 size={14} className="animate-spin text-white" />
                             </div>
                           )}
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 w-full sm:w-auto">
                           <input
+                            ref={(el) => { galleryImageRefs.current[index] = el; }}
                             type="file"
                             accept="image/*"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              if (file.size > 5 * 1024 * 1024) {
-                                toast({ title: 'File too large', description: 'Max 5MB', variant: 'destructive' });
-                                return;
-                              }
-                              try {
-                                const fileExt = file.name.split('.').pop();
-                                const fileName = `gallery/${section.id}/${Date.now()}-${index}.${fileExt}`;
-                                const { error: uploadError } = await supabase.storage.from('profile-photos').upload(fileName, file);
-                                if (uploadError) throw uploadError;
-                                const { data: { publicUrl } } = supabase.storage.from('profile-photos').getPublicUrl(fileName);
-                                const products = [...(section.content.products || [])];
-                                products[index] = { ...products[index], image: publicUrl };
-                                handleContentChange('products', products);
-                                toast({ title: 'Image uploaded!' });
-                              } catch (err) {
-                                toast({ title: 'Upload failed', variant: 'destructive' });
-                              }
-                            }}
+                            onChange={(e) => handleGalleryImageUpload(index, e)}
                             className="hidden"
-                            id={`gallery-image-${section.id}-${index}`}
                           />
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => document.getElementById(`gallery-image-${section.id}-${index}`)?.click()}
+                            onClick={() => galleryImageRefs.current[index]?.click()}
+                            disabled={uploadingGalleryImage === index}
+                            className="w-full sm:w-auto"
                           >
                             <Camera size={14} className="mr-2" />
-                            {product.image ? 'Change' : 'Add Image'}
+                            {product.image ? 'পরিবর্তন' : 'ছবি যোগ করুন'}
                           </Button>
                         </div>
                       </div>
                       
-                      <Input value={product.name || ''} onChange={(e) => {
-                        const products = [...(section.content.products || [])];
-                        products[index] = { ...products[index], name: e.target.value };
-                        handleContentChange('products', products);
-                      }} placeholder="Product name" />
-                      <div className="grid grid-cols-2 gap-3">
-                        <Input value={product.price || ''} onChange={(e) => {
-                          const products = [...(section.content.products || [])];
-                          products[index] = { ...products[index], price: e.target.value };
-                          handleContentChange('products', products);
-                        }} placeholder="Price (e.g., ৳500)" />
-                        <Input value={product.description || ''} onChange={(e) => {
-                          const products = [...(section.content.products || [])];
-                          products[index] = { ...products[index], description: e.target.value };
-                          handleContentChange('products', products);
-                        }} placeholder="Short description" />
+                      <Input 
+                        value={product.name || ''} 
+                        onChange={(e) => updateGalleryProduct(index, 'name', e.target.value)}
+                        onPointerDown={stopPropagation}
+                        placeholder="প্রোডাক্টের নাম" 
+                      />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <Input 
+                          value={product.price || ''} 
+                          onChange={(e) => updateGalleryProduct(index, 'price', e.target.value)}
+                          onPointerDown={stopPropagation}
+                          placeholder="মূল্য (যেমন: ৳500)" 
+                        />
+                        <Input 
+                          value={product.description || ''} 
+                          onChange={(e) => updateGalleryProduct(index, 'description', e.target.value)}
+                          onPointerDown={stopPropagation}
+                          placeholder="সংক্ষিপ্ত বিবরণ" 
+                        />
                       </div>
                     </div>
                   ))}
-                  <Button variant="outline" size="sm" onClick={() => {
-                    const products = [...(section.content.products || [])];
-                    products.push({ name: '', price: '', image: '', description: '' });
-                    handleContentChange('products', products);
-                  }} className="w-full">
+                  <Button variant="outline" size="sm" onClick={addGalleryProduct} className="w-full">
                     <Plus size={16} className="mr-2" />
-                    Add Product
+                    প্রোডাক্ট যোগ করুন
                   </Button>
                 </div>
               )}
