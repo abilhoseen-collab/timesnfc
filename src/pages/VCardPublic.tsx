@@ -39,6 +39,7 @@ import ServiceCatalog from '@/components/vcard/ServiceCatalog';
 import ProductCatalog from '@/components/vcard/ProductCatalog';
 import SocialProofBadges from '@/components/vcard/SocialProofBadges';
 import FAQSection from '@/components/vcard/FAQSection';
+import ContactForm from '@/components/vcard/ContactForm';
 
 interface VCard {
   id: string;
@@ -360,7 +361,7 @@ END:VCARD`;
 
     setBookingAppointment(true);
     try {
-      const { error } = await supabase.from('vcard_appointments').insert({
+      const { data: appointmentData, error } = await supabase.from('vcard_appointments').insert({
         vcard_id: vcard.id,
         visitor_name: appointmentForm.name,
         visitor_email: appointmentForm.email,
@@ -368,9 +369,27 @@ END:VCARD`;
         appointment_date: appointmentForm.date,
         appointment_time: appointmentForm.time,
         notes: appointmentForm.notes || null,
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // Send email notification
+      try {
+        await supabase.functions.invoke('send-appointment-notification', {
+          body: {
+            vcard_id: vcard.id,
+            appointment_id: appointmentData.id,
+            visitor_name: appointmentForm.name,
+            visitor_email: appointmentForm.email,
+            visitor_phone: appointmentForm.phone,
+            appointment_date: appointmentForm.date,
+            appointment_time: appointmentForm.time,
+            notes: appointmentForm.notes,
+          },
+        });
+      } catch (notifError) {
+        console.log('Notification skipped:', notifError);
+      }
 
       toast({ title: 'Appointment booked successfully!' });
       setShowAppointmentModal(false);
@@ -711,6 +730,19 @@ END:VCARD`;
                   {/* FAQ Section */}
                   {section.section_type === 'faq' && section.content?.faqs && (
                     <FAQSection faqs={section.content.faqs} accentColor={style.accent} />
+                  )}
+
+                  {/* Contact Form Section */}
+                  {section.section_type === 'contact_form' && (
+                    <ContactForm
+                      vcardId={vcard.id}
+                      ownerName={vcard.name}
+                      ownerEmail={vcard.email}
+                      accentColor={style.accent}
+                      formTitle={section.content?.form_title}
+                      formDescription={section.content?.form_description}
+                      onSubmit={() => trackLinkClick('contact_form_submit')}
+                    />
                   )}
                 </div>
               ))}

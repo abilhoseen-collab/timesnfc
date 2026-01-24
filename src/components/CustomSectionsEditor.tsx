@@ -37,10 +37,11 @@ import {
   ShoppingBag,
   Award,
   HelpCircle,
+  MessageSquare,
 } from 'lucide-react';
 import { SortableSection } from './SortableSection';
 
-export type SectionType = 'text' | 'image_gallery' | 'service_card' | 'video' | 'testimonial' | 'product_catalog' | 'social_proof' | 'faq';
+export type SectionType = 'text' | 'image_gallery' | 'service_card' | 'video' | 'testimonial' | 'product_catalog' | 'social_proof' | 'faq' | 'contact_form';
 
 export interface CustomSection {
   id: string;
@@ -65,6 +66,7 @@ const sectionTypes = [
   { type: 'testimonial' as SectionType, icon: Quote, label: 'Testimonials', description: 'Client reviews and testimonials' },
   { type: 'social_proof' as SectionType, icon: Award, label: 'Social Proof Badges', description: 'Trust badges like Verified, 100+ Clients' },
   { type: 'faq' as SectionType, icon: HelpCircle, label: 'FAQ Section', description: 'Frequently asked questions accordion' },
+  { type: 'contact_form' as SectionType, icon: MessageSquare, label: 'Contact Form', description: 'Let visitors send you messages directly' },
 ];
 
 export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorProps) {
@@ -157,6 +159,7 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
       case 'testimonial': return 'What Clients Say';
       case 'social_proof': return 'Why Trust Us';
       case 'faq': return 'FAQs';
+      case 'contact_form': return 'Contact Us';
     }
   };
 
@@ -178,6 +181,8 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
         return { badges: [{ icon: 'verified', text: 'Verified Business', color: 'blue' }] };
       case 'faq':
         return { faqs: [{ question: '', answer: '' }] };
+      case 'contact_form':
+        return { form_title: 'Get in Touch', form_description: 'Send us a message and we\'ll get back to you soon.' };
     }
   };
 
