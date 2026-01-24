@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { format, subDays, startOfDay, eachDayOfInterval } from 'date-fns';
+import { format, subDays, eachDayOfInterval } from 'date-fns';
 import { motion } from 'framer-motion';
 import {
   Eye,
@@ -18,22 +18,16 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
-import {
   AreaChart,
   Area,
   XAxis,
   YAxis,
   CartesianGrid,
-  BarChart,
-  Bar,
   PieChart,
   Pie,
   Cell,
   ResponsiveContainer,
+  Tooltip,
 } from 'recharts';
 
 interface AnalyticsData {
@@ -313,7 +307,15 @@ export default function VCardAnalyticsDashboard({ vcardId }: VCardAnalyticsDashb
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
               <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <ChartTooltip content={<ChartTooltipContent />} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                }}
+                labelStyle={{ color: 'hsl(var(--foreground))' }}
+              />
               <Area
                 type="monotone"
                 dataKey="views"
@@ -321,6 +323,7 @@ export default function VCardAnalyticsDashboard({ vcardId }: VCardAnalyticsDashb
                 fillOpacity={1}
                 fill="url(#colorViews)"
                 strokeWidth={2}
+                name="Views"
               />
               <Area
                 type="monotone"
@@ -329,6 +332,7 @@ export default function VCardAnalyticsDashboard({ vcardId }: VCardAnalyticsDashb
                 fillOpacity={1}
                 fill="url(#colorClicks)"
                 strokeWidth={2}
+                name="Clicks"
               />
             </AreaChart>
           </ResponsiveContainer>
