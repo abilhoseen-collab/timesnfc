@@ -35,6 +35,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import GalleryCarousel from '@/components/vcard/GalleryCarousel';
+import ServiceCatalog from '@/components/vcard/ServiceCatalog';
 
 interface VCard {
   id: string;
@@ -630,28 +631,15 @@ END:VCARD`;
                     />
                   )}
 
-                  {/* Service Cards Section */}
+                  {/* Service Cards Section - with Cart functionality */}
                   {section.section_type === 'service_card' && section.content?.services && (
-                    <div className="space-y-3">
-                      {(section.content.services as { name: string; price: string; description?: string }[]).map((item, idx) => (
-                        <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
-                          <div className={`w-10 h-10 rounded-lg ${style.accent} flex items-center justify-center flex-shrink-0`}>
-                            <ShoppingBag size={16} className="text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="font-medium text-gray-900">{item.name}</p>
-                              {item.price && (
-                                <span className={`${style.text} font-bold text-sm`}>{item.price}</span>
-                              )}
-                            </div>
-                            {item.description && (
-                              <p className="text-xs text-gray-500 mt-1">{item.description}</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <ServiceCatalog
+                      services={section.content.services as { name: string; price: string; description?: string; image?: string; category?: string }[]}
+                      accentColor={style.accent}
+                      ownerName={vcard.name}
+                      whatsappNumber={vcard.whatsapp_number}
+                      onTrackClick={trackLinkClick}
+                    />
                   )}
 
                   {/* Video Section */}

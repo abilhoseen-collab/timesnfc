@@ -35,11 +35,13 @@ import {
   Send,
   Calendar,
   CalendarDays,
-  List
+  List,
+  BarChart3
 } from 'lucide-react';
 import CustomSectionsEditor from '@/components/CustomSectionsEditor';
 import VCardPreview from '@/components/vcard/VCardPreview';
 import AppointmentDashboard from '@/components/vcard/AppointmentDashboard';
+import VCardAnalyticsDashboard from '@/components/vcard/VCardAnalyticsDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Import template images
@@ -1350,6 +1352,13 @@ export default function VCardEditor() {
                   <h2 className="text-lg font-bold text-foreground">Landing Page Sections</h2>
                 </div>
                 <CustomSectionsEditor vcardId={currentVcardId} />
+              </div>
+            )}
+
+            {/* Analytics Dashboard */}
+            {currentVcardId && isEditing && (
+              <div className="bg-card rounded-2xl p-6 border border-border">
+                <VCardAnalyticsDashboard vcardId={currentVcardId} />
               </div>
             )}
 
