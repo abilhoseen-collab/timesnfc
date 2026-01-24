@@ -33,10 +33,14 @@ import {
   MessageCircle,
   Wallet,
   Send,
-  Calendar
+  Calendar,
+  CalendarDays,
+  List
 } from 'lucide-react';
 import CustomSectionsEditor from '@/components/CustomSectionsEditor';
 import VCardPreview from '@/components/vcard/VCardPreview';
+import AppointmentDashboard from '@/components/vcard/AppointmentDashboard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Import template images
 import freelancerImg from '@/assets/templates/freelancer.png';
@@ -1164,110 +1168,137 @@ export default function VCardEditor() {
                 <Calendar size={20} className="text-primary" />
                 Appointment Booking
               </h2>
-              <div className="space-y-4">
-                <label className="flex items-center gap-3 cursor-pointer p-3 bg-muted/50 rounded-xl">
-                  <input
-                    type="checkbox"
-                    checked={formData.appointment_enabled}
-                    onChange={(e) => handleChange('appointment_enabled', e.target.checked)}
-                    className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
-                  />
-                  <div>
-                    <span className="text-sm font-medium text-foreground">Enable Appointment Booking</span>
-                    <p className="text-xs text-muted-foreground">Let visitors schedule meetings with you</p>
-                  </div>
-                </label>
+              
+              <Tabs defaultValue="settings" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="settings" className="flex items-center gap-2">
+                    <Calendar size={14} />
+                    Settings
+                  </TabsTrigger>
+                  <TabsTrigger value="bookings" className="flex items-center gap-2">
+                    <CalendarDays size={14} />
+                    Bookings
+                  </TabsTrigger>
+                </TabsList>
                 
-                {formData.appointment_enabled && (
-                  <div className="space-y-4 pt-2">
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Button Text
-                      </label>
-                      <Input
-                        placeholder="Book an Appointment"
-                        value={formData.appointment_title}
-                        onChange={(e) => handleChange('appointment_title', e.target.value)}
-                        className="bg-background"
+                <TabsContent value="settings">
+                  <div className="space-y-4">
+                    <label className="flex items-center gap-3 cursor-pointer p-3 bg-muted/50 rounded-xl">
+                      <input
+                        type="checkbox"
+                        checked={formData.appointment_enabled}
+                        onChange={(e) => handleChange('appointment_enabled', e.target.checked)}
+                        className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
                       />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Description (Optional)
-                      </label>
-                      <Textarea
-                        placeholder="Schedule a free consultation..."
-                        value={formData.appointment_description}
-                        onChange={(e) => handleChange('appointment_description', e.target.value)}
-                        className="bg-background"
-                        rows={2}
-                      />
-                    </div>
-                    
-                    <div className="grid sm:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          Duration (minutes)
-                        </label>
-                        <select
-                          value={formData.appointment_duration_minutes}
-                          onChange={(e) => handleChange('appointment_duration_minutes', e.target.value)}
-                          className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                        >
-                          <option value={15}>15 min</option>
-                          <option value={30}>30 min</option>
-                          <option value={45}>45 min</option>
-                          <option value={60}>1 hour</option>
-                          <option value={90}>1.5 hours</option>
-                          <option value={120}>2 hours</option>
-                        </select>
+                        <span className="text-sm font-medium text-foreground">Enable Appointment Booking</span>
+                        <p className="text-xs text-muted-foreground">Let visitors schedule meetings with you</p>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          Start Time
-                        </label>
-                        <Input
-                          type="time"
-                          value={formData.appointment_start_time}
-                          onChange={(e) => handleChange('appointment_start_time', e.target.value)}
-                          className="bg-background"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          End Time
-                        </label>
-                        <Input
-                          type="time"
-                          value={formData.appointment_end_time}
-                          onChange={(e) => handleChange('appointment_end_time', e.target.value)}
-                          className="bg-background"
-                        />
-                      </div>
-                    </div>
+                    </label>
                     
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Notification Email
-                      </label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                        <Input
-                          type="email"
-                          placeholder="Receive booking notifications at..."
-                          value={formData.appointment_email}
-                          onChange={(e) => handleChange('appointment_email', e.target.value)}
-                          className="pl-10 bg-background"
-                        />
+                    {formData.appointment_enabled && (
+                      <div className="space-y-4 pt-2">
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            Button Text
+                          </label>
+                          <Input
+                            placeholder="Book an Appointment"
+                            value={formData.appointment_title}
+                            onChange={(e) => handleChange('appointment_title', e.target.value)}
+                            className="bg-background"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            Description (Optional)
+                          </label>
+                          <Textarea
+                            placeholder="Schedule a free consultation..."
+                            value={formData.appointment_description}
+                            onChange={(e) => handleChange('appointment_description', e.target.value)}
+                            className="bg-background"
+                            rows={2}
+                          />
+                        </div>
+                        
+                        <div className="grid sm:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                              Duration (minutes)
+                            </label>
+                            <select
+                              value={formData.appointment_duration_minutes}
+                              onChange={(e) => handleChange('appointment_duration_minutes', e.target.value)}
+                              className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                            >
+                              <option value={15}>15 min</option>
+                              <option value={30}>30 min</option>
+                              <option value={45}>45 min</option>
+                              <option value={60}>1 hour</option>
+                              <option value={90}>1.5 hours</option>
+                              <option value={120}>2 hours</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                              Start Time
+                            </label>
+                            <Input
+                              type="time"
+                              value={formData.appointment_start_time}
+                              onChange={(e) => handleChange('appointment_start_time', e.target.value)}
+                              className="bg-background"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                              End Time
+                            </label>
+                            <Input
+                              type="time"
+                              value={formData.appointment_end_time}
+                              onChange={(e) => handleChange('appointment_end_time', e.target.value)}
+                              className="bg-background"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            Notification Email
+                          </label>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                            <Input
+                              type="email"
+                              placeholder="Receive booking notifications at..."
+                              value={formData.appointment_email}
+                              onChange={(e) => handleChange('appointment_email', e.target.value)}
+                              className="pl-10 bg-background"
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Get notified when someone books an appointment
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Get notified when someone books an appointment
-                      </p>
-                    </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </TabsContent>
+                
+                <TabsContent value="bookings">
+                  {currentVcardId ? (
+                    <AppointmentDashboard vcardId={currentVcardId} />
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <List size={32} className="mx-auto mb-2 opacity-50" />
+                      <p>Save your card first to see appointments</p>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </div>
 
             <div className="bg-card rounded-2xl p-6 border border-border">

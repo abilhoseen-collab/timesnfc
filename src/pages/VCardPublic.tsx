@@ -34,6 +34,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import GalleryCarousel from '@/components/vcard/GalleryCarousel';
 
 interface VCard {
   id: string;
@@ -621,19 +622,12 @@ END:VCARD`;
                     </div>
                   )}
 
-                  {/* Image Gallery Section */}
+                  {/* Image Gallery Section - with Carousel */}
                   {section.section_type === 'image_gallery' && section.content?.images && section.content.images.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2">
-                      {(section.content.images as string[]).map((img, idx) => (
-                        <div key={idx} className="aspect-square rounded-xl overflow-hidden bg-gray-100">
-                          <img 
-                            src={img} 
-                            alt={`Gallery ${idx + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ))}
-                    </div>
+                    <GalleryCarousel 
+                      images={section.content.images as string[]} 
+                      title={section.title || 'Gallery'} 
+                    />
                   )}
 
                   {/* Service Cards Section */}
