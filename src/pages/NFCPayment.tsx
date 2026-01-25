@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { usePaymentSettings } from '@/hooks/usePaymentSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -19,44 +20,6 @@ import {
 import { z } from 'zod';
 import { getUserFriendlyError } from '@/lib/errorHandler';
 import logo from '@/assets/logo.png';
-
-const paymentMethods = [
-  {
-    id: 'bkash',
-    name: 'bKash',
-    color: 'bg-pink-500',
-    number: '01XXXXXXXXX',
-    type: 'Send Money',
-    instructions: 'Send money to the number above and provide transaction ID',
-  },
-  {
-    id: 'nagad',
-    name: 'Nagad',
-    color: 'bg-orange-500',
-    number: '01XXXXXXXXX',
-    type: 'Send Money',
-    instructions: 'Send money to the number above and provide transaction ID',
-  },
-  {
-    id: 'rocket',
-    name: 'Rocket',
-    color: 'bg-purple-600',
-    number: '01XXXXXXXXX',
-    type: 'Send Money',
-    instructions: 'Send money to the number above and provide transaction ID',
-  },
-  {
-    id: 'bank',
-    name: 'Bank Transfer',
-    color: 'bg-blue-600',
-    bankName: 'Your Bank Name',
-    accountName: 'Account Holder Name',
-    accountNumber: 'XXXXXXXXXXXX',
-    routingNumber: 'XXXXXXXXX',
-    branch: 'Branch Name',
-    instructions: 'Transfer to the bank account and provide transaction details',
-  },
-];
 
 const guestOrderSchema = z.object({
   full_name: z.string().min(2, 'Name must be at least 2 characters').max(255, 'Name is too long'),
@@ -81,6 +44,9 @@ export default function NFCPayment() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { getPaymentMethods, loading: paymentSettingsLoading } = usePaymentSettings();
+  
+  const paymentMethods = getPaymentMethods();
 
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
