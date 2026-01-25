@@ -572,7 +572,7 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* Subscription Status */}
+        {/* Subscription Status - Prominent Banner */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -580,91 +580,167 @@ export default function Dashboard() {
           className="mb-8"
         >
           {subscription ? (
-            <div className={`rounded-2xl p-6 border ${
-              subscription.status === 'approved' && subscription.expires_at && new Date(subscription.expires_at) > new Date()
-                ? 'bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20'
-                : subscription.status === 'pending'
-                ? 'bg-yellow-50 border-yellow-200'
-                : 'bg-muted border-border'
-            }`}>
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                    subscription.status === 'approved' ? 'bg-primary/20 text-primary' : 
-                    subscription.status === 'pending' ? 'bg-yellow-200 text-yellow-700' : 
-                    'bg-muted-foreground/20 text-muted-foreground'
-                  }`}>
-                    {subscription.status === 'approved' ? <Crown size={24} /> : 
-                     subscription.status === 'pending' ? <Clock size={24} /> : 
-                     <CreditCard size={24} />}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-foreground">
-                        {subscription.package_name || 'Subscription'}
-                      </h3>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        subscription.status === 'approved' ? 'bg-green-100 text-green-700' :
-                        subscription.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                        subscription.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                        'bg-muted text-muted-foreground'
+            (() => {
+              const isActive = subscription.status === 'approved' && 
+                subscription.expires_at && 
+                new Date(subscription.expires_at) > new Date();
+              const daysRemaining = subscription.expires_at 
+                ? Math.ceil((new Date(subscription.expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                : 0;
+              const isExpiringSoon = daysRemaining > 0 && daysRemaining <= 7;
+              const isExpired = daysRemaining <= 0 && subscription.status === 'approved';
+
+              return (
+                <div className={`rounded-2xl p-6 border-2 ${
+                  isActive && !isExpiringSoon
+                    ? 'bg-gradient-to-r from-primary/10 via-teal-50 to-secondary/10 border-primary/30'
+                    : isExpiringSoon
+                    ? 'bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-300'
+                    : isExpired
+                    ? 'bg-gradient-to-r from-red-50 to-orange-50 border-red-300'
+                    : subscription.status === 'pending'
+                    ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-300'
+                    : 'bg-muted border-border'
+                }`}>
+                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg ${
+                        isActive && !isExpiringSoon ? 'bg-primary text-primary-foreground' : 
+                        isExpiringSoon ? 'bg-orange-500 text-white' :
+                        isExpired ? 'bg-red-500 text-white' :
+                        subscription.status === 'pending' ? 'bg-yellow-500 text-white' : 
+                        'bg-muted-foreground/20 text-muted-foreground'
                       }`}>
-                        {subscription.status === 'approved' ? 'Active' : 
-                         subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1)}
-                      </span>
+                        {isActive && !isExpiringSoon ? <Crown size={28} /> : 
+                         isExpiringSoon ? <Clock size={28} /> :
+                         isExpired ? <CreditCard size={28} /> :
+                         subscription.status === 'pending' ? <Clock size={28} /> : 
+                         <CreditCard size={28} />}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-3 mb-1">
+                          <h3 className="text-lg font-bold text-foreground">
+                            {subscription.package_name || 'সাবস্ক্রিপশন'}
+                          </h3>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
+                            isActive && !isExpiringSoon ? 'bg-green-100 text-green-700' :
+                            isExpiringSoon ? 'bg-orange-100 text-orange-700' :
+                            isExpired ? 'bg-red-100 text-red-700' :
+                            subscription.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                            subscription.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                            'bg-muted text-muted-foreground'
+                          }`}>
+                            {isActive && !isExpiringSoon ? '✓ সক্রিয়' : 
+                             isExpiringSoon ? `⚠ ${daysRemaining} দিন বাকি` :
+                             isExpired ? '✕ মেয়াদ শেষ' :
+                             subscription.status === 'pending' ? '⏳ অপেক্ষমান' :
+                             subscription.status === 'rejected' ? '✕ প্রত্যাখ্যাত' :
+                             subscription.status}
+                          </span>
+                        </div>
+                        
+                        {isActive && subscription.expires_at && (
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Calendar size={14} />
+                              <span>মেয়াদ শেষ: {new Date(subscription.expires_at).toLocaleDateString('bn-BD', { 
+                                year: 'numeric', month: 'long', day: 'numeric' 
+                              })}</span>
+                            </div>
+                            {!isExpiringSoon && (
+                              <span className="text-primary font-medium">
+                                ({daysRemaining} দিন বাকি)
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        
+                        {isExpired && (
+                          <p className="text-sm text-red-600 font-medium">
+                            আপনার সাবস্ক্রিপশনের মেয়াদ শেষ হয়ে গেছে। কার্ড তৈরি করতে রিনিউ করুন।
+                          </p>
+                        )}
+                        
+                        {subscription.status === 'pending' && (
+                          <p className="text-sm text-yellow-700">
+                            আপনার পেমেন্ট ভেরিফাই করা হচ্ছে। অনুগ্রহ করে অপেক্ষা করুন।
+                          </p>
+                        )}
+                        
+                        {subscription.status === 'rejected' && (
+                          <p className="text-sm text-red-600">
+                            পেমেন্ট প্রত্যাখ্যাত হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    {subscription.status === 'approved' && subscription.expires_at && (
-                      <p className="text-sm text-muted-foreground">
-                        Expires: {new Date(subscription.expires_at).toLocaleDateString('en-US', { 
-                          year: 'numeric', month: 'long', day: 'numeric' 
-                        })}
-                      </p>
-                    )}
-                    {subscription.status === 'pending' && (
-                      <p className="text-sm text-yellow-700">
-                        Your payment is being verified
-                      </p>
-                    )}
-                    {subscription.status === 'rejected' && (
-                      <p className="text-sm text-red-600">
-                        Payment was rejected. Please try again.
-                      </p>
-                    )}
+                    
+                    <div className="flex gap-2 flex-wrap">
+                      {(isExpiringSoon || isExpired) && (
+                        <Button 
+                          variant="secondary" 
+                          onClick={() => navigate('/payment')}
+                          className="font-semibold"
+                        >
+                          <ArrowUpCircle size={16} className="mr-2" />
+                          {isExpired ? 'রিনিউ করুন' : 'রিনিউ করুন'}
+                        </Button>
+                      )}
+                      {isActive && !isExpiringSoon && subscription.package_name && (
+                        <UpgradePackageForm
+                          userId={user!.id}
+                          currentSubscriptionId={subscription.id}
+                          currentPackageName={subscription.package_name}
+                          onSuccess={fetchSubscription}
+                        />
+                      )}
+                      {subscription.status !== 'approved' && (
+                        <Button variant="secondary" onClick={() => navigate('/payment')}>
+                          {subscription.status === 'rejected' ? 'আবার চেষ্টা করুন' : 'প্যাকেজ দেখুন'}
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  {subscription.status === 'approved' && subscription.package_name && (
-                    <UpgradePackageForm
-                      userId={user!.id}
-                      currentSubscriptionId={subscription.id}
-                      currentPackageName={subscription.package_name}
-                      onSuccess={fetchSubscription}
-                    />
+                  
+                  {/* Progress bar for active subscriptions */}
+                  {isActive && subscription.expires_at && (
+                    <div className="mt-4 pt-4 border-t border-border/50">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                        <span>সাবস্ক্রিপশন প্রোগ্রেস</span>
+                        <span>{Math.max(0, Math.min(100, Math.round((daysRemaining / 30) * 100)))}% বাকি</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <motion.div 
+                          className={`h-full rounded-full ${
+                            isExpiringSoon ? 'bg-orange-500' : 'bg-primary'
+                          }`}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.max(0, Math.min(100, (daysRemaining / 30) * 100))}%` }}
+                          transition={{ duration: 1, ease: "easeOut" }}
+                        />
+                      </div>
+                    </div>
                   )}
-                  {subscription.status !== 'approved' && (
-                    <Button variant="secondary" onClick={() => navigate('/payment')}>
-                      {subscription.status === 'rejected' ? 'Try Again' : 'View Plans'}
-                    </Button>
-                  )}
                 </div>
-              </div>
-            </div>
+              );
+            })()
           ) : (
-            <div className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-2xl p-6 border border-border">
-              <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="bg-gradient-to-r from-primary/5 via-teal-50/50 to-secondary/5 rounded-2xl p-6 border-2 border-dashed border-primary/30">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                    <Crown size={24} />
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                    <Crown size={28} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-foreground">Upgrade to Premium</h3>
+                    <h3 className="text-lg font-bold text-foreground">সাবস্ক্রিপশন নেই</h3>
                     <p className="text-sm text-muted-foreground">
-                      Unlock premium features and unlimited cards
+                      বিজনেস কার্ড তৈরি করতে একটি প্যাকেজ কিনুন
                     </p>
                   </div>
                 </div>
-                <Button variant="secondary" onClick={() => navigate('/payment')}>
-                  View Plans
+                <Button variant="secondary" size="lg" onClick={() => navigate('/payment')} className="font-semibold">
+                  <Crown size={18} className="mr-2" />
+                  প্যাকেজ কিনুন
                 </Button>
               </div>
             </div>
