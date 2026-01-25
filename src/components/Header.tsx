@@ -128,7 +128,7 @@ export function Header() {
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button variant="secondary" className="font-semibold" onClick={() => navigate('/auth')}>
-                    Start Free Trial
+                    রেজিস্টার করুন
                   </Button>
                 </motion.div>
               </>
@@ -236,7 +236,7 @@ export function Header() {
                         navigate('/auth');
                       }}
                     >
-                      Start Free Trial
+                      রেজিস্টার করুন
                     </Button>
                   </>
                 )}

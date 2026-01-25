@@ -28,15 +28,15 @@ export function CTA() {
   }
 
   const content = section?.content || {};
-  const badgeText = content.badge_text || "Limited Time Offer - 30% Off Premium";
-  const title = section?.title || "Ready to Transform Your Networking?";
-  const subtitle = section?.subtitle || "Join 10,000+ professionals who have already upgraded to digital business cards. Start free today and experience the future of networking.";
-  const primaryButtonText = content.primary_button_text || "Start Free Trial";
-  const secondaryButtonText = content.secondary_button_text || "View Demo";
+  const badgeText = content.badge_text || "সীমিত সময়ের অফার - ৩০% ছাড়";
+  const title = section?.title || "আপনার নেটওয়ার্কিং বদলে দিতে প্রস্তুত?";
+  const subtitle = section?.subtitle || "হাজারো পেশাদার যারা ইতিমধ্যে ডিজিটাল বিজনেস কার্ডে আপগ্রেড করেছেন তাদের সাথে যোগ দিন।";
+  const primaryButtonText = content.primary_button_text || "শুরু করুন";
+  const secondaryButtonText = content.secondary_button_text || "ডেমো দেখুন";
   const trustBadges = content.trust_badges || [
-    "No credit card required",
-    "Free forever plan available",
-    "Cancel anytime",
+    "সহজ পেমেন্ট সিস্টেম",
+    "২৪/৭ সাপোর্ট",
+    "যেকোনো সময় বাতিল করুন",
   ];
 
   return (
