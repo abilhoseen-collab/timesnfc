@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Lock, User, ArrowLeft, Eye, EyeOff, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Mail, Lock, User, ArrowLeft, Eye, EyeOff, Clock, CheckCircle, XCircle, Chrome } from 'lucide-react';
 import logo from '@/assets/logo.png';
+import { Separator } from '@/components/ui/separator';
 
 const signUpSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
@@ -38,10 +39,38 @@ export default function Auth() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [nfcOrderStatus, setNfcOrderStatus] = useState<NFCOrderStatus | null>(null);
   const [checkingOrder, setCheckingOrder] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}${redirectPath}`,
+        },
+      });
+      if (error) {
+        toast({
+          title: 'Google Sign In Failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   // Check for prefilled email from NFC payment and redirect param
   useEffect(() => {
@@ -394,6 +423,26 @@ export default function Auth() {
               disabled={loading || (isSignUpDisabled as boolean)}
             >
               {loading ? 'Please wait...' : isSignUp ? 'Create Account' : 'Sign In'}
+            </Button>
+
+            {/* Google Sign In */}
+            <div className="relative my-4">
+              <Separator />
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-xs text-muted-foreground">
+                অথবা
+              </span>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="w-full font-medium gap-2"
+              onClick={handleGoogleSignIn}
+              disabled={googleLoading}
+            >
+              <Chrome size={18} />
+              {googleLoading ? 'Connecting...' : 'Google দিয়ে সাইন ইন করুন'}
             </Button>
           </form>
 
