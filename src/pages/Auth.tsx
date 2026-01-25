@@ -397,6 +397,19 @@ export default function Auth() {
             </Button>
           </form>
 
+          {/* Forgot Password Link */}
+          {!isSignUp && (
+            <div className="text-center mt-4">
+              <button
+                type="button"
+                onClick={() => navigate('/forgot-password')}
+                className="text-sm text-primary hover:underline"
+              >
+                পাসওয়ার্ড ভুলে গেছেন?
+              </button>
+            </div>
+          )}
+
           {/* Toggle */}
           <div className="text-center mt-6">
             <p className="text-muted-foreground">

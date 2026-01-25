@@ -1,175 +1,32 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { getUserFriendlyError } from '@/lib/errorHandler';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { 
-  ArrowLeft, 
-  Save, 
-  User, 
-  Briefcase, 
-  Building, 
-  Mail, 
-  Phone, 
-  Globe,
-  MapPin,
-  Linkedin,
-  Twitter,
-  Facebook,
-  Instagram,
-  Youtube,
-  Github,
-  Eye,
-  Camera,
-  Loader2,
-  QrCode,
-  Bell,
-  Layout,
-  MessageCircle,
-  Wallet,
-  Send,
-  Calendar,
-  CalendarDays,
-  List,
-  BarChart3,
-  Undo2,
-  Redo2,
-} from 'lucide-react';
+import { ArrowLeft, Save, Undo2, BarChart3 } from 'lucide-react';
 import CustomSectionsEditor from '@/components/CustomSectionsEditor';
 import VCardPreview from '@/components/vcard/VCardPreview';
-import AppointmentDashboard from '@/components/vcard/AppointmentDashboard';
 import VCardAnalyticsDashboard from '@/components/vcard/VCardAnalyticsDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-// Import template images
-import freelancerImg from '@/assets/templates/freelancer.png';
-import doctorImg from '@/assets/templates/doctor.png';
-import restaurantImg from '@/assets/templates/restaurant.png';
-import realestateImg from '@/assets/templates/realestate.png';
-import fitnessImg from '@/assets/templates/fitness.png';
-import photographyImg from '@/assets/templates/photography.png';
-import lawfirmImg from '@/assets/templates/lawfirm.png';
-import cafeImg from '@/assets/templates/cafe.png';
-import salonImg from '@/assets/templates/salon.png';
-import constructionImg from '@/assets/templates/construction.png';
-import eventplannerImg from '@/assets/templates/eventplanner.png';
-import techStartupImg from '@/assets/templates/tech-startup.png';
-
-const templates = [
-  { id: 'freelancer', name: 'Freelancer', image: freelancerImg },
-  { id: 'doctor', name: 'Doctor', image: doctorImg },
-  { id: 'restaurant', name: 'Restaurant', image: restaurantImg },
-  { id: 'realestate', name: 'Real Estate', image: realestateImg },
-  { id: 'fitness', name: 'Fitness', image: fitnessImg },
-  { id: 'photography', name: 'Photography', image: photographyImg },
-  { id: 'lawfirm', name: 'Law Firm', image: lawfirmImg },
-  { id: 'cafe', name: 'Cafe', image: cafeImg },
-  { id: 'salon', name: 'Salon', image: salonImg },
-  { id: 'construction', name: 'Construction', image: constructionImg },
-  { id: 'eventplanner', name: 'Event Planner', image: eventplannerImg },
-  { id: 'tech-startup', name: 'Tech Startup', image: techStartupImg },
-];
-
-interface FormData {
-  name: string;
-  job_title: string;
-  company: string;
-  email: string;
-  phone: string;
-  website: string;
-  address: string;
-  bio: string;
-  template: string;
-  linkedin_url: string;
-  twitter_url: string;
-  facebook_url: string;
-  instagram_url: string;
-  youtube_url: string;
-  github_url: string;
-  is_active: boolean;
-  photo_url: string;
-  cover_image_url: string;
-  qr_foreground_color: string;
-  qr_background_color: string;
-  qr_logo_url: string;
-  notification_email: string;
-  notify_on_view: boolean;
-  notify_on_click: boolean;
-  slug: string;
-  // Chat & Payment fields
-  whatsapp_number: string;
-  telegram_username: string;
-  chat_enabled: boolean;
-  payment_enabled: boolean;
-  payment_bkash: string;
-  payment_nagad: string;
-  payment_rocket: string;
-  payment_bank_details: string;
-  payment_button_text: string;
-  // Appointment fields
-  appointment_enabled: boolean;
-  appointment_title: string;
-  appointment_description: string;
-  appointment_duration_minutes: number;
-  appointment_available_days: string[];
-  appointment_start_time: string;
-  appointment_end_time: string;
-  appointment_email: string;
-}
-
-const initialFormData: FormData = {
-  name: '',
-  job_title: '',
-  company: '',
-  email: '',
-  phone: '',
-  website: '',
-  address: '',
-  bio: '',
-  template: 'freelancer',
-  linkedin_url: '',
-  twitter_url: '',
-  facebook_url: '',
-  instagram_url: '',
-  youtube_url: '',
-  github_url: '',
-  is_active: true,
-  photo_url: '',
-  cover_image_url: '',
-  qr_foreground_color: '#000000',
-  qr_background_color: '#FFFFFF',
-  qr_logo_url: '',
-  notification_email: '',
-  notify_on_view: false,
-  notify_on_click: false,
-  slug: '',
-  // Chat & Payment
-  whatsapp_number: '',
-  telegram_username: '',
-  chat_enabled: false,
-  payment_enabled: false,
-  payment_bkash: '',
-  payment_nagad: '',
-  payment_rocket: '',
-  payment_bank_details: '',
-  payment_button_text: 'Send Payment / Donate',
-  // Appointment
-  appointment_enabled: false,
-  appointment_title: 'Book an Appointment',
-  appointment_description: '',
-  appointment_duration_minutes: 30,
-  appointment_available_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-  appointment_start_time: '09:00',
-  appointment_end_time: '17:00',
-  appointment_email: '',
-};
+// Import refactored components
+import {
+  BasicInfoEditor,
+  SocialLinksEditor,
+  AppointmentSettings,
+  PaymentSettings,
+  ChatWidgetSettings,
+  NotificationSettings,
+  QRCodeSettings,
+  PhotoUploader,
+  TemplateSelector,
+  FormData,
+  initialFormData,
+} from '@/components/vcard-editor';
 
 export default function VCardEditor() {
   const { id } = useParams();
@@ -179,14 +36,7 @@ export default function VCardEditor() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [uploadingCover, setUploadingCover] = useState(false);
-  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [currentVcardId, setCurrentVcardId] = useState<string | null>(id || null);
-  
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
   const isEditing = !!id;
 
   useEffect(() => {
@@ -199,7 +49,6 @@ export default function VCardEditor() {
     if (id && user) {
       fetchVCard();
     } else if (user && !id) {
-      // For new cards, create a draft immediately so custom sections can work
       createDraftCard();
     }
   }, [id, user]);
@@ -223,7 +72,7 @@ export default function VCardEditor() {
           name: draftName,
           user_id: user.id,
           slug: generateSlug(draftName),
-          is_active: false, // Draft cards start as inactive
+          is_active: false,
         })
         .select()
         .single();
@@ -240,8 +89,7 @@ export default function VCardEditor() {
 
       if (data) {
         setCurrentVcardId(data.id);
-        setFormData(prev => ({ ...prev, name: '' })); // Clear name so user can enter their own
-        // Navigate to the edit URL so the ID is in the URL
+        setFormData(prev => ({ ...prev, name: '' }));
         navigate(`/vcard/${data.id}`, { replace: true });
       }
     } catch (error) {
@@ -286,7 +134,7 @@ export default function VCardEditor() {
         github_url: data.github_url || '',
         is_active: data.is_active ?? true,
         photo_url: data.photo_url || '',
-        cover_image_url: (data as any).cover_image_url || '',
+        cover_image_url: data.cover_image_url || '',
         qr_foreground_color: data.qr_foreground_color || '#000000',
         qr_background_color: data.qr_background_color || '#FFFFFF',
         qr_logo_url: data.qr_logo_url || '',
@@ -294,27 +142,25 @@ export default function VCardEditor() {
         notify_on_view: data.notify_on_view ?? false,
         notify_on_click: data.notify_on_click ?? false,
         slug: data.slug || '',
-        // Chat & Payment
-        whatsapp_number: (data as any).whatsapp_number || '',
-        telegram_username: (data as any).telegram_username || '',
-        chat_enabled: (data as any).chat_enabled ?? false,
-        payment_enabled: (data as any).payment_enabled ?? false,
-        payment_bkash: (data as any).payment_bkash || '',
-        payment_nagad: (data as any).payment_nagad || '',
-        payment_rocket: (data as any).payment_rocket || '',
-        payment_bank_details: (data as any).payment_bank_details || '',
-        payment_button_text: (data as any).payment_button_text || 'Send Payment / Donate',
-        // Appointment
-        appointment_enabled: (data as any).appointment_enabled ?? false,
-        appointment_title: (data as any).appointment_title || 'Book an Appointment',
-        appointment_description: (data as any).appointment_description || '',
-        appointment_duration_minutes: (data as any).appointment_duration_minutes || 30,
-        appointment_available_days: Array.isArray((data as any).appointment_available_days) 
-          ? (data as any).appointment_available_days 
+        whatsapp_number: data.whatsapp_number || '',
+        telegram_username: data.telegram_username || '',
+        chat_enabled: data.chat_enabled ?? false,
+        payment_enabled: data.payment_enabled ?? false,
+        payment_bkash: data.payment_bkash || '',
+        payment_nagad: data.payment_nagad || '',
+        payment_rocket: data.payment_rocket || '',
+        payment_bank_details: data.payment_bank_details || '',
+        payment_button_text: data.payment_button_text || 'Send Payment / Donate',
+        appointment_enabled: data.appointment_enabled ?? false,
+        appointment_title: data.appointment_title || 'Book an Appointment',
+        appointment_description: data.appointment_description || '',
+        appointment_duration_minutes: data.appointment_duration_minutes || 30,
+        appointment_available_days: Array.isArray(data.appointment_available_days) 
+          ? (data.appointment_available_days as string[])
           : ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-        appointment_start_time: (data as any).appointment_start_time || '09:00',
-        appointment_end_time: (data as any).appointment_end_time || '17:00',
-        appointment_email: (data as any).appointment_email || '',
+        appointment_start_time: data.appointment_start_time || '09:00',
+        appointment_end_time: data.appointment_end_time || '17:00',
+        appointment_email: data.appointment_email || '',
       });
       setCurrentVcardId(data.id);
     }
@@ -325,142 +171,8 @@ export default function VCardEditor() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: 'Invalid file',
-        description: 'Please upload an image file',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: 'File too large',
-        description: 'Please upload an image smaller than 5MB',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setUploadingPhoto(true);
-
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('profile-photos')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('profile-photos')
-        .getPublicUrl(fileName);
-
-      setFormData(prev => ({ ...prev, photo_url: publicUrl }));
-      
-      toast({
-        title: 'Photo uploaded',
-        description: 'Your profile photo has been uploaded successfully',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Upload failed',
-        description: error.message || 'Failed to upload photo',
-        variant: 'destructive',
-      });
-    } finally {
-      setUploadingPhoto(false);
-    }
-  };
-
-  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast({ title: 'Invalid file', description: 'Please upload an image file', variant: 'destructive' });
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'File too large', description: 'Please upload an image smaller than 5MB', variant: 'destructive' });
-      return;
-    }
-
-    setUploadingCover(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `covers/${user.id}/${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('profile-photos')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('profile-photos')
-        .getPublicUrl(fileName);
-
-      setFormData(prev => ({ ...prev, cover_image_url: publicUrl }));
-      toast({ title: 'Cover image uploaded successfully' });
-    } catch (error: any) {
-      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
-    } finally {
-      setUploadingCover(false);
-    }
-  };
-
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast({ title: 'Invalid file', description: 'Please upload an image file', variant: 'destructive' });
-      return;
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ title: 'File too large', description: 'Please upload an image smaller than 2MB', variant: 'destructive' });
-      return;
-    }
-
-    setUploadingLogo(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('qr-logos')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('qr-logos')
-        .getPublicUrl(fileName);
-
-      setFormData(prev => ({ ...prev, qr_logo_url: publicUrl }));
-      toast({ title: 'Logo uploaded successfully' });
-    } catch (error: any) {
-      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
-    } finally {
-      setUploadingLogo(false);
-    }
-  };
-
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     
     if (!formData.name.trim()) {
       toast({
@@ -474,14 +186,13 @@ export default function VCardEditor() {
     setSaving(true);
 
     try {
-      // Always update since we create a draft on new card
       if (currentVcardId) {
         const { error } = await supabase
           .from('vcards')
           .update({
             ...formData,
-            is_active: true, // Activate the card when saved
-            slug: generateSlug(formData.name), // Update slug with actual name
+            is_active: true,
+            slug: generateSlug(formData.name),
           })
           .eq('id', currentVcardId)
           .eq('user_id', user?.id);
@@ -528,7 +239,6 @@ export default function VCardEditor() {
           </button>
           
           <div className="flex items-center gap-2">
-            {/* Undo/Redo Buttons */}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -536,7 +246,6 @@ export default function VCardEditor() {
                     variant="ghost"
                     size="icon"
                     onClick={() => {
-                      // Simple undo by reloading - full undo/redo would need more refactoring
                       if (window.confirm('পরিবর্তনগুলো বাতিল করতে চান?')) {
                         window.location.reload();
                       }
@@ -552,7 +261,7 @@ export default function VCardEditor() {
             
             <Button 
               variant="secondary" 
-              onClick={handleSubmit}
+              onClick={() => handleSubmit()}
               disabled={saving}
               className="font-semibold"
             >
@@ -570,852 +279,98 @@ export default function VCardEditor() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            {isEditing ? 'Edit Business Card' : 'Create New Business Card'}
-          </h1>
-          <p className="text-muted-foreground mb-8">
-            Fill in your information to create a professional digital business card
-          </p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              {isEditing ? 'Edit Business Card' : 'Create New Business Card'}
+            </h1>
+            <p className="text-muted-foreground mb-8">
+              Fill in your information to create a professional digital business card
+            </p>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Profile Photo */}
-            <div className="bg-card rounded-2xl p-6 border border-border">
-              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                <Camera size={20} className="text-primary" />
-                Profile Photo
-              </h2>
-              <div className="flex items-center gap-6">
-                <div className="relative">
-                  <div className="w-24 h-24 rounded-full overflow-hidden bg-muted flex items-center justify-center border-2 border-border">
-                    {formData.photo_url ? (
-                      <img 
-                        src={formData.photo_url} 
-                        alt="Profile" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User size={32} className="text-muted-foreground" />
-                    )}
-                  </div>
-                  {uploadingPhoto && (
-                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                      <Loader2 size={24} className="animate-spin text-white" />
+            <Tabs defaultValue="content" className="w-full">
+              <TabsList className="mb-6">
+                <TabsTrigger value="content">Content & Design</TabsTrigger>
+                <TabsTrigger value="analytics" className="flex items-center gap-2">
+                  <BarChart3 size={14} />
+                  Analytics
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="content">
+                <form onSubmit={handleSubmit} className="space-y-8">
+                  {/* Photo Uploader */}
+                  <PhotoUploader 
+                    formData={formData} 
+                    onChange={handleChange} 
+                    userId={user?.id} 
+                  />
+
+                  {/* Basic Info */}
+                  <BasicInfoEditor formData={formData} onChange={handleChange} />
+
+                  {/* Social Links */}
+                  <SocialLinksEditor formData={formData} onChange={handleChange} />
+
+                  {/* QR Code */}
+                  <QRCodeSettings 
+                    formData={formData} 
+                    onChange={handleChange} 
+                    userId={user?.id} 
+                  />
+
+                  {/* Notifications */}
+                  <NotificationSettings formData={formData} onChange={handleChange} />
+
+                  {/* Chat Widget */}
+                  <ChatWidgetSettings formData={formData} onChange={handleChange} />
+
+                  {/* Payment */}
+                  <PaymentSettings formData={formData} onChange={handleChange} />
+
+                  {/* Appointment */}
+                  <AppointmentSettings 
+                    formData={formData} 
+                    onChange={handleChange} 
+                    currentVcardId={currentVcardId} 
+                  />
+
+                  {/* Template Selector */}
+                  <TemplateSelector 
+                    selectedTemplate={formData.template} 
+                    onChange={handleChange} 
+                  />
+
+                  {/* Custom Sections */}
+                  {currentVcardId && (
+                    <div className="bg-card rounded-2xl p-6 border border-border">
+                      <CustomSectionsEditor vcardId={currentVcardId} />
                     </div>
                   )}
-                </div>
-                <div className="flex-1">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handlePhotoUpload}
-                    accept="image/*"
-                    className="hidden"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingPhoto}
-                  >
-                    <Camera size={16} className="mr-2" />
-                    {uploadingPhoto ? 'Uploading...' : formData.photo_url ? 'Change Photo' : 'Upload Photo'}
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    JPG, PNG or GIF. Max 5MB.
-                  </p>
-                </div>
-              </div>
-            </div>
+                </form>
+              </TabsContent>
 
-            {/* Cover Image */}
-            <div className="bg-card rounded-2xl p-6 border border-border">
-              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                <Layout size={20} className="text-primary" />
-                Cover Image
-              </h2>
-              <div className="space-y-4">
-                {formData.cover_image_url ? (
-                  <div className="relative aspect-[3/1] rounded-xl overflow-hidden bg-muted border border-border">
-                    <img 
-                      src={formData.cover_image_url} 
-                      alt="Cover" 
-                      className="w-full h-full object-cover"
-                    />
-                    {uploadingCover && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <Loader2 size={24} className="animate-spin text-white" />
-                      </div>
-                    )}
-                  </div>
+              <TabsContent value="analytics">
+                {currentVcardId ? (
+                  <VCardAnalyticsDashboard vcardId={currentVcardId} />
                 ) : (
-                  <div className="aspect-[3/1] rounded-xl bg-muted border-2 border-dashed border-border flex items-center justify-center">
-                    <div className="text-center">
-                      <Layout size={32} className="mx-auto text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground">No cover image</p>
-                    </div>
+                  <div className="text-center py-12 text-muted-foreground">
+                    <BarChart3 size={48} className="mx-auto mb-4 opacity-50" />
+                    <p>Save your card first to see analytics</p>
                   </div>
                 )}
-                <div className="flex items-center gap-4">
-                  <input
-                    type="file"
-                    ref={coverInputRef}
-                    onChange={handleCoverUpload}
-                    accept="image/*"
-                    className="hidden"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => coverInputRef.current?.click()}
-                    disabled={uploadingCover}
-                  >
-                    <Camera size={16} className="mr-2" />
-                    {uploadingCover ? 'Uploading...' : formData.cover_image_url ? 'Change Cover' : 'Upload Cover'}
-                  </Button>
-                  {formData.cover_image_url && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => setFormData(prev => ({ ...prev, cover_image_url: '' }))}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      Remove
-                    </Button>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Recommended size: 1200x400px. Max 5MB. This will appear as a banner at the top of your card.
-                </p>
-              </div>
-            </div>
-
-            {/* Basic Info */}
-            <div className="bg-card rounded-2xl p-6 border border-border">
-              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                <User size={20} className="text-primary" />
-                Basic Information
-              </h2>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Full Name *
-                  </label>
-                  <Input
-                    placeholder="John Doe"
-                    value={formData.name}
-                    onChange={(e) => handleChange('name', e.target.value)}
-                    className="bg-background"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Job Title
-                  </label>
-                  <div className="relative">
-                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                    <Input
-                      placeholder="Senior Developer"
-                      value={formData.job_title}
-                      onChange={(e) => handleChange('job_title', e.target.value)}
-                      className="pl-10 bg-background"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Company
-                  </label>
-                  <div className="relative">
-                    <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                    <Input
-                      placeholder="Tech Solutions Inc."
-                      value={formData.company}
-                      onChange={(e) => handleChange('company', e.target.value)}
-                      className="pl-10 bg-background"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                    <Input
-                      type="email"
-                      placeholder="john@example.com"
-                      value={formData.email}
-                      onChange={(e) => handleChange('email', e.target.value)}
-                      className="pl-10 bg-background"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Phone
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                    <Input
-                      placeholder="+880 1XXX-XXXXXX"
-                      value={formData.phone}
-                      onChange={(e) => handleChange('phone', e.target.value)}
-                      className="pl-10 bg-background"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Website
-                  </label>
-                  <div className="relative">
-                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                    <Input
-                      placeholder="https://example.com"
-                      value={formData.website}
-                      onChange={(e) => handleChange('website', e.target.value)}
-                      className="pl-10 bg-background"
-                    />
-                  </div>
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Address
-                  </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-3 text-muted-foreground" size={16} />
-                    <Input
-                      placeholder="123 Business Street, Dhaka, Bangladesh"
-                      value={formData.address}
-                      onChange={(e) => handleChange('address', e.target.value)}
-                      className="pl-10 bg-background"
-                    />
-                  </div>
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Bio
-                  </label>
-                  <Textarea
-                    placeholder="A brief description about yourself or your business..."
-                    value={formData.bio}
-                    onChange={(e) => handleChange('bio', e.target.value)}
-                    className="bg-background resize-none"
-                    rows={3}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Social Links */}
-            <div className="bg-card rounded-2xl p-6 border border-border">
-              <h2 className="text-lg font-bold text-foreground mb-4">
-                Social Links
-              </h2>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="relative">
-                  <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                  <Input
-                    placeholder="LinkedIn URL"
-                    value={formData.linkedin_url}
-                    onChange={(e) => handleChange('linkedin_url', e.target.value)}
-                    className="pl-10 bg-background"
-                  />
-                </div>
-                <div className="relative">
-                  <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                  <Input
-                    placeholder="Twitter URL"
-                    value={formData.twitter_url}
-                    onChange={(e) => handleChange('twitter_url', e.target.value)}
-                    className="pl-10 bg-background"
-                  />
-                </div>
-                <div className="relative">
-                  <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                  <Input
-                    placeholder="Facebook URL"
-                    value={formData.facebook_url}
-                    onChange={(e) => handleChange('facebook_url', e.target.value)}
-                    className="pl-10 bg-background"
-                  />
-                </div>
-                <div className="relative">
-                  <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                  <Input
-                    placeholder="Instagram URL"
-                    value={formData.instagram_url}
-                    onChange={(e) => handleChange('instagram_url', e.target.value)}
-                    className="pl-10 bg-background"
-                  />
-                </div>
-                <div className="relative">
-                  <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                  <Input
-                    placeholder="YouTube URL"
-                    value={formData.youtube_url}
-                    onChange={(e) => handleChange('youtube_url', e.target.value)}
-                    className="pl-10 bg-background"
-                  />
-                </div>
-                <div className="relative">
-                  <Github className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                  <Input
-                    placeholder="GitHub URL"
-                    value={formData.github_url}
-                    onChange={(e) => handleChange('github_url', e.target.value)}
-                    className="pl-10 bg-background"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* QR Code Customization */}
-            <div className="bg-card rounded-2xl p-6 border border-border">
-              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                <QrCode size={20} className="text-primary" />
-                QR Code Customization
-              </h2>
-              <div className="grid sm:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Foreground Color
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={formData.qr_foreground_color}
-                      onChange={(e) => handleChange('qr_foreground_color', e.target.value)}
-                      className="w-12 h-12 rounded-lg border border-border cursor-pointer"
-                    />
-                    <Input
-                      value={formData.qr_foreground_color}
-                      onChange={(e) => handleChange('qr_foreground_color', e.target.value)}
-                      className="bg-background flex-1"
-                      placeholder="#000000"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Background Color
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={formData.qr_background_color}
-                      onChange={(e) => handleChange('qr_background_color', e.target.value)}
-                      className="w-12 h-12 rounded-lg border border-border cursor-pointer"
-                    />
-                    <Input
-                      value={formData.qr_background_color}
-                      onChange={(e) => handleChange('qr_background_color', e.target.value)}
-                      className="bg-background flex-1"
-                      placeholder="#FFFFFF"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* QR Logo Upload */}
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Logo Overlay (Optional)
-                </label>
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex items-center justify-center border border-border">
-                      {formData.qr_logo_url ? (
-                        <img 
-                          src={formData.qr_logo_url} 
-                          alt="QR Logo" 
-                          className="w-full h-full object-contain"
-                        />
-                      ) : (
-                        <QrCode size={24} className="text-muted-foreground" />
-                      )}
-                    </div>
-                    {uploadingLogo && (
-                      <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                        <Loader2 size={20} className="animate-spin text-white" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <input
-                      type="file"
-                      ref={logoInputRef}
-                      onChange={handleLogoUpload}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => logoInputRef.current?.click()}
-                      disabled={uploadingLogo}
-                    >
-                      {uploadingLogo ? 'Uploading...' : formData.qr_logo_url ? 'Change Logo' : 'Upload Logo'}
-                    </Button>
-                    {formData.qr_logo_url && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="ml-2 text-destructive"
-                        onClick={() => handleChange('qr_logo_url', '')}
-                      >
-                        Remove
-                      </Button>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Add your logo to the center of the QR code. Max 2MB.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <p className="text-xs text-muted-foreground mt-4">
-                Customize your QR code colors and add a logo to match your brand identity.
-              </p>
-            </div>
-
-            {/* Notification Settings */}
-            <div className="bg-card rounded-2xl p-6 border border-border">
-              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                <Bell size={20} className="text-primary" />
-                Email Notifications
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Notification Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                    <Input
-                      type="email"
-                      placeholder="your@email.com"
-                      value={formData.notification_email}
-                      onChange={(e) => handleChange('notification_email', e.target.value)}
-                      className="pl-10 bg-background"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Receive notifications when someone interacts with your card.
-                  </p>
-                </div>
-                <div className="flex items-center gap-6">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.notify_on_view}
-                      onChange={(e) => handleChange('notify_on_view', e.target.checked)}
-                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-                    />
-                    <span className="text-sm text-foreground">Notify on card view</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.notify_on_click}
-                      onChange={(e) => handleChange('notify_on_click', e.target.checked)}
-                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-                    />
-                    <span className="text-sm text-foreground">Notify on link click</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Live Chat Widget Settings */}
-            <div className="bg-card rounded-2xl p-6 border border-border">
-              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                <MessageCircle size={20} className="text-primary" />
-                Live Chat Widget
-              </h2>
-              <div className="space-y-4">
-                <label className="flex items-center gap-3 cursor-pointer p-3 bg-muted/50 rounded-xl">
-                  <input
-                    type="checkbox"
-                    checked={formData.chat_enabled}
-                    onChange={(e) => handleChange('chat_enabled', e.target.checked)}
-                    className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
-                  />
-                  <div>
-                    <span className="text-sm font-medium text-foreground">Enable Chat Widget</span>
-                    <p className="text-xs text-muted-foreground">Show floating WhatsApp/Telegram buttons on your card</p>
-                  </div>
-                </label>
-                
-                {formData.chat_enabled && (
-                  <div className="space-y-4 pt-2">
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        WhatsApp Number
-                      </label>
-                      <div className="relative">
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">W</span>
-                        </div>
-                        <Input
-                          placeholder="+880 1XXXXXXXXX"
-                          value={formData.whatsapp_number}
-                          onChange={(e) => handleChange('whatsapp_number', e.target.value)}
-                          className="pl-11 bg-background"
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">Include country code (e.g., +880)</p>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Telegram Username
-                      </label>
-                      <div className="relative">
-                        <Send className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" size={16} />
-                        <Input
-                          placeholder="@yourusername"
-                          value={formData.telegram_username}
-                          onChange={(e) => handleChange('telegram_username', e.target.value)}
-                          className="pl-10 bg-background"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Payment/Donation Settings */}
-            <div className="bg-card rounded-2xl p-6 border border-border">
-              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                <Wallet size={20} className="text-primary" />
-                Payment / Donation
-              </h2>
-              <div className="space-y-4">
-                <label className="flex items-center gap-3 cursor-pointer p-3 bg-muted/50 rounded-xl">
-                  <input
-                    type="checkbox"
-                    checked={formData.payment_enabled}
-                    onChange={(e) => handleChange('payment_enabled', e.target.checked)}
-                    className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
-                  />
-                  <div>
-                    <span className="text-sm font-medium text-foreground">Enable Payment Button</span>
-                    <p className="text-xs text-muted-foreground">Let visitors send you payments or donations</p>
-                  </div>
-                </label>
-                
-                {formData.payment_enabled && (
-                  <div className="space-y-4 pt-2">
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Button Text
-                      </label>
-                      <Input
-                        placeholder="Send Payment / Donate"
-                        value={formData.payment_button_text}
-                        onChange={(e) => handleChange('payment_button_text', e.target.value)}
-                        className="bg-background"
-                      />
-                    </div>
-                    
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          bKash Number
-                        </label>
-                        <div className="relative">
-                          <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-pink-500 flex items-center justify-center">
-                            <span className="text-white text-xs font-bold">b</span>
-                          </div>
-                          <Input
-                            placeholder="01XXXXXXXXX"
-                            value={formData.payment_bkash}
-                            onChange={(e) => handleChange('payment_bkash', e.target.value)}
-                            className="pl-11 bg-background"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          Nagad Number
-                        </label>
-                        <div className="relative">
-                          <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
-                            <span className="text-white text-xs font-bold">N</span>
-                          </div>
-                          <Input
-                            placeholder="01XXXXXXXXX"
-                            value={formData.payment_nagad}
-                            onChange={(e) => handleChange('payment_nagad', e.target.value)}
-                            className="pl-11 bg-background"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          Rocket Number
-                        </label>
-                        <div className="relative">
-                          <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center">
-                            <span className="text-white text-xs font-bold">R</span>
-                          </div>
-                          <Input
-                            placeholder="01XXXXXXXXX"
-                            value={formData.payment_rocket}
-                            onChange={(e) => handleChange('payment_rocket', e.target.value)}
-                            className="pl-11 bg-background"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Bank Details (Optional)
-                      </label>
-                      <Textarea
-                        placeholder="Bank: XYZ Bank&#10;Account: 1234567890&#10;Branch: Dhaka"
-                        value={formData.payment_bank_details}
-                        onChange={(e) => handleChange('payment_bank_details', e.target.value)}
-                        className="bg-background"
-                        rows={3}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Appointment Booking Settings */}
-            <div className="bg-card rounded-2xl p-6 border border-border">
-              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                <Calendar size={20} className="text-primary" />
-                Appointment Booking
-              </h2>
-              
-              <Tabs defaultValue="settings" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="settings" className="flex items-center gap-2">
-                    <Calendar size={14} />
-                    Settings
-                  </TabsTrigger>
-                  <TabsTrigger value="bookings" className="flex items-center gap-2">
-                    <CalendarDays size={14} />
-                    Bookings
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="settings">
-                  <div className="space-y-4">
-                    <label className="flex items-center gap-3 cursor-pointer p-3 bg-muted/50 rounded-xl">
-                      <input
-                        type="checkbox"
-                        checked={formData.appointment_enabled}
-                        onChange={(e) => handleChange('appointment_enabled', e.target.checked)}
-                        className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
-                      />
-                      <div>
-                        <span className="text-sm font-medium text-foreground">Enable Appointment Booking</span>
-                        <p className="text-xs text-muted-foreground">Let visitors schedule meetings with you</p>
-                      </div>
-                    </label>
-                    
-                    {formData.appointment_enabled && (
-                      <div className="space-y-4 pt-2">
-                        <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">
-                            Button Text
-                          </label>
-                          <Input
-                            placeholder="Book an Appointment"
-                            value={formData.appointment_title}
-                            onChange={(e) => handleChange('appointment_title', e.target.value)}
-                            className="bg-background"
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">
-                            Description (Optional)
-                          </label>
-                          <Textarea
-                            placeholder="Schedule a free consultation..."
-                            value={formData.appointment_description}
-                            onChange={(e) => handleChange('appointment_description', e.target.value)}
-                            className="bg-background"
-                            rows={2}
-                          />
-                        </div>
-                        
-                        <div className="grid sm:grid-cols-3 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">
-                              Duration (minutes)
-                            </label>
-                            <select
-                              value={formData.appointment_duration_minutes}
-                              onChange={(e) => handleChange('appointment_duration_minutes', e.target.value)}
-                              className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                            >
-                              <option value={15}>15 min</option>
-                              <option value={30}>30 min</option>
-                              <option value={45}>45 min</option>
-                              <option value={60}>1 hour</option>
-                              <option value={90}>1.5 hours</option>
-                              <option value={120}>2 hours</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">
-                              Start Time
-                            </label>
-                            <Input
-                              type="time"
-                              value={formData.appointment_start_time}
-                              onChange={(e) => handleChange('appointment_start_time', e.target.value)}
-                              className="bg-background"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">
-                              End Time
-                            </label>
-                            <Input
-                              type="time"
-                              value={formData.appointment_end_time}
-                              onChange={(e) => handleChange('appointment_end_time', e.target.value)}
-                              className="bg-background"
-                            />
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">
-                            Notification Email
-                          </label>
-                          <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                            <Input
-                              type="email"
-                              placeholder="Receive booking notifications at..."
-                              value={formData.appointment_email}
-                              onChange={(e) => handleChange('appointment_email', e.target.value)}
-                              className="pl-10 bg-background"
-                            />
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Get notified when someone books an appointment
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="bookings">
-                  {currentVcardId ? (
-                    <AppointmentDashboard vcardId={currentVcardId} />
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <List size={32} className="mx-auto mb-2 opacity-50" />
-                      <p>Save your card first to see appointments</p>
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
-            </div>
-
-            <div className="bg-card rounded-2xl p-6 border border-border">
-              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                <Eye size={20} className="text-primary" />
-                Choose Template
-              </h2>
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-4">
-                {templates.map((template) => (
-                  <motion.button
-                    key={template.id}
-                    type="button"
-                    onClick={() => handleChange('template', template.id)}
-                    className={`relative aspect-[3/4] rounded-xl overflow-hidden border-2 transition-all ${
-                      formData.template === template.id
-                        ? 'border-primary ring-2 ring-primary/30'
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <img
-                      src={template.image}
-                      alt={template.name}
-                      className="w-full h-full object-cover object-top"
-                    />
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-foreground/80 to-transparent p-2">
-                      <span className="text-xs font-medium text-primary-foreground">
-                        {template.name}
-                      </span>
-                    </div>
-                    {formData.template === template.id && (
-                      <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                        <svg className="w-3 h-3 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    )}
-                  </motion.button>
-                ))}
-              </div>
-            </div>
-
-            {/* Custom Sections - Only show when editing or after card is created */}
-            {currentVcardId && (
-              <div className="bg-card rounded-2xl p-6 border border-border">
-                <div className="flex items-center gap-2 mb-6">
-                  <Layout size={20} className="text-primary" />
-                  <h2 className="text-lg font-bold text-foreground">Landing Page Sections</h2>
-                </div>
-                <CustomSectionsEditor vcardId={currentVcardId} />
-              </div>
-            )}
-
-            {/* Analytics Dashboard */}
-            {currentVcardId && isEditing && (
-              <div className="bg-card rounded-2xl p-6 border border-border">
-                <VCardAnalyticsDashboard vcardId={currentVcardId} />
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <div className="flex justify-end gap-4">
-              <Button 
-                type="button"
-                variant="outline" 
-                onClick={() => navigate('/dashboard')}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit"
-                variant="secondary" 
-                disabled={saving}
-                className="font-semibold"
-              >
-                <Save size={18} className="mr-2" />
-                {saving ? 'Saving...' : isEditing ? 'Update Card' : 'Create Card'}
-              </Button>
-            </div>
-          </form>
+              </TabsContent>
+            </Tabs>
           </motion.div>
 
-          {/* Preview Section - Desktop Only */}
+          {/* Preview Section */}
           <div className="hidden lg:block">
-            <VCardPreview formData={formData} />
+            <div className="sticky top-24">
+              <h3 className="text-sm font-medium text-muted-foreground mb-3">Live Preview</h3>
+              <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-lg">
+                <div className="max-h-[600px] overflow-auto">
+                  <VCardPreview formData={formData} />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>
