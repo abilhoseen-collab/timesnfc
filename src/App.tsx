@@ -27,6 +27,8 @@ import DoctorPublic from "./pages/templates/DoctorPublic";
 import RealEstatePublic from "./pages/templates/RealEstatePublic";
 import LandingPageBuilder from "./pages/LandingPageBuilder";
 import LandingPagePublic from "./pages/LandingPagePublic";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +44,8 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/vcard/new" element={<VCardEditor />} />
