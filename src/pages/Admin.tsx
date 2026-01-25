@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import HomePageContentManager from '@/components/admin/HomePageContentManager';
 import PackageManager from '@/components/admin/PackageManager';
 import DashboardOverview from '@/components/admin/DashboardOverview';
+import PaymentSettingsManager from '@/components/admin/PaymentSettingsManager';
 import { 
   ArrowLeft,
   CheckCircle,
@@ -112,7 +113,7 @@ export default function Admin() {
   const { toast } = useToast();
 
   // Tab management
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'subscriptions' | 'nfc-orders' | 'upgrades' | 'users' | 'settings' | 'homepage' | 'packages'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'subscriptions' | 'nfc-orders' | 'upgrades' | 'users' | 'settings' | 'homepage' | 'packages' | 'payment-settings'>('dashboard');
 
   // Subscriptions state
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -926,6 +927,17 @@ export default function Admin() {
               <Package size={18} />
               Packages
             </button>
+            <button
+              onClick={() => { setActiveTab('payment-settings'); }}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${
+                activeTab === 'payment-settings'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-card border border-border text-foreground hover:bg-accent'
+              }`}
+            >
+              <CreditCard size={18} />
+              Payment Settings
+            </button>
           </div>
 
           {/* Stats */}
@@ -1003,6 +1015,10 @@ export default function Admin() {
           ) : activeTab === 'homepage' ? (
             <div className="bg-card rounded-2xl border border-border p-6">
               <HomePageContentManager />
+            </div>
+          ) : activeTab === 'payment-settings' ? (
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <PaymentSettingsManager />
             </div>
           ) : activeTab === 'users' ? (
             <div className="space-y-4">

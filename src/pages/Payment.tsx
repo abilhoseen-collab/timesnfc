@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { usePaymentSettings } from '@/hooks/usePaymentSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -29,44 +30,6 @@ interface Package {
   features: string[];
 }
 
-const paymentMethods = [
-  {
-    id: 'bkash',
-    name: 'bKash',
-    color: 'bg-pink-500',
-    number: '01XXXXXXXXX',
-    type: 'Send Money',
-    instructions: 'Send money to the number above and provide transaction ID',
-  },
-  {
-    id: 'nagad',
-    name: 'Nagad',
-    color: 'bg-orange-500',
-    number: '01XXXXXXXXX',
-    type: 'Send Money',
-    instructions: 'Send money to the number above and provide transaction ID',
-  },
-  {
-    id: 'rocket',
-    name: 'Rocket',
-    color: 'bg-purple-600',
-    number: '01XXXXXXXXX',
-    type: 'Send Money',
-    instructions: 'Send money to the number above and provide transaction ID',
-  },
-  {
-    id: 'bank',
-    name: 'Bank Transfer',
-    color: 'bg-blue-600',
-    bankName: 'Your Bank Name',
-    accountName: 'Account Holder Name',
-    accountNumber: 'XXXXXXXXXXXX',
-    routingNumber: 'XXXXXXXXX',
-    branch: 'Branch Name',
-    instructions: 'Transfer to the bank account and provide transaction details',
-  },
-];
-
 const paymentSchema = z.object({
   transaction_id: z.string().min(4, 'Transaction ID must be at least 4 characters').max(50),
   sender_number: z.string().optional(),
@@ -81,7 +44,10 @@ export default function Payment() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { getPaymentMethods, loading: paymentSettingsLoading } = usePaymentSettings();
 
+  const paymentMethods = getPaymentMethods();
+  
   const [packages, setPackages] = useState<Package[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
