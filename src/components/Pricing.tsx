@@ -5,59 +5,54 @@ import { useNavigate } from "react-router-dom";
 
 const plans = [
   {
-    name: "Starter",
-    price: "৳0",
-    period: "/month",
-    description: "Perfect for individuals getting started",
+    name: "Basic",
+    price: "৳49",
+    period: "/মাস",
+    description: "ব্যক্তিগত ব্যবহারের জন্য উপযুক্ত",
     features: [
-      "1 Business Card",
-      "2 Team Members",
-      "1GB Storage",
-      "Basic Analytics",
-      "QR Code Generation",
-      "Email Support",
+      "১টি বিজনেস কার্ড",
+      "বেসিক এনালিটিক্স",
+      "QR কোড জেনারেশন",
+      "ইমেইল সাপোর্ট",
     ],
     popular: false,
-    buttonText: "Get Started Free",
+    buttonText: "এখনই কিনুন",
     buttonVariant: "outline" as const,
   },
   {
     name: "Professional",
     price: "৳99",
-    period: "/month",
-    description: "Best for growing professionals",
+    period: "/মাস",
+    description: "পেশাদারদের জন্য সেরা",
     features: [
-      "5 Business Cards",
-      "10 Team Members",
-      "10GB Storage",
-      "Advanced Analytics",
-      "NFC Technology",
-      "PWA Support",
-      "Custom Domain",
-      "Priority Support",
+      "৫টি বিজনেস কার্ড",
+      "অ্যাডভান্সড এনালিটিক্স",
+      "NFC টেকনোলজি",
+      "PWA সাপোর্ট",
+      "কাস্টম ডোমেইন",
+      "প্রায়োরিটি সাপোর্ট",
     ],
     popular: true,
-    buttonText: "Start Free Trial",
+    buttonText: "এখনই কিনুন",
     buttonVariant: "secondary" as const,
   },
   {
     name: "Premium",
     price: "৳150",
-    period: "/month",
-    description: "For enterprises and large teams",
+    period: "/মাস",
+    description: "এন্টারপ্রাইজ ও বড় টিমের জন্য",
     features: [
-      "Unlimited Business Cards",
-      "Unlimited Team Members",
-      "100GB Storage",
-      "AI Integration",
-      "Password Protection",
-      "Custom CSS/JS",
-      "White Label",
-      "Dedicated Support",
-      "API Access",
+      "আনলিমিটেড বিজনেস কার্ড",
+      "আনলিমিটেড টিম মেম্বার",
+      "১০০GB স্টোরেজ",
+      "AI ইন্টিগ্রেশন",
+      "পাসওয়ার্ড প্রটেকশন",
+      "কাস্টম CSS/JS",
+      "হোয়াইট লেবেল",
+      "ডেডিকেটেড সাপোর্ট",
     ],
     popular: false,
-    buttonText: "Contact Sales",
+    buttonText: "যোগাযোগ করুন",
     buttonVariant: "outline" as const,
   },
 ];
@@ -86,11 +81,8 @@ export function Pricing() {
   const navigate = useNavigate();
 
   const handlePlanClick = (planName: string) => {
-    if (planName === 'Starter') {
-      navigate('/auth');
-    } else if (planName === 'Professional' || planName === 'Premium') {
-      navigate('/payment');
-    }
+    // All plans now require payment
+    navigate('/payment');
   };
   
   return (

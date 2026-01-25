@@ -6,12 +6,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { getUserFriendlyError } from '@/lib/errorHandler';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Undo2, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Save, Undo2, BarChart3, AlertCircle } from 'lucide-react';
 import CustomSectionsEditor from '@/components/CustomSectionsEditor';
 import VCardPreview from '@/components/vcard/VCardPreview';
 import VCardAnalyticsDashboard from '@/components/vcard/VCardAnalyticsDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // Import refactored components
 import {
@@ -37,7 +38,40 @@ export default function VCardEditor() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [currentVcardId, setCurrentVcardId] = useState<string | null>(id || null);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean | null>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState(true);
   const isEditing = !!id;
+
+  // Check for active subscription
+  useEffect(() => {
+    const checkSubscription = async () => {
+      if (!user) {
+        setCheckingSubscription(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('id, status, expires_at')
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && data && data.expires_at) {
+        const isActive = new Date(data.expires_at) > new Date();
+        setHasActiveSubscription(isActive);
+      } else {
+        setHasActiveSubscription(false);
+      }
+      setCheckingSubscription(false);
+    };
+
+    if (user) {
+      checkSubscription();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -45,13 +79,25 @@ export default function VCardEditor() {
     }
   }, [user, authLoading, navigate]);
 
+  // Redirect to payment if no active subscription (only for new cards)
   useEffect(() => {
-    if (id && user) {
+    if (!checkingSubscription && hasActiveSubscription === false && !isEditing) {
+      toast({
+        title: 'সাবস্ক্রিপশন প্রয়োজন',
+        description: 'কার্ড তৈরি করতে একটি প্যাকেজ কিনুন।',
+        variant: 'destructive',
+      });
+      navigate('/payment');
+    }
+  }, [checkingSubscription, hasActiveSubscription, isEditing, navigate, toast]);
+
+  useEffect(() => {
+    if (id && user && hasActiveSubscription) {
       fetchVCard();
-    } else if (user && !id) {
+    } else if (user && !id && hasActiveSubscription) {
       createDraftCard();
     }
-  }, [id, user]);
+  }, [id, user, hasActiveSubscription]);
 
   const generateSlug = (name: string) => {
     return name
@@ -217,10 +263,29 @@ export default function VCardEditor() {
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading || loading || checkingSubscription) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Show subscription required message if trying to access without subscription
+  if (hasActiveSubscription === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center p-8 max-w-md">
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              কার্ড তৈরি বা এডিট করতে সক্রিয় সাবস্ক্রিপশন প্রয়োজন।
+            </AlertDescription>
+          </Alert>
+          <Button variant="secondary" onClick={() => navigate('/payment')}>
+            প্যাকেজ কিনুন
+          </Button>
+        </div>
       </div>
     );
   }

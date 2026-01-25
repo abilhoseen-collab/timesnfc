@@ -106,7 +106,7 @@ export function Hero() {
                   className="text-base font-semibold px-8 py-6"
                   onClick={() => navigate('/auth')}
                 >
-                  Start Free Trial
+                  শুরু করুন
                 </Button>
               </motion.div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
