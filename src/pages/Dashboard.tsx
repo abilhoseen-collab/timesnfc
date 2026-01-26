@@ -62,6 +62,7 @@ import { useToast } from '@/hooks/use-toast';
 import logo from '@/assets/logo.png';
 import UpgradePackageForm from '@/components/UpgradePackageForm';
 import AnalyticsExport from '@/components/dashboard/AnalyticsExport';
+import { UsageLimitsCard } from '@/components/dashboard/UsageLimitsCard';
 
 interface LandingPage {
   id: string;
@@ -701,6 +702,7 @@ export default function Dashboard() {
                           userId={user!.id}
                           currentSubscriptionId={subscription.id}
                           currentPackageName={subscription.package_name}
+                          currentExpiresAt={subscription.expires_at || undefined}
                           onSuccess={fetchSubscription}
                         />
                       )}
@@ -757,13 +759,23 @@ export default function Dashboard() {
           )}
         </motion.div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid with Usage Limits */}
         <motion.div 
-          className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+          className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
+          {/* Usage Limits Card - First */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="lg:row-span-2"
+          >
+            <UsageLimitsCard />
+          </motion.div>
+          
           {stats.map((stat, index) => (
             <motion.div
               key={stat.label}
