@@ -6,7 +6,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { getUserFriendlyError } from '@/lib/errorHandler';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Undo2, BarChart3, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Save, Undo2, BarChart3, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import CustomSectionsEditor from '@/components/CustomSectionsEditor';
 import VCardPreview from '@/components/vcard/VCardPreview';
 import VCardAnalyticsDashboard from '@/components/vcard/VCardAnalyticsDashboard';
@@ -237,8 +239,7 @@ export default function VCardEditor() {
           .from('vcards')
           .update({
             ...formData,
-            is_active: true,
-            slug: generateSlug(formData.name),
+            slug: formData.slug || generateSlug(formData.name),
           })
           .eq('id', currentVcardId)
           .eq('user_id', user?.id);
@@ -303,7 +304,34 @@ export default function VCardEditor() {
             <span className="hidden sm:inline">ড্যাশবোর্ডে ফিরুন</span>
           </button>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            {/* Publish Toggle */}
+            <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-lg">
+              <Switch
+                id="is_active"
+                checked={formData.is_active}
+                onCheckedChange={(checked) => handleChange('is_active', checked)}
+              />
+              <Label 
+                htmlFor="is_active" 
+                className={`text-sm font-medium flex items-center gap-1.5 cursor-pointer ${
+                  formData.is_active ? 'text-green-600' : 'text-muted-foreground'
+                }`}
+              >
+                {formData.is_active ? (
+                  <>
+                    <Eye size={14} />
+                    <span className="hidden sm:inline">Published</span>
+                  </>
+                ) : (
+                  <>
+                    <EyeOff size={14} />
+                    <span className="hidden sm:inline">Draft</span>
+                  </>
+                )}
+              </Label>
+            </div>
+            
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>

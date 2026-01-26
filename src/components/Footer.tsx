@@ -35,7 +35,7 @@ const footerLinks = {
     links: [
       { name: "Privacy Policy", href: "#contact", placeholder: true },
       { name: "Terms of Service", href: "#contact", placeholder: true },
-      { name: "Refund Policy", href: "#contact", placeholder: true },
+      { name: "Refund Policy", href: "/refund-policy" },
       { name: "Shipping Policy", href: "#contact", placeholder: true },
     ],
   },
