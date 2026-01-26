@@ -665,8 +665,59 @@ export default function Admin() {
     setShowUpgradeModal(true);
   };
 
+  // Calculate expected pro-rated amount for validation
+  const calculateExpectedProRated = (upgrade: any): { 
+    expectedAmount: number; 
+    daysRemaining: number; 
+    creditAmount: number;
+    isValid: boolean;
+    difference: number;
+  } | null => {
+    if (!upgrade.current_subscription_id) {
+      return { expectedAmount: upgrade.packages?.price || upgrade.amount, daysRemaining: 0, creditAmount: 0, isValid: true, difference: 0 };
+    }
+
+    // Find current subscription details
+    const currentSub = subscriptions.find(s => s.id === upgrade.current_subscription_id);
+    if (!currentSub || !currentSub.expires_at) {
+      return { expectedAmount: upgrade.packages?.price || upgrade.amount, daysRemaining: 0, creditAmount: 0, isValid: true, difference: 0 };
+    }
+
+    const now = new Date();
+    const expiresAt = new Date(currentSub.expires_at);
+    const daysRemaining = Math.max(0, Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+
+    if (daysRemaining <= 0) {
+      const expected = upgrade.packages?.price || 0;
+      return { expectedAmount: expected, daysRemaining: 0, creditAmount: 0, isValid: Math.abs(upgrade.amount - expected) <= 50, difference: upgrade.amount - expected };
+    }
+
+    // Calculate daily rate of current package
+    const currentPackagePrice = currentSub.packages?.duration_days ? (currentSub.amount / currentSub.packages.duration_days) : 0;
+    const creditAmount = Math.round(currentPackagePrice * daysRemaining);
+    const expectedAmount = Math.max(0, (upgrade.packages?.price || 0) - creditAmount);
+    
+    // Allow ৳50 tolerance for rounding differences
+    const difference = upgrade.amount - expectedAmount;
+    const isValid = Math.abs(difference) <= 50;
+
+    return { expectedAmount, daysRemaining, creditAmount, isValid, difference };
+  };
+
   const handleApproveUpgrade = async (upgrade: any) => {
     setProcessing(true);
+
+    // Validate pro-rated amount
+    const validation = calculateExpectedProRated(upgrade);
+    if (validation && !validation.isValid) {
+      toast({ 
+        title: 'পেমেন্ট ভ্যালিডেশন ব্যর্থ', 
+        description: `প্রত্যাশিত: ৳${validation.expectedAmount}, প্রাপ্ত: ৳${upgrade.amount} (পার্থক্য: ৳${Math.abs(validation.difference)})`,
+        variant: 'destructive' 
+      });
+      setProcessing(false);
+      return;
+    }
 
     // Calculate new expiry date based on target package duration
     const expiresAt = new Date();
@@ -1697,6 +1748,51 @@ export default function Admin() {
                   </div>
                 )}
               </div>
+
+              {/* Pro-rated Validation Info */}
+              {selectedUpgrade.status === 'pending' && (() => {
+                const validation = calculateExpectedProRated(selectedUpgrade);
+                if (!validation) return null;
+                return (
+                  <div className={`p-4 rounded-lg border ${validation.isValid ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      {validation.isValid ? (
+                        <CheckCircle size={16} className="text-green-600" />
+                      ) : (
+                        <XCircle size={16} className="text-red-600" />
+                      )}
+                      <span className={`font-medium text-sm ${validation.isValid ? 'text-green-700' : 'text-red-700'}`}>
+                        প্রো-রেটেড ভ্যালিডেশন
+                      </span>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">টার্গেট প্যাকেজ মূল্য:</span>
+                        <span className="font-medium">৳{selectedUpgrade.packages?.price || 0}</span>
+                      </div>
+                      {validation.daysRemaining > 0 && (
+                        <div className="flex justify-between text-green-600">
+                          <span>ক্রেডিট ({validation.daysRemaining} দিন বাকি):</span>
+                          <span>- ৳{validation.creditAmount}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-medium border-t pt-1 mt-1">
+                        <span>প্রত্যাশিত পেমেন্ট:</span>
+                        <span className="text-primary">৳{validation.expectedAmount}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>প্রাপ্ত পেমেন্ট:</span>
+                        <span className={validation.isValid ? 'text-green-600' : 'text-red-600'}>৳{selectedUpgrade.amount}</span>
+                      </div>
+                      {!validation.isValid && (
+                        <p className="text-xs text-red-600 mt-2">
+                          ⚠️ পেমেন্ট পার্থক্য: ৳{Math.abs(validation.difference)} - ৫০ টাকার বেশি পার্থক্য গ্রহণযোগ্য নয়
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {selectedUpgrade.payment_screenshot_url && (
                 <div>
