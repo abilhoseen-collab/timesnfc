@@ -507,8 +507,10 @@ export type Database = {
           features: Json | null
           id: string
           is_active: boolean | null
+          landing_page_limit: number
           name: string
           price: number
+          vcard_limit: number
         }
         Insert: {
           created_at?: string
@@ -517,8 +519,10 @@ export type Database = {
           features?: Json | null
           id?: string
           is_active?: boolean | null
+          landing_page_limit?: number
           name: string
           price: number
+          vcard_limit?: number
         }
         Update: {
           created_at?: string
@@ -527,8 +531,10 @@ export type Database = {
           features?: Json | null
           id?: string
           is_active?: boolean | null
+          landing_page_limit?: number
           name?: string
           price?: number
+          vcard_limit?: number
         }
         Relationships: []
       }

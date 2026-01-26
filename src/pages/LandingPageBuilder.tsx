@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -198,6 +199,14 @@ export default function LandingPageBuilder() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { 
+    canCreateLandingPage, 
+    currentLandingPages, 
+    landingPageLimit, 
+    hasActiveSubscription, 
+    isLoading: limitsLoading,
+    packageName 
+  } = useSubscriptionLimits();
   
   const [landingPage, setLandingPage] = useState<LandingPage | null>(null);
   const [sections, setSections] = useState<LandingPageSection[]>([]);
@@ -205,8 +214,6 @@ export default function LandingPageBuilder() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('sections');
   const [showAddSection, setShowAddSection] = useState(false);
-  const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean | null>(null);
-  const [checkingSubscription, setCheckingSubscription] = useState(true);
   const isEditing = !!id;
 
   // DnD sensors
@@ -221,37 +228,6 @@ export default function LandingPageBuilder() {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
 
-  // Check for active subscription
-  useEffect(() => {
-    const checkSubscription = async () => {
-      if (!user) {
-        setCheckingSubscription(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('id, status, expires_at')
-        .eq('user_id', user.id)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (!error && data && data.expires_at) {
-        const isActive = new Date(data.expires_at) > new Date();
-        setHasActiveSubscription(isActive);
-      } else {
-        setHasActiveSubscription(false);
-      }
-      setCheckingSubscription(false);
-    };
-
-    if (user) {
-      checkSubscription();
-    }
-  }, [user]);
-
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
@@ -260,7 +236,7 @@ export default function LandingPageBuilder() {
 
   // Redirect to payment if no active subscription (only for new pages)
   useEffect(() => {
-    if (!checkingSubscription && hasActiveSubscription === false && !isEditing) {
+    if (!limitsLoading && !hasActiveSubscription && !isEditing) {
       toast({
         title: 'সাবস্ক্রিপশন প্রয়োজন',
         description: 'ল্যান্ডিং পেইজ তৈরি করতে একটি প্যাকেজ কিনুন।',
@@ -268,15 +244,27 @@ export default function LandingPageBuilder() {
       });
       navigate('/payment');
     }
-  }, [checkingSubscription, hasActiveSubscription, isEditing, navigate, toast]);
+  }, [limitsLoading, hasActiveSubscription, isEditing, navigate, toast]);
+
+  // Check limits for new landing pages
+  useEffect(() => {
+    if (!limitsLoading && hasActiveSubscription && !isEditing && !canCreateLandingPage) {
+      toast({
+        title: 'লিমিট শেষ',
+        description: `আপনার ${packageName} প্ল্যানে সর্বোচ্চ ${landingPageLimit}টি ল্যান্ডিং পেইজ তৈরি করা যায়। বর্তমানে ${currentLandingPages}টি আছে।`,
+        variant: 'destructive',
+      });
+      navigate('/dashboard');
+    }
+  }, [limitsLoading, hasActiveSubscription, isEditing, canCreateLandingPage, landingPageLimit, currentLandingPages, packageName, navigate, toast]);
 
   useEffect(() => {
     if (user && id && hasActiveSubscription) {
       fetchLandingPage();
-    } else if (user && !id && hasActiveSubscription) {
+    } else if (user && !id && hasActiveSubscription && canCreateLandingPage) {
       setLoading(false);
     }
-  }, [user, id, hasActiveSubscription]);
+  }, [user, id, hasActiveSubscription, canCreateLandingPage]);
 
   const fetchLandingPage = async () => {
     setLoading(true);
@@ -560,7 +548,7 @@ export default function LandingPageBuilder() {
     toast({ title: 'URL copied!' });
   };
 
-  if (authLoading || loading || checkingSubscription) {
+  if (authLoading || loading || limitsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
