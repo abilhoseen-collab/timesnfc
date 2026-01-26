@@ -668,9 +668,19 @@ export default function Dashboard() {
                         )}
                         
                         {subscription.status === 'rejected' && (
-                          <p className="text-sm text-red-600">
-                            পেমেন্ট প্রত্যাখ্যাত হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।
-                          </p>
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-2">
+                            <p className="text-sm text-red-700 font-medium mb-2">
+                              ❌ পেমেন্ট প্রত্যাখ্যাত হয়েছে
+                            </p>
+                            <div className="text-xs text-red-600 space-y-1">
+                              <p>📋 <strong>রিফান্ড প্রসেস:</strong></p>
+                              <ul className="list-disc list-inside ml-2 space-y-0.5">
+                                <li>ভুল ট্রান্সেকশন আইডি বা তথ্য থাকলে পুনরায় সঠিক তথ্য দিয়ে পেমেন্ট করুন</li>
+                                <li>টাকা কেটে গেলে আমাদের সাথে যোগাযোগ করুন - ৩-৫ কার্যদিবসে রিফান্ড পাবেন</li>
+                                <li>যোগাযোগ: support@timescard.com বা WhatsApp: 01815726006</li>
+                              </ul>
+                            </div>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -1205,13 +1215,20 @@ export default function Dashboard() {
                             <p className="text-xs text-muted-foreground">/c/{card.slug}</p>
                           </div>
                         </div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          card.is_active 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {card.is_active ? 'Active' : 'Inactive'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            card.is_active 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {card.is_active ? '✓ Published' : '📝 Draft'}
+                          </span>
+                          {!card.is_active && (
+                            <span className="text-xs text-muted-foreground italic">
+                              (Public-এ দেখাবে না)
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
