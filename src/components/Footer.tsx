@@ -33,10 +33,10 @@ const footerLinks = {
   legal: {
     title: "Legal",
     links: [
-      { name: "Privacy Policy", href: "#contact", placeholder: true },
-      { name: "Terms of Service", href: "#contact", placeholder: true },
+      { name: "Privacy Policy", href: "/privacy-policy" },
+      { name: "Terms of Service", href: "/terms-of-service" },
       { name: "Refund Policy", href: "/refund-policy" },
-      { name: "Shipping Policy", href: "#contact", placeholder: true },
+      { name: "Shipping Policy", href: "/shipping-policy" },
     ],
   },
 };
