@@ -29,6 +29,7 @@ import LandingPageBuilder from "./pages/LandingPageBuilder";
 import LandingPagePublic from "./pages/LandingPagePublic";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import RefundPolicy from "./pages/RefundPolicy";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,7 @@ const App = () => (
                 <Route path="/landing-builder" element={<LandingPageBuilder />} />
                 <Route path="/landing-builder/:id" element={<LandingPageBuilder />} />
                 <Route path="/site/:slug" element={<LandingPagePublic />} />
+                <Route path="/refund-policy" element={<RefundPolicy />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
