@@ -233,12 +233,23 @@ export default function TrackOrder() {
                       createdAt={order.created_at}
                     />
 
-                    {/* Admin Notes for rejected orders */}
-                    {order.admin_notes && order.status === 'rejected' && (
-                      <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                        <p className="text-sm text-red-800">
-                          <strong>অ্যাডমিনের নোট:</strong> {order.admin_notes}
-                        </p>
+                    {/* Admin Notes and Refund Guidance for rejected orders */}
+                    {order.status === 'rejected' && (
+                      <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
+                        {order.admin_notes && (
+                          <p className="text-sm text-red-800">
+                            <strong>প্রত্যাখ্যানের কারণ:</strong> {order.admin_notes}
+                          </p>
+                        )}
+                        <div className="border-t border-red-200 pt-3">
+                          <p className="text-sm font-medium text-red-700 mb-2">💰 রিফান্ড গাইড:</p>
+                          <ul className="text-xs text-red-600 space-y-1 list-disc list-inside">
+                            <li>ভুল তথ্য থাকলে সঠিক তথ্য দিয়ে নতুন অর্ডার করুন</li>
+                            <li>টাকা কেটে গেলে আমাদের সাথে যোগাযোগ করুন</li>
+                            <li>রিফান্ড ৩-৫ কার্যদিবসের মধ্যে প্রক্রিয়া করা হবে</li>
+                            <li>যোগাযোগ: support@timescard.com | WhatsApp: 01815726006</li>
+                          </ul>
+                        </div>
                       </div>
                     )}
 
