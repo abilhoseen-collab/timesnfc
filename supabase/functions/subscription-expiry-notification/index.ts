@@ -53,7 +53,6 @@ const handler = async (req: Request): Promise<Response> => {
         user_id,
         expires_at,
         package_id,
-        profiles!subscriptions_user_id_fkey(email, full_name),
         packages(name)
       `)
       .eq("status", "approved")
@@ -64,6 +63,15 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Error fetching subscriptions:", fetchError);
       throw fetchError;
     }
+
+    // Fetch user profiles separately
+    const userIds = expiringSubscriptions?.map(s => s.user_id) || [];
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("id, email, full_name")
+      .in("id", userIds);
+    
+    const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
 
     console.log(`Found ${expiringSubscriptions?.length || 0} expiring subscriptions`);
 
@@ -76,10 +84,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResults = [];
 
-    for (const subscription of expiringSubscriptions as unknown as SubscriptionWithUser[]) {
-      const userEmail = subscription.profiles?.email;
-      const userName = subscription.profiles?.full_name || "User";
-      const packageName = subscription.packages?.name || "Your subscription";
+    for (const subscription of expiringSubscriptions || []) {
+      const profile = profilesMap.get(subscription.user_id);
+      const userEmail = profile?.email;
+      const userName = profile?.full_name || "User";
+      const packageName = (subscription.packages as any)?.name || "Your subscription";
       const expiryDate = new Date(subscription.expires_at).toLocaleDateString("bn-BD", {
         year: "numeric",
         month: "long",
