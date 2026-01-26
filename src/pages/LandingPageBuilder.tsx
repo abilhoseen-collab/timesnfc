@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import {
   DndContext,
@@ -204,6 +205,9 @@ export default function LandingPageBuilder() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('sections');
   const [showAddSection, setShowAddSection] = useState(false);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean | null>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState(true);
+  const isEditing = !!id;
 
   // DnD sensors
   const sensors = useSensors(
@@ -217,19 +221,62 @@ export default function LandingPageBuilder() {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
 
+  // Check for active subscription
+  useEffect(() => {
+    const checkSubscription = async () => {
+      if (!user) {
+        setCheckingSubscription(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('id, status, expires_at')
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && data && data.expires_at) {
+        const isActive = new Date(data.expires_at) > new Date();
+        setHasActiveSubscription(isActive);
+      } else {
+        setHasActiveSubscription(false);
+      }
+      setCheckingSubscription(false);
+    };
+
+    if (user) {
+      checkSubscription();
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
     }
   }, [user, authLoading, navigate]);
 
+  // Redirect to payment if no active subscription (only for new pages)
   useEffect(() => {
-    if (user && id) {
+    if (!checkingSubscription && hasActiveSubscription === false && !isEditing) {
+      toast({
+        title: 'সাবস্ক্রিপশন প্রয়োজন',
+        description: 'ল্যান্ডিং পেইজ তৈরি করতে একটি প্যাকেজ কিনুন।',
+        variant: 'destructive',
+      });
+      navigate('/payment');
+    }
+  }, [checkingSubscription, hasActiveSubscription, isEditing, navigate, toast]);
+
+  useEffect(() => {
+    if (user && id && hasActiveSubscription) {
       fetchLandingPage();
-    } else if (user && !id) {
+    } else if (user && !id && hasActiveSubscription) {
       setLoading(false);
     }
-  }, [user, id]);
+  }, [user, id, hasActiveSubscription]);
 
   const fetchLandingPage = async () => {
     setLoading(true);
@@ -513,10 +560,29 @@ export default function LandingPageBuilder() {
     toast({ title: 'URL copied!' });
   };
 
-  if (authLoading || loading) {
+  if (authLoading || loading || checkingSubscription) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Show subscription required message if trying to access without subscription
+  if (hasActiveSubscription === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center p-8 max-w-md">
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              ল্যান্ডিং পেইজ তৈরি বা এডিট করতে সক্রিয় সাবস্ক্রিপশন প্রয়োজন।
+            </AlertDescription>
+          </Alert>
+          <Button variant="secondary" onClick={() => navigate('/payment')}>
+            প্যাকেজ কিনুন
+          </Button>
+        </div>
       </div>
     );
   }
