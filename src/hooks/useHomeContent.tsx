@@ -13,31 +13,10 @@ interface HomeSection {
 
 const STALE = 5 * 60 * 1000;
 
-export function useHomeContent(sectionKey: string) {
-  const { data, isLoading } = useQuery({
-    queryKey: ['home-content', sectionKey],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('home_page_content')
-        .select('*')
-        .eq('section_key', sectionKey)
-        .eq('is_visible', true)
-        .maybeSingle();
-      if (error) {
-        console.error('[useHomeContent]', error);
-        return null;
-      }
-      return (data as HomeSection) || null;
-    },
-    staleTime: STALE,
-    gcTime: STALE * 2,
-  });
-
-  return { section: data ?? null, loading: isLoading, isVisible: data?.is_visible ?? true };
-}
-
-export function useAllHomeContent() {
-  const { data, isLoading } = useQuery({
+// Shared single-fetch for every home page section. All `useHomeContent(key)`
+// callers read from this cache instead of issuing their own request.
+function useHomeContentMap() {
+  return useQuery({
     queryKey: ['home-content-all'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -45,7 +24,7 @@ export function useAllHomeContent() {
         .select('*')
         .order('sort_order', { ascending: true });
       if (error) {
-        console.error('[useAllHomeContent]', error);
+        console.error('[useHomeContent]', error);
         return {} as Record<string, HomeSection>;
       }
       const map: Record<string, HomeSection> = {};
@@ -54,7 +33,22 @@ export function useAllHomeContent() {
     },
     staleTime: STALE,
     gcTime: STALE * 2,
+    refetchOnWindowFocus: false,
   });
+}
 
+export function useHomeContent(sectionKey: string) {
+  const { data, isLoading } = useHomeContentMap();
+  const section = data?.[sectionKey] ?? null;
+  const isVisible = section ? section.is_visible : true;
+  return {
+    section: section && section.is_visible ? section : null,
+    loading: isLoading,
+    isVisible,
+  };
+}
+
+export function useAllHomeContent() {
+  const { data, isLoading } = useHomeContentMap();
   return { sections: data ?? {}, loading: isLoading };
 }
