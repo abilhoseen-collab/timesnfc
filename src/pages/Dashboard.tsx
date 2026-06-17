@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -322,29 +322,67 @@ export default function Dashboard() {
     img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
   };
 
-  // Filter VCards
-  const filteredVcards = vcards.filter(card => {
-    const matchesSearch = card.name.toLowerCase().includes(vcardSearch.toLowerCase()) ||
-      card.slug?.toLowerCase().includes(vcardSearch.toLowerCase()) ||
-      card.template?.toLowerCase().includes(vcardSearch.toLowerCase());
-    const matchesFilter = vcardFilter === 'all' || 
-      (vcardFilter === 'active' && card.is_active) ||
-      (vcardFilter === 'inactive' && !card.is_active);
-    return matchesSearch && matchesFilter;
-  });
+  // Filter VCards (memoized)
+  const filteredVcards = useMemo(() => {
+    const q = vcardSearch.toLowerCase();
+    return vcards.filter(card => {
+      const matchesSearch = !q ||
+        card.name.toLowerCase().includes(q) ||
+        card.slug?.toLowerCase().includes(q) ||
+        card.template?.toLowerCase().includes(q);
+      const matchesFilter = vcardFilter === 'all' ||
+        (vcardFilter === 'active' && card.is_active) ||
+        (vcardFilter === 'inactive' && !card.is_active);
+      return matchesSearch && matchesFilter;
+    });
+  }, [vcards, vcardSearch, vcardFilter]);
 
-  // Filter Landing Pages
-  const filteredLandingPages = landingPages.filter(page => {
-    const matchesSearch = page.name.toLowerCase().includes(landingSearch.toLowerCase()) ||
-      page.slug?.toLowerCase().includes(landingSearch.toLowerCase());
-    const matchesFilter = landingFilter === 'all' || 
-      (landingFilter === 'published' && page.is_published) ||
-      (landingFilter === 'draft' && !page.is_published);
-    return matchesSearch && matchesFilter;
-  });
+  // Filter Landing Pages (memoized)
+  const filteredLandingPages = useMemo(() => {
+    const q = landingSearch.toLowerCase();
+    return landingPages.filter(page => {
+      const matchesSearch = !q ||
+        page.name.toLowerCase().includes(q) ||
+        page.slug?.toLowerCase().includes(q);
+      const matchesFilter = landingFilter === 'all' ||
+        (landingFilter === 'published' && page.is_published) ||
+        (landingFilter === 'draft' && !page.is_published);
+      return matchesSearch && matchesFilter;
+    });
+  }, [landingPages, landingSearch, landingFilter]);
 
-  // Calculate total landing page views
-  const totalLandingViews = landingPages.reduce((sum, page) => sum + (page.total_views || 0), 0);
+  // Total landing page views (memoized)
+  const totalLandingViews = useMemo(
+    () => landingPages.reduce((sum, page) => sum + (page.total_views || 0), 0),
+    [landingPages]
+  );
+
+  // Per-vcard view counts (single pass instead of N filters per render)
+  const viewsByVcardId = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const e of analyticsEvents) {
+      if (e.event_type === 'view' && e.vcard_id) {
+        counts[e.vcard_id] = (counts[e.vcard_id] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [analyticsEvents]);
+
+  // Top links (memoized)
+  const topLinks = useMemo(() => {
+    const linkClicks: Record<string, number> = {};
+    for (const e of analyticsEvents) {
+      if (e.event_type === 'link_click' && e.link_name) {
+        linkClicks[e.link_name] = (linkClicks[e.link_name] || 0) + 1;
+      }
+    }
+    return Object.entries(linkClicks).sort(([, a], [, b]) => b - a).slice(0, 5);
+  }, [analyticsEvents]);
+
+  const maxDailyValue = useMemo(
+    () => Math.max(...dailyStats.map(d => d.views + d.clicks), 1),
+    [dailyStats]
+  );
 
   if (authLoading || loading) {
     return (
@@ -360,20 +398,6 @@ export default function Dashboard() {
     { label: 'QR Scans', value: analytics.qr_scans, icon: QrCode, color: 'text-primary' },
     { label: 'NFC Taps', value: analytics.nfc_taps, icon: Nfc, color: 'text-secondary' },
   ];
-
-  const maxDailyValue = Math.max(...dailyStats.map(d => d.views + d.clicks), 1);
-
-  // Get top clicked links
-  const linkClicks = analyticsEvents
-    .filter(e => e.event_type === 'link_click' && e.link_name)
-    .reduce((acc, e) => {
-      acc[e.link_name!] = (acc[e.link_name!] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-  const topLinks = Object.entries(linkClicks)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-background to-orange-50/30">
@@ -826,7 +850,7 @@ export default function Dashboard() {
                   topLinks,
                   vcards: filteredVcards.map(v => ({
                     name: v.name,
-                    views: analyticsEvents.filter(e => e.vcard_id === v.id && e.event_type === 'view').length,
+                    views: viewsByVcardId[v.id] || 0,
                     template: v.template,
                   })),
                   landingPages: filteredLandingPages.map(p => ({
