@@ -137,21 +137,25 @@ export default function VCardEditor() {
 
   const fetchVCard = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('vcards')
-      .select('*')
-      .eq('id', id)
-      .eq('user_id', user?.id)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('vcards')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user?.id)
+        .maybeSingle();
 
-    if (error || !data) {
-      toast({
-        title: 'Error',
-        description: 'Card not found',
-        variant: 'destructive',
-      });
-      navigate('/dashboard');
-    } else {
+      if (error) throw error;
+      if (!data) {
+        toast({
+          title: 'ত্রুটি',
+          description: 'কার্ড পাওয়া যায়নি',
+          variant: 'destructive',
+        });
+        navigate('/dashboard');
+        return;
+      }
+
       setFormData({
         name: data.name || '',
         job_title: data.job_title || '',
@@ -191,7 +195,7 @@ export default function VCardEditor() {
         appointment_title: data.appointment_title || 'Book an Appointment',
         appointment_description: data.appointment_description || '',
         appointment_duration_minutes: data.appointment_duration_minutes || 30,
-        appointment_available_days: Array.isArray(data.appointment_available_days) 
+        appointment_available_days: Array.isArray(data.appointment_available_days)
           ? (data.appointment_available_days as string[])
           : ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
         appointment_start_time: data.appointment_start_time || '09:00',
@@ -199,8 +203,16 @@ export default function VCardEditor() {
         appointment_email: data.appointment_email || '',
       });
       setCurrentVcardId(data.id);
+    } catch (err) {
+      toast({
+        title: 'ত্রুটি',
+        description: getUserFriendlyError(err),
+        variant: 'destructive',
+      });
+      navigate('/dashboard');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleChange = (field: keyof FormData, value: string | boolean | number) => {
