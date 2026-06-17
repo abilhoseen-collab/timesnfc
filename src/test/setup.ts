@@ -16,8 +16,7 @@ Object.defineProperty(window, "matchMedia", {
 
 // jsdom lacks these — silence warnings from UI libs
 if (!window.ResizeObserver) {
-  // @ts-ignore
-  window.ResizeObserver = class {
+  (window as unknown as { ResizeObserver: unknown }).ResizeObserver = class {
     observe() {}
     unobserve() {}
     disconnect() {}
