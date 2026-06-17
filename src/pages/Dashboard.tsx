@@ -63,6 +63,7 @@ import logo from '@/assets/logo.png';
 import UpgradePackageForm from '@/components/UpgradePackageForm';
 import AnalyticsExport from '@/components/dashboard/AnalyticsExport';
 import { UsageLimitsCard } from '@/components/dashboard/UsageLimitsCard';
+import { getUserFriendlyError } from '@/lib/errorHandler';
 
 interface LandingPage {
   id: string;
@@ -158,125 +159,129 @@ export default function Dashboard() {
   }, [user]);
 
   const fetchLandingPages = async () => {
-    const { data, error } = await supabase
-      .from('landing_pages')
-      .select('id, name, slug, is_published, total_views, created_at')
-      .eq('user_id', user?.id)
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setLandingPages(data);
+    try {
+      const { data, error } = await supabase
+        .from('landing_pages')
+        .select('id, name, slug, is_published, total_views, created_at')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setLandingPages(data || []);
+    } catch (err) {
+      toast({ title: 'ত্রুটি', description: getUserFriendlyError(err), variant: 'destructive' });
     }
   };
 
   const fetchSubscription = async () => {
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select(`
-        id,
-        status,
-        expires_at,
-        packages:package_id (name)
-      `)
-      .eq('user_id', user?.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (!error && data) {
-      setSubscription({
-        id: data.id,
-        status: data.status || 'pending',
-        expires_at: data.expires_at,
-        package_name: (data.packages as any)?.name || null
-      });
+    try {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select(`id, status, expires_at, packages:package_id (name)`)
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      if (data) {
+        setSubscription({
+          id: data.id,
+          status: data.status || 'pending',
+          expires_at: data.expires_at,
+          package_name: (data.packages as any)?.name || null,
+        });
+      }
+    } catch (err) {
+      toast({ title: 'ত্রুটি', description: getUserFriendlyError(err), variant: 'destructive' });
     }
   };
 
   const fetchVCards = async () => {
-    const { data, error } = await supabase
-      .from('vcards')
-      .select('*')
-      .eq('user_id', user?.id)
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setVcards(data);
+    try {
+      const { data, error } = await supabase
+        .from('vcards')
+        .select('id, name, job_title, company, template, is_active, slug, created_at, qr_foreground_color, qr_background_color, qr_logo_url')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setVcards((data as VCard[]) || []);
+    } catch (err) {
+      toast({ title: 'ত্রুটি', description: getUserFriendlyError(err), variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const fetchAnalytics = async () => {
-    // First get user's vcard IDs
-    const { data: vcardData } = await supabase
-      .from('vcards')
-      .select('id')
-      .eq('user_id', user?.id);
+    try {
+      const { data: vcardData, error: vErr } = await supabase
+        .from('vcards')
+        .select('id')
+        .eq('user_id', user?.id);
+      if (vErr) throw vErr;
+      if (!vcardData || vcardData.length === 0) return;
 
-    if (!vcardData || vcardData.length === 0) return;
+      const vcardIds = vcardData.map(v => v.id);
+      const sinceDate = new Date();
+      sinceDate.setDate(sinceDate.getDate() - 30);
 
-    const vcardIds = vcardData.map(v => v.id);
+      const { data, error } = await supabase
+        .from('vcard_analytics')
+        .select('id, event_type, link_name, created_at, vcard_id')
+        .in('vcard_id', vcardIds)
+        .gte('created_at', sinceDate.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(5000);
+      if (error) throw error;
 
-    const { data, error } = await supabase
-      .from('vcard_analytics')
-      .select('*')
-      .in('vcard_id', vcardIds)
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setAnalyticsEvents(data);
-      
+      const events = data || [];
+      setAnalyticsEvents(events);
       setAnalytics({
-        total_views: data.filter(a => a.event_type === 'view').length,
-        total_clicks: data.filter(a => a.event_type === 'link_click').length,
-        qr_scans: data.filter(a => a.event_type === 'qr_scan').length,
-        nfc_taps: data.filter(a => a.event_type === 'nfc_tap').length,
+        total_views: events.filter(a => a.event_type === 'view').length,
+        total_clicks: events.filter(a => a.event_type === 'link_click').length,
+        qr_scans: events.filter(a => a.event_type === 'qr_scan').length,
+        nfc_taps: events.filter(a => a.event_type === 'nfc_tap').length,
       });
 
-      // Calculate daily stats for last 7 days (with landing page views)
       const last7Days: DailyStats[] = [];
       for (let i = 6; i >= 0; i--) {
         const date = new Date();
         date.setDate(date.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
-        
-        const dayEvents = data.filter(e => e.created_at.startsWith(dateStr));
+        const dayEvents = events.filter(e => e.created_at.startsWith(dateStr));
         last7Days.push({
           date: dateStr,
           views: dayEvents.filter(e => e.event_type === 'view').length,
           clicks: dayEvents.filter(e => e.event_type === 'link_click').length,
-          landingViews: 0, // Will be calculated from landing pages total
+          landingViews: 0,
         });
       }
       setDailyStats(last7Days);
+    } catch (err) {
+      toast({ title: 'ত্রুটি', description: getUserFriendlyError(err), variant: 'destructive' });
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this card?')) {
-      const { error } = await supabase
-        .from('vcards')
-        .delete()
-        .eq('id', id);
-
-      if (!error) {
-        setVcards(vcards.filter(v => v.id !== id));
-        toast({ title: 'Card deleted successfully' });
-      }
+    if (!confirm('আপনি কি এই কার্ডটি মুছে ফেলতে চান?')) return;
+    try {
+      const { error } = await supabase.from('vcards').delete().eq('id', id);
+      if (error) throw error;
+      setVcards(prev => prev.filter(v => v.id !== id));
+      toast({ title: 'কার্ড সফলভাবে মুছে ফেলা হয়েছে' });
+    } catch (err) {
+      toast({ title: 'ত্রুটি', description: getUserFriendlyError(err), variant: 'destructive' });
     }
   };
 
   const handleDeleteLandingPage = async (id: string) => {
-    if (confirm('Are you sure you want to delete this landing page?')) {
-      const { error } = await supabase
-        .from('landing_pages')
-        .delete()
-        .eq('id', id);
-
-      if (!error) {
-        setLandingPages(landingPages.filter(p => p.id !== id));
-        toast({ title: 'Landing page deleted successfully' });
-      }
+    if (!confirm('আপনি কি এই ল্যান্ডিং পেইজটি মুছে ফেলতে চান?')) return;
+    try {
+      const { error } = await supabase.from('landing_pages').delete().eq('id', id);
+      if (error) throw error;
+      setLandingPages(prev => prev.filter(p => p.id !== id));
+      toast({ title: 'ল্যান্ডিং পেইজ সফলভাবে মুছে ফেলা হয়েছে' });
+    } catch (err) {
+      toast({ title: 'ত্রুটি', description: getUserFriendlyError(err), variant: 'destructive' });
     }
   };
 

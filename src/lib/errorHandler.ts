@@ -1,37 +1,72 @@
 /**
- * Maps database and API errors to user-friendly messages.
+ * Maps database and API errors to user-friendly Bengali messages.
  * Prevents leaking internal implementation details to users.
  */
 export const getUserFriendlyError = (error: any): string => {
-  // Log full error server-side for debugging
-  console.error('[Error Details]:', error);
-  
-  // Map common Postgres error codes
-  if (error?.code === '23505') return 'This item already exists. Please try a different value.';
-  if (error?.code === '23503') return 'Invalid reference. Please check your input.';
-  if (error?.code === '23502') return 'Required field is missing. Please fill all required fields.';
-  if (error?.code === '23514') return 'Input validation failed. Please check your data.';
-  if (error?.code === '42501') return 'You do not have permission to perform this action.';
-  if (error?.code === '42P01') return 'An error occurred. Please try again.';
-  if (error?.code === 'PGRST116') return 'Record not found.';
-  
-  // Map RLS policy violations
-  if (error?.message?.includes('policy')) return 'Access denied. Please check your permissions.';
-  if (error?.message?.includes('row-level security')) return 'Access denied. Please log in and try again.';
-  
-  // Map auth errors
-  if (error?.message?.includes('Invalid login credentials')) return 'Invalid email or password.';
-  if (error?.message?.includes('Email not confirmed')) return 'Please verify your email address.';
-  if (error?.message?.includes('User already registered')) return 'An account with this email already exists.';
-  
-  // Map storage errors
-  if (error?.message?.includes('storage')) return 'File upload failed. Please try again.';
-  if (error?.message?.includes('bucket')) return 'File storage error. Please try again.';
-  
-  // Map network errors
-  if (error?.message?.includes('Failed to fetch')) return 'Network error. Please check your connection.';
-  if (error?.message?.includes('NetworkError')) return 'Network error. Please check your connection.';
-  
-  // Generic fallback - never expose the actual error message
-  return 'An error occurred. Please try again or contact support if the problem persists.';
+  // Log full error for debugging (dev only noise; safe in prod)
+  if (typeof console !== 'undefined') {
+    console.error('[Error Details]:', error);
+  }
+
+  if (!error) return 'একটি অজানা ত্রুটি ঘটেছে। আবার চেষ্টা করুন।';
+
+  const code = error?.code;
+  const msg: string = (error?.message || error?.error_description || '').toString();
+
+  // Postgres error codes
+  if (code === '23505') return 'এই তথ্য ইতিমধ্যে বিদ্যমান। অন্য মান ব্যবহার করুন।';
+  if (code === '23503') return 'অবৈধ রেফারেন্স। ইনপুট পরীক্ষা করুন।';
+  if (code === '23502') return 'প্রয়োজনীয় ফিল্ড খালি। সব ফিল্ড পূরণ করুন।';
+  if (code === '23514') return 'ইনপুট ভ্যালিডেশন ব্যর্থ। ডেটা পরীক্ষা করুন।';
+  if (code === '42501') return 'এই কাজ করার অনুমতি আপনার নেই।';
+  if (code === '42P01') return 'একটি ত্রুটি ঘটেছে। আবার চেষ্টা করুন।';
+  if (code === 'PGRST116') return 'কোনো তথ্য পাওয়া যায়নি।';
+  if (code === 'PGRST301') return 'সেশন এক্সপায়ার্ড। পুনরায় লগইন করুন।';
+
+  // RLS / policy
+  if (msg.includes('policy') || msg.includes('row-level security')) {
+    return 'অ্যাক্সেস অস্বীকৃত। লগইন করে আবার চেষ্টা করুন।';
+  }
+
+  // Auth
+  if (msg.includes('Invalid login credentials')) return 'ইমেইল বা পাসওয়ার্ড ভুল।';
+  if (msg.includes('Email not confirmed')) return 'ইমেইল ভেরিফাই করুন।';
+  if (msg.includes('User already registered')) return 'এই ইমেইল দিয়ে ইতিমধ্যে অ্যাকাউন্ট আছে।';
+  if (msg.includes('Password should be')) return 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।';
+  if (msg.includes('rate limit')) return 'অনেকবার চেষ্টা করেছেন। কিছুক্ষণ পর আবার চেষ্টা করুন।';
+
+  // Storage
+  if (msg.includes('storage') || msg.includes('bucket')) {
+    return 'ফাইল আপলোড ব্যর্থ। আবার চেষ্টা করুন।';
+  }
+  if (msg.includes('exceeded the maximum allowed size') || msg.includes('Payload too large')) {
+    return 'ফাইলের সাইজ অনেক বড়। ছোট ফাইল আপলোড করুন।';
+  }
+
+  // Network
+  if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('network')) {
+    return 'নেটওয়ার্ক সমস্যা। ইন্টারনেট সংযোগ পরীক্ষা করুন।';
+  }
+  if (msg.includes('timeout') || msg.includes('Timeout')) {
+    return 'অনুরোধটি টাইমআউট হয়েছে। আবার চেষ্টা করুন।';
+  }
+
+  return 'একটি ত্রুটি ঘটেছে। আবার চেষ্টা করুন বা সাপোর্টে যোগাযোগ করুন।';
+};
+
+/**
+ * Wraps an async operation with a friendly error message via toast.
+ */
+export const safeAsync = async <T,>(
+  fn: () => Promise<T>,
+  toast?: (opts: { title: string; description?: string; variant?: 'default' | 'destructive' }) => void,
+  fallbackTitle = 'ত্রুটি'
+): Promise<T | null> => {
+  try {
+    return await fn();
+  } catch (err) {
+    const message = getUserFriendlyError(err);
+    if (toast) toast({ title: fallbackTitle, description: message, variant: 'destructive' });
+    return null;
+  }
 };

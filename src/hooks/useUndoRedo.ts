@@ -25,7 +25,7 @@ export function useUndoRedo<T>(initialState: T, maxHistory: number = 50): UseUnd
   });
   
   const lastUpdateTimeRef = useRef<number>(0);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setState = useCallback((newState: T | ((prev: T) => T)) => {
     const now = Date.now();
