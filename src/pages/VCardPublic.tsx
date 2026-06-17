@@ -404,19 +404,20 @@ END:VCARD`;
     }
   };
 
-  // Generate available time slots
+  // Generate available time slots — respects start/end minutes too
   const getTimeSlots = () => {
     if (!vcard.appointment_start_time || !vcard.appointment_end_time) return [];
     const slots: string[] = [];
-    const [startHour] = vcard.appointment_start_time.split(':').map(Number);
-    const [endHour] = vcard.appointment_end_time.split(':').map(Number);
-    const duration = vcard.appointment_duration_minutes || 30;
-    
-    for (let hour = startHour; hour < endHour; hour++) {
-      for (let min = 0; min < 60; min += duration) {
-        const time = `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
-        slots.push(time);
-      }
+    const [startHour, startMin = 0] = vcard.appointment_start_time.split(':').map(Number);
+    const [endHour, endMin = 0] = vcard.appointment_end_time.split(':').map(Number);
+    const duration = Math.max(5, vcard.appointment_duration_minutes || 30);
+    const startTotal = startHour * 60 + startMin;
+    const endTotal = endHour * 60 + endMin;
+
+    for (let m = startTotal; m + duration <= endTotal; m += duration) {
+      const h = Math.floor(m / 60);
+      const mm = m % 60;
+      slots.push(`${h.toString().padStart(2, '0')}:${mm.toString().padStart(2, '0')}`);
     }
     return slots;
   };

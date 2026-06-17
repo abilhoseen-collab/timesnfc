@@ -268,115 +268,122 @@ export default function LandingPageBuilder() {
 
   const fetchLandingPage = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('landing_pages')
-      .select('*')
-      .eq('id', id)
-      .eq('user_id', user?.id)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('landing_pages')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user?.id)
+        .maybeSingle();
 
-    if (error || !data) {
-      toast({ title: 'Page not found', variant: 'destructive' });
+      if (error) throw error;
+      if (!data) {
+        toast({ title: 'পেইজ পাওয়া যায়নি', variant: 'destructive' });
+        navigate('/dashboard');
+        return;
+      }
+
+      const parsedData: LandingPage = {
+        ...data,
+        header_nav_items: Array.isArray(data.header_nav_items)
+          ? (data.header_nav_items as unknown as NavItem[])
+          : [],
+        footer_social_links: Array.isArray(data.footer_social_links)
+          ? (data.footer_social_links as unknown as { platform: string; url: string }[])
+          : [],
+        footer_additional_links: Array.isArray(data.footer_additional_links)
+          ? (data.footer_additional_links as unknown as { label: string; url: string }[])
+          : [],
+      };
+
+      setLandingPage(parsedData);
+      setName(data.name);
+      setSlug(data.slug);
+
+      const { data: sectionsData, error: sErr } = await supabase
+        .from('landing_page_sections')
+        .select('*')
+        .eq('landing_page_id', data.id)
+        .order('sort_order', { ascending: true });
+
+      if (sErr) throw sErr;
+      if (sectionsData) setSections(sectionsData as unknown as LandingPageSection[]);
+    } catch (err) {
+      toast({ title: 'ত্রুটি', description: getUserFriendlyError(err), variant: 'destructive' });
       navigate('/dashboard');
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    // Parse JSON fields
-    const parsedData: LandingPage = {
-      ...data,
-      header_nav_items: Array.isArray(data.header_nav_items) 
-        ? (data.header_nav_items as unknown as NavItem[])
-        : [],
-      footer_social_links: Array.isArray(data.footer_social_links)
-        ? (data.footer_social_links as unknown as { platform: string; url: string }[])
-        : [],
-      footer_additional_links: Array.isArray(data.footer_additional_links)
-        ? (data.footer_additional_links as unknown as { label: string; url: string }[])
-        : [],
-    };
-
-    setLandingPage(parsedData);
-    setName(data.name);
-    setSlug(data.slug);
-
-    // Fetch sections
-    const { data: sectionsData } = await supabase
-      .from('landing_page_sections')
-      .select('*')
-      .eq('landing_page_id', data.id)
-      .order('sort_order', { ascending: true });
-
-    if (sectionsData) {
-      setSections(sectionsData as unknown as LandingPageSection[]);
-    }
-    setLoading(false);
   };
 
   const createLandingPage = async () => {
     if (!name.trim()) {
-      toast({ title: 'Please enter a page name', variant: 'destructive' });
+      toast({ title: 'পেইজের নাম দিন', variant: 'destructive' });
       return;
     }
 
     const generatedSlug = slug.trim() || name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
     setSaving(true);
-    const { data, error } = await supabase
-      .from('landing_pages')
-      .insert({
-        user_id: user?.id,
-        name: name.trim(),
-        slug: generatedSlug,
-      })
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('landing_pages')
+        .insert({
+          user_id: user?.id,
+          name: name.trim(),
+          slug: generatedSlug,
+        })
+        .select()
+        .maybeSingle();
 
-    if (error) {
-      toast({ title: 'Failed to create page', description: error.message, variant: 'destructive' });
+      if (error) throw error;
+      if (!data) throw new Error('Insert returned no row');
+
+      toast({ title: 'ল্যান্ডিং পেইজ তৈরি হয়েছে!' });
+      navigate(`/landing-builder/${data.id}`);
+    } catch (err) {
+      toast({ title: 'ত্রুটি', description: getUserFriendlyError(err), variant: 'destructive' });
+    } finally {
       setSaving(false);
-      return;
     }
-
-    toast({ title: 'Landing page created!' });
-    navigate(`/landing-builder/${data.id}`);
-    setSaving(false);
   };
 
   const saveLandingPage = async () => {
     if (!landingPage) return;
-
     setSaving(true);
-    const { error } = await supabase
-      .from('landing_pages')
-      .update({
-        name,
-        slug,
-      })
-      .eq('id', landingPage.id);
-
-    if (error) {
-      toast({ title: 'Failed to save', variant: 'destructive' });
-    } else {
-      toast({ title: 'Changes saved!' });
+    try {
+      const { error } = await supabase
+        .from('landing_pages')
+        .update({ name, slug })
+        .eq('id', landingPage.id)
+        .eq('user_id', user?.id);
+      if (error) throw error;
+      toast({ title: 'পরিবর্তন সংরক্ষিত হয়েছে!' });
       setLandingPage({ ...landingPage, name, slug });
+    } catch (err) {
+      toast({ title: 'ত্রুটি', description: getUserFriendlyError(err), variant: 'destructive' });
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const togglePublish = async () => {
     if (!landingPage) return;
-
-    const { error } = await supabase
-      .from('landing_pages')
-      .update({ is_published: !landingPage.is_published })
-      .eq('id', landingPage.id);
-
-    if (!error) {
-      setLandingPage({ ...landingPage, is_published: !landingPage.is_published });
-      toast({ 
-        title: landingPage.is_published ? 'Page unpublished' : 'Page published!',
-        description: landingPage.is_published ? '' : 'Your landing page is now live.'
+    try {
+      const newVal = !landingPage.is_published;
+      const { error } = await supabase
+        .from('landing_pages')
+        .update({ is_published: newVal })
+        .eq('id', landingPage.id)
+        .eq('user_id', user?.id);
+      if (error) throw error;
+      setLandingPage({ ...landingPage, is_published: newVal });
+      toast({
+        title: newVal ? 'পেইজ প্রকাশিত হয়েছে!' : 'পেইজ আনপাবলিশ করা হয়েছে',
+        description: newVal ? 'আপনার ল্যান্ডিং পেইজ এখন লাইভ।' : '',
       });
+    } catch (err) {
+      toast({ title: 'ত্রুটি', description: getUserFriendlyError(err), variant: 'destructive' });
     }
   };
 

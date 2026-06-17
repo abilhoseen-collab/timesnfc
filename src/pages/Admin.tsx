@@ -458,17 +458,22 @@ export default function Admin() {
 
   const fetchSettings = async () => {
     setSettingsLoading(true);
-    const { data } = await supabase
-      .from('site_settings')
-      .select('*')
-      .eq('key', 'templates_visible')
-      .single();
-
-    if (data) {
-      const value = data.value as { enabled?: boolean } | null;
-      setTemplatesVisible(value?.enabled || false);
+    try {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('key', 'templates_visible')
+        .maybeSingle();
+      if (error) throw error;
+      if (data) {
+        const value = data.value as { enabled?: boolean } | null;
+        setTemplatesVisible(value?.enabled || false);
+      }
+    } catch (err) {
+      console.error('[fetchSettings]', err);
+    } finally {
+      setSettingsLoading(false);
     }
-    setSettingsLoading(false);
   };
 
   const toggleTemplatesVisible = async () => {
