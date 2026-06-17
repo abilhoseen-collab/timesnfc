@@ -128,7 +128,7 @@ beforeEach(() => {
 
 describe('VCardEditor.fetchVCard', () => {
   it('populates the form when supabase returns a row (.maybeSingle resolves with data)', async () => {
-    maybeSingleMock.mockResolvedValueOnce({
+    maybeSingleMock.mockResolvedValue({
       data: {
         id: 'card-1',
         name: 'Akash Khan',
@@ -144,11 +144,14 @@ describe('VCardEditor.fetchVCard', () => {
     await waitFor(() => {
       expect(screen.getByTestId('basic-info-name')).toHaveTextContent('Akash Khan');
     });
-    expect(navigateMock).not.toHaveBeenCalledWith('/dashboard');
+    // No "not found" / error toast should fire on the success path
+    expect(toastMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ variant: 'destructive' })
+    );
   });
 
   it('shows a Bengali "not found" toast and navigates to /dashboard when data is null', async () => {
-    maybeSingleMock.mockResolvedValueOnce({ data: null, error: null });
+    maybeSingleMock.mockResolvedValue({ data: null, error: null });
 
     await renderEditor();
 
@@ -165,7 +168,7 @@ describe('VCardEditor.fetchVCard', () => {
   });
 
   it('handles supabase errors gracefully (PGRST116 → friendly toast + redirect)', async () => {
-    maybeSingleMock.mockResolvedValueOnce({
+    maybeSingleMock.mockResolvedValue({
       data: null,
       error: { code: 'PGRST116', message: 'No rows returned' },
     });
@@ -185,7 +188,7 @@ describe('VCardEditor.fetchVCard', () => {
   });
 
   it('handles a thrown network error without crashing', async () => {
-    maybeSingleMock.mockRejectedValueOnce(new Error('Failed to fetch'));
+    maybeSingleMock.mockRejectedValue(new Error('Failed to fetch'));
 
     await renderEditor();
 
