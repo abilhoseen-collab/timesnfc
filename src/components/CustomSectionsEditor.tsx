@@ -81,7 +81,7 @@ export default function CustomSectionsEditor({ vcardId }: CustomSectionsEditorPr
   const [saving, setSaving] = useState(false);
   const [adding, setAdding] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),

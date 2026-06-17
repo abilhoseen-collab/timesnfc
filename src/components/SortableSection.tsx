@@ -77,7 +77,7 @@ interface DebouncedInputProps {
 
 function DebouncedInput({ value, onChange, placeholder, className, type = 'text' }: DebouncedInputProps) {
   const [localValue, setLocalValue] = useState(value);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setLocalValue(value);
@@ -128,7 +128,7 @@ interface DebouncedTextareaProps {
 
 function DebouncedTextarea({ value, onChange, placeholder, rows = 3, className }: DebouncedTextareaProps) {
   const [localValue, setLocalValue] = useState(value);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setLocalValue(value);
