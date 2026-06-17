@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 interface HomeSection {
@@ -11,54 +11,50 @@ interface HomeSection {
   sort_order: number;
 }
 
-export function useHomeContent(sectionKey: string) {
-  const [section, setSection] = useState<HomeSection | null>(null);
-  const [loading, setLoading] = useState(true);
+const STALE = 5 * 60 * 1000;
 
-  useEffect(() => {
-    const fetchContent = async () => {
+export function useHomeContent(sectionKey: string) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['home-content', sectionKey],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('home_page_content')
         .select('*')
         .eq('section_key', sectionKey)
         .eq('is_visible', true)
-        .single();
-
-      if (!error && data) {
-        setSection(data as HomeSection);
+        .maybeSingle();
+      if (error) {
+        console.error('[useHomeContent]', error);
+        return null;
       }
-      setLoading(false);
-    };
+      return (data as HomeSection) || null;
+    },
+    staleTime: STALE,
+    gcTime: STALE * 2,
+  });
 
-    fetchContent();
-  }, [sectionKey]);
-
-  return { section, loading, isVisible: section?.is_visible ?? true };
+  return { section: data ?? null, loading: isLoading, isVisible: data?.is_visible ?? true };
 }
 
 export function useAllHomeContent() {
-  const [sections, setSections] = useState<Record<string, HomeSection>>({});
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchAllContent = async () => {
+  const { data, isLoading } = useQuery({
+    queryKey: ['home-content-all'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('home_page_content')
         .select('*')
         .order('sort_order', { ascending: true });
-
-      if (!error && data) {
-        const sectionsMap: Record<string, HomeSection> = {};
-        data.forEach((section) => {
-          sectionsMap[section.section_key] = section as HomeSection;
-        });
-        setSections(sectionsMap);
+      if (error) {
+        console.error('[useAllHomeContent]', error);
+        return {} as Record<string, HomeSection>;
       }
-      setLoading(false);
-    };
+      const map: Record<string, HomeSection> = {};
+      (data || []).forEach((s: any) => { map[s.section_key] = s as HomeSection; });
+      return map;
+    },
+    staleTime: STALE,
+    gcTime: STALE * 2,
+  });
 
-    fetchAllContent();
-  }, []);
-
-  return { sections, loading };
+  return { sections: data ?? {}, loading: isLoading };
 }
