@@ -16,7 +16,7 @@ Object.defineProperty(window, "matchMedia", {
 
 // jsdom lacks these — silence warnings from UI libs
 if (!window.ResizeObserver) {
-  // @ts-ignore
+  // @ts-expect-error - polyfill assignment
   window.ResizeObserver = class {
     observe() {}
     unobserve() {}
