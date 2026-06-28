@@ -38,8 +38,12 @@ import {
   Layout,
   BarChart3,
   Search,
-  Filter
+  Filter,
+  Settings,
+  Receipt,
+  LifeBuoy
 } from 'lucide-react';
+import { NotificationBell } from '@/components/NotificationBell';
 import {
   Dialog,
   DialogContent,
