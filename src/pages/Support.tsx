@@ -155,7 +155,10 @@ export default function Support() {
     try {
       const { error } = await supabase.from("support_tickets").insert({
         user_id: user!.id,
-        ...parsed.data,
+        subject: parsed.data.subject,
+        message: parsed.data.message,
+        category: parsed.data.category,
+        priority: parsed.data.priority,
       });
       if (error) throw error;
       toast({ title: "সফল", description: "আপনার টিকিট তৈরি হয়েছে" });
