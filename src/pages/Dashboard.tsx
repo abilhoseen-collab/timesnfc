@@ -38,8 +38,12 @@ import {
   Layout,
   BarChart3,
   Search,
-  Filter
+  Filter,
+  Settings,
+  Receipt,
+  LifeBuoy
 } from 'lucide-react';
+import { NotificationBell } from '@/components/NotificationBell';
 import {
   Dialog,
   DialogContent,
@@ -410,40 +414,42 @@ export default function Dashboard() {
             className="h-10 cursor-pointer" 
             onClick={() => navigate('/')}
           />
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1 sm:gap-2">
             {isAdmin && (
               <Button 
                 variant="ghost" 
                 size="sm"
                 onClick={() => navigate('/admin')}
-                className="text-primary"
+                className="text-primary hidden sm:inline-flex"
               >
                 <Shield size={18} className="mr-2" />
                 Admin
               </Button>
             )}
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => navigate('/cart')}
-              className="relative"
-            >
+            <NotificationBell />
+            <Button variant="ghost" size="icon" onClick={() => navigate('/cart')} title="কার্ট">
               <ShoppingCart size={20} />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => navigate('/orders')}
-            >
+            <Button variant="ghost" size="icon" onClick={() => navigate('/orders')} title="অর্ডার">
               <Package size={20} />
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
-              <LogOut size={18} className="mr-2" />
-              Sign Out
+            <Button variant="ghost" size="icon" onClick={() => navigate('/billing')} title="বিলিং" className="hidden sm:inline-flex">
+              <Receipt size={20} />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/support')} title="সাপোর্ট" className="hidden sm:inline-flex">
+              <LifeBuoy size={20} />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} title="সেটিংস">
+              <Settings size={20} />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleSignOut} title="লগ আউট">
+              <LogOut size={18} />
+              <span className="hidden md:inline ml-2">Sign Out</span>
             </Button>
           </div>
         </div>
       </header>
+
 
       <main className="container-custom py-8">
         {/* Welcome Section */}

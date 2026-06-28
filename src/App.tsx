@@ -33,6 +33,9 @@ import RefundPolicy from "./pages/RefundPolicy";
 import ShippingPolicy from "./pages/ShippingPolicy";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import AccountSettings from "./pages/AccountSettings";
+import Billing from "./pages/Billing";
+import Support from "./pages/Support";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -83,6 +86,9 @@ const App = () => (
                 <Route path="/shipping-policy" element={<ShippingPolicy />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
+                <Route path="/settings" element={<AccountSettings />} />
+                <Route path="/billing" element={<Billing />} />
+                <Route path="/support" element={<Support />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
