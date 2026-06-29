@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { nativeShare as capacitorShare, isNative } from '@/lib/native';
 import {
   Facebook, Twitter, Linkedin, MessageCircle, Send, Mail, Copy, Check, QrCode,
 } from 'lucide-react';
@@ -38,11 +39,10 @@ export default function ShareDialog({ open, onOpenChange, url, name, ogImageUrl 
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const nativeShare = async () => {
+  const nativeShareHandler = async () => {
+    if (await capacitorShare({ title: name, text, url })) return;
     if (navigator.share) {
-      try {
-        await navigator.share({ title: name, text, url });
-      } catch { /* user cancelled */ }
+      try { await navigator.share({ title: name, text, url }); } catch { /* cancelled */ }
     }
   };
 
@@ -83,8 +83,8 @@ export default function ShareDialog({ open, onOpenChange, url, name, ogImageUrl 
           </Button>
         </div>
 
-        {typeof navigator !== 'undefined' && 'share' in navigator && (
-          <Button onClick={nativeShare} variant="secondary" className="w-full">
+        {(isNative() || (typeof navigator !== 'undefined' && 'share' in navigator)) && (
+          <Button onClick={nativeShareHandler} variant="secondary" className="w-full">
             <QrCode size={16} className="mr-2" />
             সিস্টেম শেয়ার মেনু
           </Button>
