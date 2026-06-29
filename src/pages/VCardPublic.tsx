@@ -459,6 +459,7 @@ END:VCARD`;
         <meta name="twitter:description" content={pageDesc} />
         <meta name="twitter:image" content={ogImageUrl} />
       </Helmet>
+      <VCardPixelScripts gaId={(vcard as any).ga_measurement_id} pixelId={(vcard as any).meta_pixel_id} />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
