@@ -19,6 +19,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { uploadOptimizedImage, ImagePresets } from '@/lib/imageOptimizer';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -292,25 +293,14 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
 
     for (const file of Array.from(files)) {
       if (!file.type.startsWith('image/')) continue;
-      if (file.size > 5 * 1024 * 1024) {
-        toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 5MB', variant: 'destructive' });
+      if (file.size > 10 * 1024 * 1024) {
+        toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 10MB', variant: 'destructive' });
         continue;
       }
 
       try {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `sections/${section.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('profile-photos')
-          .upload(fileName, file);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('profile-photos')
-          .getPublicUrl(fileName);
-
+        const base = `sections/${section.id}/${Date.now()}-${Math.random().toString(36).substring(7)}`;
+        const { publicUrl } = await uploadOptimizedImage(file, 'profile-photos', base, ImagePresets.cover);
         newImages.push(publicUrl);
       } catch (error: any) {
         toast({ title: 'আপলোড ব্যর্থ হয়েছে', variant: 'destructive' });
@@ -367,26 +357,15 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 5MB', variant: 'destructive' });
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 10MB', variant: 'destructive' });
       return;
     }
 
     setUploadingServiceImage(index);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `services/${section.id}/${Date.now()}-${index}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('profile-photos')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('profile-photos')
-        .getPublicUrl(fileName);
-
+      const base = `services/${section.id}/${Date.now()}-${index}`;
+      const { publicUrl } = await uploadOptimizedImage(file, 'profile-photos', base, ImagePresets.cover);
       updateService(index, 'image', publicUrl);
       toast({ title: 'ছবি আপলোড হয়েছে!' });
     } catch (error) {
@@ -425,26 +404,15 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 2MB', variant: 'destructive' });
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 5MB', variant: 'destructive' });
       return;
     }
 
     setUploadingTestimonialAvatar(index);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `testimonials/${section.id}/${Date.now()}-${index}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('profile-photos')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('profile-photos')
-        .getPublicUrl(fileName);
-
+      const base = `testimonials/${section.id}/${Date.now()}-${index}`;
+      const { publicUrl } = await uploadOptimizedImage(file, 'profile-photos', base, ImagePresets.avatar);
       updateTestimonial(index, 'avatar', publicUrl);
       toast({ title: 'অ্যাভাটার আপলোড হয়েছে!' });
     } catch (error) {
@@ -478,18 +446,15 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 5MB', variant: 'destructive' });
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 10MB', variant: 'destructive' });
       return;
     }
 
     setUploadingProductImage(index);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `products/${section.id}/${Date.now()}-${index}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('profile-photos').upload(fileName, file);
-      if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from('profile-photos').getPublicUrl(fileName);
+      const base = `products/${section.id}/${Date.now()}-${index}`;
+      const { publicUrl } = await uploadOptimizedImage(file, 'profile-photos', base, ImagePresets.cover);
       updateProduct(index, 'image', publicUrl);
       toast({ title: 'ছবি আপলোড হয়েছে!' });
     } catch (err) {
@@ -511,18 +476,15 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 5MB', variant: 'destructive' });
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 10MB', variant: 'destructive' });
       return;
     }
 
     setUploadingGalleryImage(index);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `gallery/${section.id}/${Date.now()}-${index}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('profile-photos').upload(fileName, file);
-      if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from('profile-photos').getPublicUrl(fileName);
+      const base = `gallery/${section.id}/${Date.now()}-${index}`;
+      const { publicUrl } = await uploadOptimizedImage(file, 'profile-photos', base, ImagePresets.cover);
       updateProduct(index, 'image', publicUrl);
       toast({ title: 'ছবি আপলোড হয়েছে!' });
     } catch (err) {
@@ -750,25 +712,14 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
                       
                       for (const file of Array.from(files)) {
                         if (!file.type.startsWith('image/')) continue;
-                        if (file.size > 5 * 1024 * 1024) {
-                          toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 5MB', variant: 'destructive' });
+                        if (file.size > 10 * 1024 * 1024) {
+                          toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 10MB', variant: 'destructive' });
                           continue;
                         }
                         
                         try {
-                          const fileExt = file.name.split('.').pop();
-                          const fileName = `sections/${section.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-                          
-                          const { error: uploadError } = await supabase.storage
-                            .from('profile-photos')
-                            .upload(fileName, file);
-                          
-                          if (uploadError) throw uploadError;
-                          
-                          const { data: { publicUrl } } = supabase.storage
-                            .from('profile-photos')
-                            .getPublicUrl(fileName);
-                          
+                          const base = `sections/${section.id}/${Date.now()}-${Math.random().toString(36).substring(7)}`;
+                          const { publicUrl } = await uploadOptimizedImage(file, 'profile-photos', base, ImagePresets.cover);
                           newImages.push(publicUrl);
                         } catch (error: any) {
                           toast({ title: 'আপলোড ব্যর্থ হয়েছে', variant: 'destructive' });
