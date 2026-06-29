@@ -425,6 +425,14 @@ export default function VCardAnalyticsDashboard({ vcardId }: VCardAnalyticsDashb
           )}
         </div>
       </div>
+
+      {/* Advanced analytics: device, browser, source, country, funnel */}
+      <div className="mt-8">
+        <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+          <BarChart3 size={20} className="text-primary" /> অ্যাডভান্সড অ্যানালিটিক্স
+        </h3>
+        <AdvancedAnalytics analytics={analytics as any} />
+      </div>
     </div>
   );
 }
