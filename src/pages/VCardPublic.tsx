@@ -10,6 +10,9 @@ import { readUTM, attachScrollTracking } from '@/lib/utmAndScroll';
 import TestimonialsSection from '@/components/vcard/TestimonialsSection';
 import SaveContactButton from '@/components/vcard/SaveContactButton';
 import VCardChatWidget from '@/components/vcard/VCardChatWidget';
+import BookingSlotPicker from '@/components/vcard/BookingSlotPicker';
+import PhoneOtpVerifier from '@/components/vcard/PhoneOtpVerifier';
+import { trackConversion, getVariant } from '@/lib/abTesting';
 import { 
   Mail, 
   Phone, 
@@ -89,6 +92,8 @@ interface VCard {
   appointment_start_time: string | null;
   appointment_end_time: string | null;
   appointment_email: string | null;
+  require_phone_verification?: boolean | null;
+  owner_whatsapp_number?: string | null;
 }
 
 interface CustomSection {
@@ -134,6 +139,7 @@ export default function VCardPublic() {
     notes: ''
   });
   const [bookingAppointment, setBookingAppointment] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
 
   const [shareOpen, setShareOpen] = useState(false);
 
@@ -375,6 +381,10 @@ END:VCARD`;
       toast({ title: 'Please fill all required fields', variant: 'destructive' });
       return;
     }
+    if (vcard.require_phone_verification && !phoneVerified) {
+      toast({ title: 'ফোন ভেরিফিকেশন প্রয়োজন', variant: 'destructive' });
+      return;
+    }
 
     setBookingAppointment(true);
     try {
@@ -386,7 +396,8 @@ END:VCARD`;
         appointment_date: appointmentForm.date,
         appointment_time: appointmentForm.time,
         notes: appointmentForm.notes || null,
-      }).select().single();
+        phone_verified: phoneVerified,
+      } as any).select().single();
 
       if (error) throw error;
 
@@ -425,8 +436,21 @@ END:VCARD`;
       }).catch(() => {});
 
       toast({ title: 'Appointment booked successfully!' });
+      trackConversion('booking_cta', { vcardId: vcard.id });
+
+      // Optional WhatsApp confirmation deep-link (visitor → owner)
+      const ownerWa = vcard.owner_whatsapp_number || (vcard as any).whatsapp_number;
+      if (ownerWa) {
+        const wa = ownerWa.replace(/[^\d]/g, '');
+        const msg = encodeURIComponent(
+          `আসসালামু আলাইকুম, আমি ${appointmentForm.name}. ${appointmentForm.date} ${appointmentForm.time}-এ একটি appointment book করেছি।`
+        );
+        window.open(`https://wa.me/${wa}?text=${msg}`, '_blank');
+      }
+
       setShowAppointmentModal(false);
       setAppointmentForm({ name: '', email: '', phone: '', date: '', time: '', notes: '' });
+      setPhoneVerified(false);
       trackLinkClick('appointment_booked');
     } catch (error: any) {
       toast({ title: 'Failed to book appointment', variant: 'destructive' });
@@ -637,23 +661,30 @@ END:VCARD`;
           )}
 
           {/* Appointment Booking Button */}
-          {vcard.appointment_enabled && (
-            <div className="px-6 pb-4">
-              <Button
-                onClick={() => {
-                  setShowAppointmentModal(true);
-                  trackLinkClick('appointment_button');
-                }}
-                className={`w-full bg-gradient-to-r ${style.bg} hover:opacity-90 text-white font-semibold py-6`}
-              >
-                <Calendar size={18} className="mr-2" />
-                {vcard.appointment_title || 'Book an Appointment'}
-              </Button>
-              {vcard.appointment_description && (
-                <p className="text-xs text-center text-gray-500 mt-2">{vcard.appointment_description}</p>
-              )}
-            </div>
-          )}
+          {vcard.appointment_enabled && (() => {
+            const ctaVariant = getVariant('booking_cta', ['default', 'urgent'] as const, { vcardId: vcard.id });
+            const ctaLabel =
+              ctaVariant === 'urgent'
+                ? `⚡ এখনই বুক করুন — ${vcard.appointment_duration_minutes || 30} মিনিট`
+                : (vcard.appointment_title || 'Book an Appointment');
+            return (
+              <div className="px-6 pb-4">
+                <Button
+                  onClick={() => {
+                    setShowAppointmentModal(true);
+                    trackLinkClick('appointment_button');
+                  }}
+                  className={`w-full bg-gradient-to-r ${style.bg} hover:opacity-90 text-white font-semibold py-6`}
+                >
+                  <Calendar size={18} className="mr-2" />
+                  {ctaLabel}
+                </Button>
+                {vcard.appointment_description && (
+                  <p className="text-xs text-center text-gray-500 mt-2">{vcard.appointment_description}</p>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Social Links */}
           {socialLinks.length > 0 && (
@@ -1077,38 +1108,48 @@ END:VCARD`;
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone (Optional)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone {vcard.require_phone_verification ? '*' : '(Optional)'}
+                  </label>
                   <Input
                     value={appointmentForm.phone}
-                    onChange={(e) => setAppointmentForm(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="Your phone number"
+                    onChange={(e) => { setAppointmentForm(prev => ({ ...prev, phone: e.target.value })); setPhoneVerified(false); }}
+                    placeholder="+8801XXXXXXXXX"
+                  />
+                  {vcard.require_phone_verification && appointmentForm.phone && (
+                    <div className="mt-2">
+                      <PhoneOtpVerifier
+                        phone={appointmentForm.phone}
+                        verified={phoneVerified}
+                        onVerified={() => setPhoneVerified(true)}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                  <Input
+                    type="date"
+                    value={appointmentForm.date}
+                    onChange={(e) => setAppointmentForm(prev => ({ ...prev, date: e.target.value, time: '' }))}
+                    min={new Date().toISOString().split('T')[0]}
                   />
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
-                    <Input
-                      type="date"
-                      value={appointmentForm.date}
-                      onChange={(e) => setAppointmentForm(prev => ({ ...prev, date: e.target.value }))}
-                      min={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
-                    <select
-                      value={appointmentForm.time}
-                      onChange={(e) => setAppointmentForm(prev => ({ ...prev, time: e.target.value }))}
-                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                    >
-                      <option value="">Select</option>
-                      {getTimeSlots().map(time => (
-                        <option key={time} value={time}>{time}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">উপলভ্য টাইম স্লট *</label>
+                  <BookingSlotPicker
+                    vcardId={vcard.id}
+                    date={appointmentForm.date}
+                    startTime={vcard.appointment_start_time}
+                    endTime={vcard.appointment_end_time}
+                    durationMinutes={vcard.appointment_duration_minutes}
+                    availableDays={vcard.appointment_available_days}
+                    value={appointmentForm.time}
+                    onChange={(t) => setAppointmentForm(prev => ({ ...prev, time: t }))}
+                  />
                 </div>
+
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
