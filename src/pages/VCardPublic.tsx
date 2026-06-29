@@ -1107,9 +1107,11 @@ END:VCARD`;
         )}
 
         {/* Footer */}
-        <div className="text-center py-8 text-gray-500 text-sm">
-          <p>Powered by Digital Business Card</p>
-        </div>
+        {!(vcard as any).hide_branding && (
+          <div className="text-center py-8 text-gray-500 text-sm">
+            <p>Powered by Digital Business Card</p>
+          </div>
+        )}
       </motion.div>
 
       <ShareDialog
