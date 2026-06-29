@@ -30,6 +30,8 @@ import {
   Tooltip,
 } from 'recharts';
 
+import AdvancedAnalytics from './AdvancedAnalytics';
+
 interface AnalyticsData {
   id: string;
   event_type: string;
@@ -40,6 +42,9 @@ interface AnalyticsData {
   is_unique: boolean | null;
   time_on_page: number | null;
   referrer: string | null;
+  user_agent: string | null;
+  country: string | null;
+  city: string | null;
 }
 
 interface VCardAnalyticsDashboardProps {
@@ -419,6 +424,14 @@ export default function VCardAnalyticsDashboard({ vcardId }: VCardAnalyticsDashb
             <p className="text-sm text-muted-foreground text-center py-8">No traffic data yet</p>
           )}
         </div>
+      </div>
+
+      {/* Advanced analytics: device, browser, source, country, funnel */}
+      <div className="mt-8">
+        <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+          <BarChart3 size={20} className="text-primary" /> অ্যাডভান্সড অ্যানালিটিক্স
+        </h3>
+        <AdvancedAnalytics analytics={analytics as any} />
       </div>
     </div>
   );
