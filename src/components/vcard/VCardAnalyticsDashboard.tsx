@@ -29,6 +29,9 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts';
+import { FileDown, FileText } from 'lucide-react';
+import { exportAnalyticsCsv, exportAnalyticsPdf } from '@/lib/exportAnalytics';
+import GeoMap from './GeoMap';
 
 import AdvancedAnalytics from './AdvancedAnalytics';
 
@@ -215,6 +218,53 @@ export default function VCardAnalyticsDashboard({ vcardId }: VCardAnalyticsDashb
             <option value={30}>Last 30 days</option>
             <option value={90}>Last 90 days</option>
           </select>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => exportAnalyticsCsv(`vcard-analytics-${vcardId}-${Date.now()}.csv`, analytics.map((a) => ({
+              date: a.created_at, event: a.event_type, link: a.link_name || '', country: a.country || '',
+              city: a.city || '', referrer: a.referrer || '', unique: a.is_unique ? 'yes' : 'no',
+              time_on_page: a.time_on_page ?? '',
+            })))}
+            disabled={analytics.length === 0}
+          >
+            <FileDown size={14} className="mr-1" /> CSV
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const countryMap = new Map<string, number>();
+              analytics.filter(a => a.event_type === 'view').forEach(a => {
+                const c = a.country || 'Unknown';
+                countryMap.set(c, (countryMap.get(c) || 0) + 1);
+              });
+              exportAnalyticsPdf({
+                title: 'vCard Analytics Report',
+                subtitle: `Last ${dateRange} days`,
+                stats: [
+                  { label: 'Total Views', value: stats.totalViews },
+                  { label: 'Unique Visitors', value: stats.uniqueVisitors },
+                  { label: 'Link Clicks', value: stats.totalClicks },
+                  { label: 'Bounce Rate', value: `${stats.bounceRate}%` },
+                  { label: 'Appointments', value: stats.appointmentsCount },
+                ],
+                sections: [
+                  { title: 'Daily Trends', headers: ['Date', 'Views', 'Clicks', 'Appointments'],
+                    rows: chartData.map(d => [d.date, d.views, d.clicks, d.appointments]) },
+                  { title: 'Top Clicked Links', headers: ['Link', 'Clicks'],
+                    rows: topLinks.map(l => [l.name, l.count]) },
+                  { title: 'Traffic Sources', headers: ['Source', 'Visits'],
+                    rows: referrerData.map(r => [r.name, r.value]) },
+                  { title: 'Top Countries', headers: ['Country', 'Visits'],
+                    rows: Array.from(countryMap.entries()).sort((a,b)=>b[1]-a[1]).slice(0,15) },
+                ],
+              });
+            }}
+            disabled={analytics.length === 0}
+          >
+            <FileText size={14} className="mr-1" /> PDF
+          </Button>
           <Button
             size="sm"
             variant="outline"
@@ -425,6 +475,16 @@ export default function VCardAnalyticsDashboard({ vcardId }: VCardAnalyticsDashb
           )}
         </div>
       </div>
+
+      {/* Geo Map */}
+      {(() => {
+        const m = new Map<string, number>();
+        analytics.filter(a => a.event_type === 'view' && a.country).forEach(a => {
+          m.set(a.country!, (m.get(a.country!) || 0) + 1);
+        });
+        const list = Array.from(m, ([name, value]) => ({ name, value })).sort((a,b)=>b.value-a.value);
+        return <GeoMap countries={list} />;
+      })()}
 
       {/* Advanced analytics: device, browser, source, country, funnel */}
       <div className="mt-8">
