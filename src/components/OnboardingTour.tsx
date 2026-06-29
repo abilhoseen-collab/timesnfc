@@ -63,7 +63,7 @@ export default function OnboardingTour() {
       locale={{ back: 'পেছনে', close: 'বন্ধ', last: 'শেষ', next: 'পরবর্তী', skip: 'এড়িয়ে যান' }}
       styles={{
         options: { primaryColor: '#7c3aed', zIndex: 10000, arrowColor: 'hsl(var(--card))', backgroundColor: 'hsl(var(--card))', textColor: 'hsl(var(--foreground))' },
-      }}
+      } as any}
     />
   );
 }
