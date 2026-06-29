@@ -132,6 +132,7 @@ export default function Dashboard() {
   const { isAdmin } = useAdmin();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { canEdit: canEditTeam, canDelete: canDeleteTeam, getRole } = useTeamRoles();
   const [vcards, setVcards] = useState<VCard[]>([]);
   const [analyticsEvents, setAnalyticsEvents] = useState<AnalyticsEvent[]>([]);
   const [analytics, setAnalytics] = useState<Analytics>({
