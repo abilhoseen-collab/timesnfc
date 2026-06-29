@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import ShareDialog from '@/components/vcard/ShareDialog';
+import VCardChatWidget from '@/components/vcard/VCardChatWidget';
 import { 
   Mail, 
   Phone, 
@@ -126,6 +129,8 @@ export default function VCardPublic() {
     notes: ''
   });
   const [bookingAppointment, setBookingAppointment] = useState(false);
+
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     if (slug) {
@@ -280,18 +285,10 @@ export default function VCardPublic() {
     return null;
   };
 
-  const handleShare = async () => {
-    if (navigator.share) {
-      await navigator.share({
-        title: vcard?.name,
-        text: `Check out ${vcard?.name}'s digital business card`,
-        url: window.location.href,
-      });
-    } else {
-      await navigator.clipboard.writeText(window.location.href);
-      toast({ title: 'Link copied to clipboard!' });
-    }
+  const handleShare = () => {
+    setShareOpen(true);
   };
+
 
   const downloadVCard = () => {
     if (!vcard) return;
