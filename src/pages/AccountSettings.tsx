@@ -22,7 +22,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Loader2, User, Lock, Mail, Trash2, ArrowLeft } from "lucide-react";
+import { Loader2, User, Lock, Mail, Trash2, ArrowLeft, Bell } from "lucide-react";
+import NotificationSettings from "@/components/NotificationSettings";
 
 const profileSchema = z.object({
   full_name: z.string().trim().min(1, "নাম প্রয়োজন").max(100, "নাম ১০০ অক্ষরের বেশি হতে পারবে না"),
