@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
 import logo from "@/assets/logo.png";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 const navLinks = [
   { name: "Home", href: "#home" },
@@ -100,6 +101,7 @@ export function Header() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
           >
+            <LanguageSwitcher />
             <motion.button
               onClick={() => navigate('/cart')}
               className="relative p-2 text-foreground/80 hover:text-primary transition-colors"

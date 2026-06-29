@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "home": "Home",
+    "features": "Features",
+    "templates": "Templates",
+    "pricing": "Pricing",
+    "nfcStore": "NFC Store",
+    "about": "About",
+    "contact": "Contact",
+    "dashboard": "Dashboard",
+    "login": "Login",
+    "register": "Register",
+    "cart": "Cart",
+    "logout": "Logout"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "refresh": "Refresh",
+    "export": "Export",
+    "download": "Download",
+    "search": "Search",
+    "back": "Back",
+    "language": "Language"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "totalViews": "Total Views",
+    "uniqueVisitors": "Unique Visitors",
+    "linkClicks": "Link Clicks",
+    "appointments": "Appointments",
+    "bounceRate": "Bounce Rate",
+    "avgTime": "Avg. Time",
+    "dailyTrends": "Daily Trends",
+    "topLinks": "Top Links",
+    "trafficSources": "Traffic Sources",
+    "geoMap": "Geographic Map",
+    "exportPdf": "Download PDF",
+    "exportCsv": "Download CSV",
+    "country": "Country"
+  },
+  "lang": {
+    "bn": "বাংলা",
+    "en": "English"
+  }
+}
