@@ -31,6 +31,7 @@ import {
   FormData,
   initialFormData,
 } from '@/components/vcard-editor';
+import CustomDomainManager from '@/components/vcard-editor/CustomDomainManager';
 
 export default function VCardEditor() {
   const { id } = useParams();
