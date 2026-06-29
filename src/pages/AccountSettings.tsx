@@ -329,6 +329,10 @@ export default function AccountSettings() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="notifications" className="mt-4">
+            <NotificationSettings />
+          </TabsContent>
+
           <TabsContent value="security" className="mt-4">
             <TwoFactorAuth />
           </TabsContent>
