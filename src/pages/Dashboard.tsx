@@ -41,9 +41,11 @@ import {
   Filter,
   Settings,
   Receipt,
-  LifeBuoy
+  LifeBuoy,
+  Gift
 } from 'lucide-react';
 import { NotificationBell } from '@/components/NotificationBell';
+import { OnboardingWizard } from '@/components/OnboardingWizard';
 import {
   Dialog,
   DialogContent,
@@ -438,6 +440,9 @@ export default function Dashboard() {
             </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/support')} title="সাপোর্ট" className="hidden sm:inline-flex">
               <LifeBuoy size={20} />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/referrals')} title="রেফারেল" className="hidden sm:inline-flex">
+              <Gift size={20} />
             </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} title="সেটিংস">
               <Settings size={20} />
