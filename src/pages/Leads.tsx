@@ -25,8 +25,18 @@ interface Lead {
   status: string;
   message: string | null;
   notes: string | null;
+  tags: string[] | null;
   created_at: string;
 }
+
+const TAG_PRESETS = ['hot', 'follow-up', 'vip', 'cold', 'spam'];
+const TAG_COLORS: Record<string, string> = {
+  hot: 'bg-red-100 text-red-700',
+  'follow-up': 'bg-amber-100 text-amber-700',
+  vip: 'bg-purple-100 text-purple-700',
+  cold: 'bg-sky-100 text-sky-700',
+  spam: 'bg-gray-200 text-gray-700',
+};
 
 const STATUSES = [
   { value: 'new', label: 'নতুন', color: 'bg-blue-100 text-blue-700' },
