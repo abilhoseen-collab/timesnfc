@@ -149,3 +149,28 @@ export function formatBytes(n: number): string {
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / 1024 / 1024).toFixed(2)} MB`;
 }
+
+/**
+ * Optimize + upload to Supabase Storage in one call.
+ * Returns the public URL. The `path` MUST omit the extension — the optimizer
+ * picks `.webp` or `.jpg` based on browser support.
+ */
+import { supabase } from "@/integrations/supabase/client";
+
+export async function uploadOptimizedImage(
+  file: File | Blob,
+  bucket: string,
+  pathWithoutExt: string,
+  preset: OptimizeOptions = ImagePresets.cover,
+): Promise<{ publicUrl: string; optimized: OptimizedImage; path: string }> {
+  const optimized = await optimizeImage(file, preset);
+  const path = `${pathWithoutExt}.${optimized.ext}`;
+  const { error } = await supabase.storage.from(bucket).upload(path, optimized.blob, {
+    contentType: optimized.mime,
+    cacheControl: "31536000",
+  });
+  if (error) throw error;
+  const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path);
+  return { publicUrl, optimized, path };
+}
+
