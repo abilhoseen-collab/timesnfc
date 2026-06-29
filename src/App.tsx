@@ -45,6 +45,11 @@ import AcceptInvite from "./pages/AcceptInvite";
 import Maintenance from "./pages/Maintenance";
 import Offline from "./pages/Offline";
 import PWADiagnostics from "./pages/PWADiagnostics";
+import Directory from "./pages/Directory";
+import Leaderboard from "./pages/Leaderboard";
+import Network from "./pages/Network";
+import LinktreeView from "./pages/LinktreeView";
+import AffiliateDashboard from "./pages/AffiliateDashboard";
 import MaintenanceGate from "./components/MaintenanceGate";
 import PWAManager from "./components/PWAManager";
 
@@ -111,6 +116,11 @@ const App = () => (
                 <Route path="/maintenance" element={<Maintenance />} />
                 <Route path="/offline" element={<Offline />} />
                 <Route path="/pwa-diagnostics" element={<PWADiagnostics />} />
+                <Route path="/directory" element={<Directory />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/network" element={<Network />} />
+                <Route path="/affiliate" element={<AffiliateDashboard />} />
+                <Route path="/l/:slug" element={<LinktreeView />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

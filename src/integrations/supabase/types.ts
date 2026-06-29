@@ -1546,6 +1546,85 @@ export type Database = {
           },
         ]
       }
+      vcard_saved_contacts: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          user_id: string
+          vcard_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          user_id: string
+          vcard_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          user_id?: string
+          vcard_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vcard_saved_contacts_vcard_id_fkey"
+            columns: ["vcard_id"]
+            isOneToOne: false
+            referencedRelation: "vcards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vcard_testimonials: {
+        Row: {
+          approved: boolean
+          author_avatar_url: string | null
+          author_name: string
+          author_title: string | null
+          content: string
+          created_at: string
+          id: string
+          rating: number | null
+          updated_at: string
+          vcard_id: string
+        }
+        Insert: {
+          approved?: boolean
+          author_avatar_url?: string | null
+          author_name: string
+          author_title?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          rating?: number | null
+          updated_at?: string
+          vcard_id: string
+        }
+        Update: {
+          approved?: boolean
+          author_avatar_url?: string | null
+          author_name?: string
+          author_title?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          rating?: number | null
+          updated_at?: string
+          vcard_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vcard_testimonials_vcard_id_fkey"
+            columns: ["vcard_id"]
+            isOneToOne: false
+            referencedRelation: "vcards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vcards: {
         Row: {
           address: string | null
@@ -1562,6 +1641,7 @@ export type Database = {
           company: string | null
           cover_image_url: string | null
           created_at: string
+          directory_category: string | null
           email: string | null
           facebook_url: string | null
           github_url: string | null
@@ -1571,6 +1651,8 @@ export type Database = {
           is_active: boolean | null
           job_title: string | null
           linkedin_url: string | null
+          linktree_enabled: boolean
+          listed_in_directory: boolean
           name: string
           notification_email: string | null
           notify_on_click: boolean | null
@@ -1590,6 +1672,7 @@ export type Database = {
           team_id: string | null
           telegram_username: string | null
           template: string | null
+          testimonials_enabled: boolean
           twitter_url: string | null
           updated_at: string
           user_id: string
@@ -1612,6 +1695,7 @@ export type Database = {
           company?: string | null
           cover_image_url?: string | null
           created_at?: string
+          directory_category?: string | null
           email?: string | null
           facebook_url?: string | null
           github_url?: string | null
@@ -1621,6 +1705,8 @@ export type Database = {
           is_active?: boolean | null
           job_title?: string | null
           linkedin_url?: string | null
+          linktree_enabled?: boolean
+          listed_in_directory?: boolean
           name: string
           notification_email?: string | null
           notify_on_click?: boolean | null
@@ -1640,6 +1726,7 @@ export type Database = {
           team_id?: string | null
           telegram_username?: string | null
           template?: string | null
+          testimonials_enabled?: boolean
           twitter_url?: string | null
           updated_at?: string
           user_id: string
@@ -1662,6 +1749,7 @@ export type Database = {
           company?: string | null
           cover_image_url?: string | null
           created_at?: string
+          directory_category?: string | null
           email?: string | null
           facebook_url?: string | null
           github_url?: string | null
@@ -1671,6 +1759,8 @@ export type Database = {
           is_active?: boolean | null
           job_title?: string | null
           linkedin_url?: string | null
+          linktree_enabled?: boolean
+          listed_in_directory?: boolean
           name?: string
           notification_email?: string | null
           notify_on_click?: boolean | null
@@ -1690,6 +1780,7 @@ export type Database = {
           team_id?: string | null
           telegram_username?: string | null
           template?: string | null
+          testimonials_enabled?: boolean
           twitter_url?: string | null
           updated_at?: string
           user_id?: string
