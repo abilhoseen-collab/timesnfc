@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      ab_events: {
+        Row: {
+          created_at: string
+          event: string
+          experiment_key: string
+          id: string
+          metadata: Json | null
+          session_id: string | null
+          user_id: string | null
+          variant: string
+          vcard_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event?: string
+          experiment_key: string
+          id?: string
+          metadata?: Json | null
+          session_id?: string | null
+          user_id?: string | null
+          variant: string
+          vcard_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          experiment_key?: string
+          id?: string
+          metadata?: Json | null
+          session_id?: string | null
+          user_id?: string | null
+          variant?: string
+          vcard_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ab_events_vcard_id_fkey"
+            columns: ["vcard_id"]
+            isOneToOne: false
+            referencedRelation: "vcards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cart_items: {
         Row: {
           created_at: string
@@ -1385,6 +1429,7 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          phone_verified: boolean
           reminder_sent_at: string | null
           status: string | null
           updated_at: string
@@ -1399,6 +1444,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          phone_verified?: boolean
           reminder_sent_at?: string | null
           status?: string | null
           updated_at?: string
@@ -1413,6 +1459,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          phone_verified?: boolean
           reminder_sent_at?: string | null
           status?: string | null
           updated_at?: string
@@ -1718,6 +1765,7 @@ export type Database = {
           notification_email: string | null
           notify_on_click: boolean | null
           notify_on_view: boolean | null
+          owner_whatsapp_number: string | null
           payment_bank_details: string | null
           payment_bkash: string | null
           payment_button_text: string | null
@@ -1729,6 +1777,7 @@ export type Database = {
           qr_background_color: string | null
           qr_foreground_color: string | null
           qr_logo_url: string | null
+          require_phone_verification: boolean
           slug: string | null
           team_id: string | null
           telegram_username: string | null
@@ -1783,6 +1832,7 @@ export type Database = {
           notification_email?: string | null
           notify_on_click?: boolean | null
           notify_on_view?: boolean | null
+          owner_whatsapp_number?: string | null
           payment_bank_details?: string | null
           payment_bkash?: string | null
           payment_button_text?: string | null
@@ -1794,6 +1844,7 @@ export type Database = {
           qr_background_color?: string | null
           qr_foreground_color?: string | null
           qr_logo_url?: string | null
+          require_phone_verification?: boolean
           slug?: string | null
           team_id?: string | null
           telegram_username?: string | null
@@ -1848,6 +1899,7 @@ export type Database = {
           notification_email?: string | null
           notify_on_click?: boolean | null
           notify_on_view?: boolean | null
+          owner_whatsapp_number?: string | null
           payment_bank_details?: string | null
           payment_bkash?: string | null
           payment_button_text?: string | null
@@ -1859,6 +1911,7 @@ export type Database = {
           qr_background_color?: string | null
           qr_foreground_color?: string | null
           qr_logo_url?: string | null
+          require_phone_verification?: boolean
           slug?: string | null
           team_id?: string | null
           telegram_username?: string | null
