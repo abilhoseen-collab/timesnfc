@@ -22,9 +22,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Loader2, User, Lock, Mail, Trash2, ArrowLeft, Bell, Users } from "lucide-react";
+import { Loader2, User, Lock, Mail, Trash2, ArrowLeft, Bell, Users, FileText, Activity, Shield } from "lucide-react";
 import NotificationSettings from "@/components/NotificationSettings";
 import TeamManagementPanel from "@/components/TeamManagementPanel";
+import InvoicesList from "@/components/account/InvoicesList";
+import LoginActivityList from "@/components/account/LoginActivityList";
+import GDPRDataPanel from "@/components/account/GDPRDataPanel";
 
 const profileSchema = z.object({
   full_name: z.string().trim().min(1, "নাম প্রয়োজন").max(100, "নাম ১০০ অক্ষরের বেশি হতে পারবে না"),
