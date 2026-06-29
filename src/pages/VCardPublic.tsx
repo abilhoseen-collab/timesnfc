@@ -1111,6 +1111,18 @@ END:VCARD`;
           <p>Powered by Digital Business Card</p>
         </div>
       </motion.div>
+
+      <ShareDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        url={shareUrl}
+        name={vcard.name}
+        ogImageUrl={ogImageUrl}
+      />
+
+      {vcard.chat_enabled && (
+        <VCardChatWidget slug={slug!} ownerName={vcard.name} />
+      )}
     </div>
   );
 }
