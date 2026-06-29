@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import ShareDialog from '@/components/vcard/ShareDialog';
+import VCardChatWidget from '@/components/vcard/VCardChatWidget';
 import { 
   Mail, 
   Phone, 
@@ -126,6 +129,8 @@ export default function VCardPublic() {
     notes: ''
   });
   const [bookingAppointment, setBookingAppointment] = useState(false);
+
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     if (slug) {
@@ -280,18 +285,10 @@ export default function VCardPublic() {
     return null;
   };
 
-  const handleShare = async () => {
-    if (navigator.share) {
-      await navigator.share({
-        title: vcard?.name,
-        text: `Check out ${vcard?.name}'s digital business card`,
-        url: window.location.href,
-      });
-    } else {
-      await navigator.clipboard.writeText(window.location.href);
-      toast({ title: 'Link copied to clipboard!' });
-    }
+  const handleShare = () => {
+    setShareOpen(true);
   };
+
 
   const downloadVCard = () => {
     if (!vcard) return;
@@ -422,8 +419,28 @@ END:VCARD`;
     return slots;
   };
 
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const ogImageUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vcard-og-image?slug=${slug}`;
+  const pageTitle = `${vcard.name}${vcard.job_title ? ` — ${vcard.job_title}` : ''}`;
+  const pageDesc = vcard.bio || `${vcard.name}-এর ডিজিটাল বিজনেস কার্ড। তাৎক্ষণিক যোগাযোগ করুন।`;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDesc} />
+        <link rel="canonical" href={shareUrl} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDesc} />
+        <meta property="og:url" content={shareUrl} />
+        <meta property="og:type" content="profile" />
+        <meta property="og:image" content={ogImageUrl} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDesc} />
+        <meta name="twitter:image" content={ogImageUrl} />
+      </Helmet>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -1094,6 +1111,18 @@ END:VCARD`;
           <p>Powered by Digital Business Card</p>
         </div>
       </motion.div>
+
+      <ShareDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        url={shareUrl}
+        name={vcard.name}
+        ogImageUrl={ogImageUrl}
+      />
+
+      {vcard.chat_enabled && (
+        <VCardChatWidget slug={slug!} ownerName={vcard.name} />
+      )}
     </div>
   );
 }

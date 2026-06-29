@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.generate-vcard-bio]
 verify_jwt = false
+
+[functions.vcard-og-image]
+verify_jwt = false
+
+[functions.vcard-chat]
+verify_jwt = false
