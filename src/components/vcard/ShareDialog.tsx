@@ -33,17 +33,58 @@ export default function ShareDialog({ open, onOpenChange, url, name, ogImageUrl 
   ];
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    toast({ title: 'লিংক কপি হয়েছে!' });
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast({ title: 'লিংক কপি হয়েছে!' });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Legacy fallback for non-secure contexts
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); toast({ title: 'লিংক কপি হয়েছে!' }); }
+      catch { toast({ title: 'কপি করা যায়নি', variant: 'destructive' }); }
+      document.body.removeChild(ta);
+    }
+  };
+
+  const tryFetchPreviewFile = async (): Promise<File | null> => {
+    if (!ogImageUrl) return null;
+    try {
+      const res = await fetch(ogImageUrl, { mode: 'cors' });
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      const ext = blob.type.includes('png') ? 'png' : 'jpg';
+      return new File([blob], `${name.replace(/\s+/g, '-')}-vcard.${ext}`, { type: blob.type || 'image/png' });
+    } catch { return null; }
   };
 
   const nativeShareHandler = async () => {
+    // 1) Capacitor native share (mobile app)
     if (await capacitorShare({ title: name, text, url })) return;
-    if (navigator.share) {
-      try { await navigator.share({ title: name, text, url }); } catch { /* cancelled */ }
+
+    // 2) Web Share Level 2 — try with preview image file when possible
+    if (typeof navigator !== 'undefined' && 'share' in navigator) {
+      try {
+        const file = await tryFetchPreviewFile();
+        if (file && (navigator as any).canShare?.({ files: [file] })) {
+          await (navigator as any).share({ title: name, text, url, files: [file] });
+          return;
+        }
+        await navigator.share({ title: name, text, url });
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+      }
     }
+
+    // 3) Final fallback — copy to clipboard
+    await handleCopy();
+    toast({ title: 'শেয়ার সমর্থিত নয়', description: 'লিংক কপি করে দেওয়া হয়েছে।' });
   };
 
   return (
