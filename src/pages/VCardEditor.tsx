@@ -31,6 +31,7 @@ import {
   FormData,
   initialFormData,
 } from '@/components/vcard-editor';
+import CustomDomainManager from '@/components/vcard-editor/CustomDomainManager';
 
 export default function VCardEditor() {
   const { id } = useParams();
@@ -438,6 +439,23 @@ export default function VCardEditor() {
                       <CustomSectionsEditor vcardId={currentVcardId} />
                     </div>
                   )}
+
+                  {/* Custom Domain */}
+                  {currentVcardId && <CustomDomainManager vcardId={currentVcardId} />}
+
+                  {/* Branding (hide_branding for paid tiers) */}
+                  <div className="bg-card rounded-2xl p-6 border border-border flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <Label className="font-medium">"Powered by" badge সরান</Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Business tier ইউজার তাদের vCard ফুটার থেকে branding সরাতে পারবেন।
+                      </p>
+                    </div>
+                    <Switch
+                      checked={!!(formData as any).hide_branding}
+                      onCheckedChange={(v) => handleChange('hide_branding' as any, v)}
+                    />
+                  </div>
                 </form>
               </TabsContent>
 

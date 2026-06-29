@@ -225,6 +225,60 @@ export type Database = {
         }
         Relationships: []
       }
+      invoices: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          customer_address: string | null
+          customer_email: string | null
+          customer_name: string | null
+          id: string
+          invoice_number: string
+          issued_at: string
+          line_items: Json
+          order_id: string | null
+          pdf_url: string | null
+          status: string
+          subscription_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          customer_address?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          id?: string
+          invoice_number: string
+          issued_at?: string
+          line_items?: Json
+          order_id?: string | null
+          pdf_url?: string | null
+          status?: string
+          subscription_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          customer_address?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          id?: string
+          invoice_number?: string
+          issued_at?: string
+          line_items?: Json
+          order_id?: string | null
+          pdf_url?: string | null
+          status?: string
+          subscription_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       landing_page_analytics: {
         Row: {
           city: string | null
@@ -449,6 +503,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      login_activity: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          device: string | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          os: string | null
+          success: boolean
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          os?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          os?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       nfc_guest_orders: {
         Row: {
@@ -714,10 +813,14 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          is_reseller: boolean
           onboarding_completed: boolean
           phone: string | null
           referral_code: string | null
           referred_by: string | null
+          reseller_brand_name: string | null
+          reseller_logo_url: string | null
+          reseller_primary_color: string | null
           updated_at: string
         }
         Insert: {
@@ -726,10 +829,14 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          is_reseller?: boolean
           onboarding_completed?: boolean
           phone?: string | null
           referral_code?: string | null
           referred_by?: string | null
+          reseller_brand_name?: string | null
+          reseller_logo_url?: string | null
+          reseller_primary_color?: string | null
           updated_at?: string
         }
         Update: {
@@ -738,10 +845,14 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          is_reseller?: boolean
           onboarding_completed?: boolean
           phone?: string | null
           referral_code?: string | null
           referred_by?: string | null
+          reseller_brand_name?: string | null
+          reseller_logo_url?: string | null
+          reseller_primary_color?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -776,6 +887,30 @@ export type Database = {
           p256dh?: string
           user_agent?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      rate_limits: {
+        Row: {
+          count: number
+          created_at: string
+          id: string
+          key: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          created_at?: string
+          id?: string
+          key: string
+          window_start?: string
+        }
+        Update: {
+          count?: number
+          created_at?: string
+          id?: string
+          key?: string
+          window_start?: string
         }
         Relationships: []
       }
@@ -1251,6 +1386,53 @@ export type Database = {
           },
         ]
       }
+      vcard_custom_domains: {
+        Row: {
+          created_at: string
+          domain: string
+          id: string
+          last_checked_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          vcard_id: string
+          verification_token: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+          id?: string
+          last_checked_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          vcard_id: string
+          verification_token?: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+          id?: string
+          last_checked_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          vcard_id?: string
+          verification_token?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vcard_custom_domains_vcard_id_fkey"
+            columns: ["vcard_id"]
+            isOneToOne: false
+            referencedRelation: "vcards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vcard_custom_sections: {
         Row: {
           content: Json
@@ -1383,6 +1565,7 @@ export type Database = {
           email: string | null
           facebook_url: string | null
           github_url: string | null
+          hide_branding: boolean
           id: string
           instagram_url: string | null
           is_active: boolean | null
@@ -1432,6 +1615,7 @@ export type Database = {
           email?: string | null
           facebook_url?: string | null
           github_url?: string | null
+          hide_branding?: boolean
           id?: string
           instagram_url?: string | null
           is_active?: boolean | null
@@ -1481,6 +1665,7 @@ export type Database = {
           email?: string | null
           facebook_url?: string | null
           github_url?: string | null
+          hide_branding?: boolean
           id?: string
           instagram_url?: string | null
           is_active?: boolean | null
@@ -1528,6 +1713,10 @@ export type Database = {
     }
     Functions: {
       accept_team_invitation: { Args: { _token: string }; Returns: string }
+      check_rate_limit: {
+        Args: { _key: string; _max_count: number; _window_seconds: number }
+        Returns: boolean
+      }
       create_personal_team_for_user: {
         Args: { _name: string; _user_id: string }
         Returns: string
@@ -1556,6 +1745,7 @@ export type Database = {
         Args: { _team_id: string; _user_id: string }
         Returns: boolean
       }
+      request_account_deletion: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

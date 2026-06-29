@@ -45,6 +45,8 @@ export interface FormData {
   appointment_start_time: string;
   appointment_end_time: string;
   appointment_email: string;
+  // Branding
+  hide_branding?: boolean;
 }
 
 export const initialFormData: FormData = {
@@ -92,6 +94,7 @@ export const initialFormData: FormData = {
   appointment_start_time: '09:00',
   appointment_end_time: '17:00',
   appointment_email: '',
+  hide_branding: false,
 };
 
 export interface Template {

@@ -22,9 +22,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Loader2, User, Lock, Mail, Trash2, ArrowLeft, Bell, Users } from "lucide-react";
+import { Loader2, User, Lock, Mail, Trash2, ArrowLeft, Bell, Users, FileText, Activity, Shield } from "lucide-react";
 import NotificationSettings from "@/components/NotificationSettings";
 import TeamManagementPanel from "@/components/TeamManagementPanel";
+import InvoicesList from "@/components/account/InvoicesList";
+import LoginActivityList from "@/components/account/LoginActivityList";
+import GDPRDataPanel from "@/components/account/GDPRDataPanel";
 
 const profileSchema = z.object({
   full_name: z.string().trim().min(1, "নাম প্রয়োজন").max(100, "নাম ১০০ অক্ষরের বেশি হতে পারবে না"),
@@ -200,7 +203,7 @@ export default function AccountSettings() {
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="flex flex-wrap gap-1 h-auto justify-start">
             <TabsTrigger value="profile" className="gap-1.5">
               <User size={14} /> প্রোফাইল
             </TabsTrigger>
@@ -216,11 +219,17 @@ export default function AccountSettings() {
             <TabsTrigger value="team" className="gap-1.5">
               <Users size={14} /> Team
             </TabsTrigger>
-            <TabsTrigger value="security" className="gap-1.5">
-              <Lock size={14} /> 2FA
+            <TabsTrigger value="invoices" className="gap-1.5">
+              <FileText size={14} /> Invoices
             </TabsTrigger>
-            <TabsTrigger value="danger" className="gap-1.5 text-destructive">
-              <Trash2 size={14} /> ডিলিট
+            <TabsTrigger value="activity" className="gap-1.5">
+              <Activity size={14} /> Activity
+            </TabsTrigger>
+            <TabsTrigger value="security" className="gap-1.5">
+              <Shield size={14} /> 2FA
+            </TabsTrigger>
+            <TabsTrigger value="data" className="gap-1.5 text-destructive">
+              <Trash2 size={14} /> Data & Delete
             </TabsTrigger>
           </TabsList>
 
@@ -351,47 +360,20 @@ export default function AccountSettings() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="invoices" className="mt-4">
+            <InvoicesList />
+          </TabsContent>
+
+          <TabsContent value="activity" className="mt-4">
+            <LoginActivityList />
+          </TabsContent>
+
           <TabsContent value="security" className="mt-4">
             <TwoFactorAuth />
           </TabsContent>
 
-          <TabsContent value="danger" className="mt-4">
-            <Card className="border-destructive/50">
-              <CardHeader>
-                <CardTitle className="text-destructive">বিপজ্জনক অঞ্চল</CardTitle>
-                <CardDescription>
-                  অ্যাকাউন্ট ডিলিট করলে সব ডেটা (vCard, ল্যান্ডিং পেজ, সাবস্ক্রিপশন) মুছে যাবে।
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive">
-                      <Trash2 size={16} className="mr-2" />
-                      অ্যাকাউন্ট ডিলিট করুন
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>আপনি কি নিশ্চিত?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        এই কাজটি অপরিবর্তনীয়। আপনার সকল vCard, ল্যান্ডিং পেজ এবং অর্ডার
-                        ইতিহাস মুছে যাবে। চূড়ান্ত ডিলিটের জন্য সাপোর্টে যোগাযোগ করতে হবে।
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>বাতিল</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDeleteAccount}
-                        className="bg-destructive hover:bg-destructive/90"
-                      >
-                        হ্যাঁ, ডিলিট করুন
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </CardContent>
-            </Card>
+          <TabsContent value="data" className="mt-4">
+            <GDPRDataPanel />
           </TabsContent>
         </Tabs>
       </div>
