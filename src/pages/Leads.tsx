@@ -157,8 +157,11 @@ export default function Leads() {
     const matchesSearch = !search || [l.visitor_name, l.visitor_email, l.visitor_phone, l.message]
       .filter(Boolean).some((v) => v!.toLowerCase().includes(search.toLowerCase()));
     const matchesStatus = statusFilter === 'all' || l.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesTag = tagFilter === 'all' || (l.tags || []).includes(tagFilter);
+    return matchesSearch && matchesStatus && matchesTag;
   });
+
+  const allTags = Array.from(new Set(leads.flatMap((l) => l.tags || []))).sort();
 
   const statusCounts = STATUSES.reduce((acc, s) => {
     acc[s.value] = leads.filter((l) => l.status === s.value).length;
