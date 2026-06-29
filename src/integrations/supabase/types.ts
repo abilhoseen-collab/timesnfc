@@ -1343,6 +1343,7 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          reminder_sent_at: string | null
           status: string | null
           updated_at: string
           vcard_id: string
@@ -1356,6 +1357,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          reminder_sent_at?: string | null
           status?: string | null
           updated_at?: string
           vcard_id: string
@@ -1369,6 +1371,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          reminder_sent_at?: string | null
           status?: string | null
           updated_at?: string
           vcard_id?: string
@@ -1644,8 +1647,10 @@ export type Database = {
           directory_category: string | null
           email: string | null
           facebook_url: string | null
+          ga_measurement_id: string | null
           github_url: string | null
           hide_branding: boolean
+          hubspot_token: string | null
           id: string
           instagram_url: string | null
           is_active: boolean | null
@@ -1653,6 +1658,10 @@ export type Database = {
           linkedin_url: string | null
           linktree_enabled: boolean
           listed_in_directory: boolean
+          mailchimp_api_key: string | null
+          mailchimp_audience_id: string | null
+          meeting_link: string | null
+          meta_pixel_id: string | null
           name: string
           notification_email: string | null
           notify_on_click: boolean | null
@@ -1679,6 +1688,7 @@ export type Database = {
           website: string | null
           whatsapp_number: string | null
           youtube_url: string | null
+          zapier_webhook_url: string | null
         }
         Insert: {
           address?: string | null
@@ -1698,8 +1708,10 @@ export type Database = {
           directory_category?: string | null
           email?: string | null
           facebook_url?: string | null
+          ga_measurement_id?: string | null
           github_url?: string | null
           hide_branding?: boolean
+          hubspot_token?: string | null
           id?: string
           instagram_url?: string | null
           is_active?: boolean | null
@@ -1707,6 +1719,10 @@ export type Database = {
           linkedin_url?: string | null
           linktree_enabled?: boolean
           listed_in_directory?: boolean
+          mailchimp_api_key?: string | null
+          mailchimp_audience_id?: string | null
+          meeting_link?: string | null
+          meta_pixel_id?: string | null
           name: string
           notification_email?: string | null
           notify_on_click?: boolean | null
@@ -1733,6 +1749,7 @@ export type Database = {
           website?: string | null
           whatsapp_number?: string | null
           youtube_url?: string | null
+          zapier_webhook_url?: string | null
         }
         Update: {
           address?: string | null
@@ -1752,8 +1769,10 @@ export type Database = {
           directory_category?: string | null
           email?: string | null
           facebook_url?: string | null
+          ga_measurement_id?: string | null
           github_url?: string | null
           hide_branding?: boolean
+          hubspot_token?: string | null
           id?: string
           instagram_url?: string | null
           is_active?: boolean | null
@@ -1761,6 +1780,10 @@ export type Database = {
           linkedin_url?: string | null
           linktree_enabled?: boolean
           listed_in_directory?: boolean
+          mailchimp_api_key?: string | null
+          mailchimp_audience_id?: string | null
+          meeting_link?: string | null
+          meta_pixel_id?: string | null
           name?: string
           notification_email?: string | null
           notify_on_click?: boolean | null
@@ -1787,6 +1810,7 @@ export type Database = {
           website?: string | null
           whatsapp_number?: string | null
           youtube_url?: string | null
+          zapier_webhook_url?: string | null
         }
         Relationships: [
           {
