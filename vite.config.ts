@@ -63,12 +63,43 @@ export default defineConfig(({ mode }) => ({
             },
           },
           {
-            // Images
+            // OG preview images served by our edge function — StaleWhileRevalidate
+            urlPattern: /\/functions\/v1\/vcard-og-image/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "og-images",
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 14 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // QR code images (qrserver / public QR endpoints)
+            urlPattern: /^https:\/\/api\.qrserver\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "qr-codes",
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // vCard photos & template assets stored in Supabase Storage
+            urlPattern: /\/storage\/v1\/object\/public\/.*\.(?:png|jpg|jpeg|webp|svg|gif)$/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "vcard-assets",
+              expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // Generic images fallback
             urlPattern: ({ request }) => request.destination === "image",
             handler: "CacheFirst",
             options: {
               cacheName: "images",
               expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
             },
           },
           {
