@@ -4,6 +4,7 @@ import { Camera, User, Loader2, Layout, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { FormData } from './types';
+import { optimizeImage, ImagePresets, formatBytes } from '@/lib/imageOptimizer';
 
 interface PhotoUploaderProps {
   formData: FormData;
@@ -67,20 +68,24 @@ export default function PhotoUploader({ formData, onChange, userId }: PhotoUploa
       toast({ title: 'Invalid file', description: 'Please upload an image file', variant: 'destructive' });
       return;
     }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'File too large', description: 'Please upload an image smaller than 5MB', variant: 'destructive' });
+    // 10MB hard cap on the *input* — we'll re-encode to ~50-200KB
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Please upload an image smaller than 10MB', variant: 'destructive' });
       return;
     }
 
     setUploadingPhoto(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}/${Date.now()}.${fileExt}`;
+      // Optimize: resize to 800px max edge + WebP encode (fallback JPEG)
+      const optimized = await optimizeImage(file, ImagePresets.avatar);
+      const fileName = `${userId}/${Date.now()}.${optimized.ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from('profile-photos')
-        .upload(fileName, file);
+        .upload(fileName, optimized.blob, {
+          contentType: optimized.mime,
+          cacheControl: '31536000', // 1y — filename is timestamped so cache-busts safely
+        });
 
       if (uploadError) throw uploadError;
 
@@ -89,7 +94,11 @@ export default function PhotoUploader({ formData, onChange, userId }: PhotoUploa
         .getPublicUrl(fileName);
 
       onChange('photo_url', publicUrl);
-      toast({ title: 'Photo uploaded', description: 'Your profile photo has been uploaded successfully' });
+      const saved = Math.round((1 - optimized.ratio) * 100);
+      toast({
+        title: 'ছবি অপ্টিমাইজ হয়েছে',
+        description: `${formatBytes(optimized.originalSize)} → ${formatBytes(optimized.blob.size)} (${saved}% কম)`,
+      });
     } catch (error: any) {
       toast({ title: 'Upload failed', description: error.message || 'Failed to upload photo', variant: 'destructive' });
     } finally {
@@ -105,20 +114,22 @@ export default function PhotoUploader({ formData, onChange, userId }: PhotoUploa
       toast({ title: 'Invalid file', description: 'Please upload an image file', variant: 'destructive' });
       return;
     }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'File too large', description: 'Please upload an image smaller than 5MB', variant: 'destructive' });
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Please upload an image smaller than 10MB', variant: 'destructive' });
       return;
     }
 
     setUploadingCover(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `covers/${userId}/${Date.now()}.${fileExt}`;
+      const optimized = await optimizeImage(file, ImagePresets.cover);
+      const fileName = `covers/${userId}/${Date.now()}.${optimized.ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from('profile-photos')
-        .upload(fileName, file);
+        .upload(fileName, optimized.blob, {
+          contentType: optimized.mime,
+          cacheControl: '31536000',
+        });
 
       if (uploadError) throw uploadError;
 
@@ -127,7 +138,11 @@ export default function PhotoUploader({ formData, onChange, userId }: PhotoUploa
         .getPublicUrl(fileName);
 
       onChange('cover_image_url', publicUrl);
-      toast({ title: 'Cover image uploaded successfully' });
+      const saved = Math.round((1 - optimized.ratio) * 100);
+      toast({
+        title: 'Cover image uploaded',
+        description: `${formatBytes(optimized.originalSize)} → ${formatBytes(optimized.blob.size)} (${saved}% কম)`,
+      });
     } catch (error: any) {
       toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
     } finally {
@@ -192,7 +207,7 @@ export default function PhotoUploader({ formData, onChange, userId }: PhotoUploa
               </Button>
             )}
             <p className="text-xs text-muted-foreground mt-2">
-              JPG, PNG or GIF. Max 5MB. AI Enhance দিয়ে professional লুক দিন।
+              JPG, PNG, WebP বা GIF। Max 10MB — auto-resize হয়ে WebP-তে কনভার্ট হবে।
             </p>
           </div>
         </div>
@@ -255,7 +270,7 @@ export default function PhotoUploader({ formData, onChange, userId }: PhotoUploa
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            Recommended size: 1200x400px. Max 5MB. This will appear as a banner at the top of your card.
+            Recommended: 1200x400px। Max 10MB — auto-resize হয়ে WebP-তে কনভার্ট হবে।
           </p>
         </div>
       </div>
