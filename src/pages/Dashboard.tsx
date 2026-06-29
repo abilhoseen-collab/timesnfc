@@ -42,7 +42,8 @@ import {
   Settings,
   Receipt,
   LifeBuoy,
-  Gift
+  Gift,
+  Users as UsersIcon
 } from 'lucide-react';
 import { NotificationBell } from '@/components/NotificationBell';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
@@ -443,6 +444,12 @@ export default function Dashboard() {
             </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/referrals')} title="রেফারেল" className="hidden sm:inline-flex">
               <Gift size={20} />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/leads')} title="Leads / CRM" className="hidden sm:inline-flex">
+              <UsersIcon size={20} />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/bulk-qr')} title="Bulk QR" className="hidden sm:inline-flex">
+              <QrCode size={20} />
             </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} title="সেটিংস">
               <Settings size={20} />
