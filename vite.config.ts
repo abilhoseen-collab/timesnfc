@@ -39,6 +39,7 @@ export default defineConfig(({ mode }) => ({
         clientsClaim: true,
         skipWaiting: false,
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+        importScripts: ["/push-sw.js"],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff,woff2}"],
         runtimeCaching: [
           {
