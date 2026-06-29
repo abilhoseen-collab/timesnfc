@@ -36,6 +36,7 @@ import TermsOfService from "./pages/TermsOfService";
 import AccountSettings from "./pages/AccountSettings";
 import Billing from "./pages/Billing";
 import Support from "./pages/Support";
+import Referrals from "./pages/Referrals";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -89,6 +90,7 @@ const App = () => (
                 <Route path="/settings" element={<AccountSettings />} />
                 <Route path="/billing" element={<Billing />} />
                 <Route path="/support" element={<Support />} />
+                <Route path="/referrals" element={<Referrals />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
