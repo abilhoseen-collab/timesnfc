@@ -14,10 +14,13 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useTeamRoles } from '@/hooks/useTeamRoles';
 
 interface Lead {
   id: string;
   vcard_id: string;
+  user_id: string | null;
+  team_id: string | null;
   visitor_name: string;
   visitor_email: string | null;
   visitor_phone: string | null;
@@ -57,6 +60,7 @@ const SOURCES: Record<string, string> = {
 export default function Leads() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { canEdit, canDelete, getRole } = useTeamRoles();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
