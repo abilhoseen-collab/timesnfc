@@ -40,7 +40,9 @@ import Referrals from "./pages/Referrals";
 import Leads from "./pages/Leads";
 import BulkQR from "./pages/BulkQR";
 import Maintenance from "./pages/Maintenance";
+import Offline from "./pages/Offline";
 import MaintenanceGate from "./components/MaintenanceGate";
+import PWAManager from "./components/PWAManager";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,6 +63,7 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <PWAManager />
             <BrowserRouter>
               <MaintenanceGate>
               <Routes>
@@ -99,6 +102,7 @@ const App = () => (
                 <Route path="/leads" element={<Leads />} />
                 <Route path="/bulk-qr" element={<BulkQR />} />
                 <Route path="/maintenance" element={<Maintenance />} />
+                <Route path="/offline" element={<Offline />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
