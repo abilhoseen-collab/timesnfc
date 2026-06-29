@@ -50,6 +50,8 @@ import Leaderboard from "./pages/Leaderboard";
 import Network from "./pages/Network";
 import LinktreeView from "./pages/LinktreeView";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
+import HelpCenter from "./pages/HelpCenter";
+import OnboardingTour from "./components/OnboardingTour";
 import MaintenanceGate from "./components/MaintenanceGate";
 import PWAManager from "./components/PWAManager";
 
