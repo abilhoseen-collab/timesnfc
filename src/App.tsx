@@ -40,6 +40,8 @@ import Referrals from "./pages/Referrals";
 import Leads from "./pages/Leads";
 import BulkQR from "./pages/BulkQR";
 import BulkCreate from "./pages/BulkCreate";
+import Teams from "./pages/Teams";
+import AcceptInvite from "./pages/AcceptInvite";
 import Maintenance from "./pages/Maintenance";
 import Offline from "./pages/Offline";
 import PWADiagnostics from "./pages/PWADiagnostics";
@@ -104,6 +106,8 @@ const App = () => (
                 <Route path="/leads" element={<Leads />} />
                 <Route path="/bulk-qr" element={<BulkQR />} />
                 <Route path="/bulk-create" element={<BulkCreate />} />
+                <Route path="/teams" element={<Teams />} />
+                <Route path="/accept-invite" element={<AcceptInvite />} />
                 <Route path="/maintenance" element={<Maintenance />} />
                 <Route path="/offline" element={<Offline />} />
                 <Route path="/pwa-diagnostics" element={<PWADiagnostics />} />
