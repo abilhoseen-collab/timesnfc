@@ -456,6 +456,7 @@ export default function Dashboard() {
       </header>
 
 
+      <OnboardingWizard />
       <main className="container-custom py-8">
         {/* Welcome Section */}
         <motion.div
