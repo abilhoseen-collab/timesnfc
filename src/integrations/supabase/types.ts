@@ -514,6 +514,33 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          email_new_lead: boolean
+          push_new_lead: boolean
+          updated_at: string
+          user_id: string
+          weekly_digest: boolean
+        }
+        Insert: {
+          created_at?: string
+          email_new_lead?: boolean
+          push_new_lead?: boolean
+          updated_at?: string
+          user_id: string
+          weekly_digest?: boolean
+        }
+        Update: {
+          created_at?: string
+          email_new_lead?: boolean
+          push_new_lead?: boolean
+          updated_at?: string
+          user_id?: string
+          weekly_digest?: boolean
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -705,6 +732,39 @@ export type Database = {
           referral_code?: string | null
           referred_by?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_used_at: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_used_at?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_used_at?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }
