@@ -22,8 +22,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Loader2, User, Lock, Mail, Trash2, ArrowLeft, Bell } from "lucide-react";
+import { Loader2, User, Lock, Mail, Trash2, ArrowLeft, Bell, Users } from "lucide-react";
 import NotificationSettings from "@/components/NotificationSettings";
+import TeamManagementPanel from "@/components/TeamManagementPanel";
 
 const profileSchema = z.object({
   full_name: z.string().trim().min(1, "নাম প্রয়োজন").max(100, "নাম ১০০ অক্ষরের বেশি হতে পারবে না"),
@@ -199,7 +200,7 @@ export default function AccountSettings() {
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="profile" className="gap-1.5">
               <User size={14} /> প্রোফাইল
             </TabsTrigger>
@@ -211,6 +212,9 @@ export default function AccountSettings() {
             </TabsTrigger>
             <TabsTrigger value="notifications" className="gap-1.5">
               <Bell size={14} /> Notifications
+            </TabsTrigger>
+            <TabsTrigger value="team" className="gap-1.5">
+              <Users size={14} /> Team
             </TabsTrigger>
             <TabsTrigger value="security" className="gap-1.5">
               <Lock size={14} /> 2FA
