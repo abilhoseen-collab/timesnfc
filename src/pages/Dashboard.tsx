@@ -1238,7 +1238,10 @@ export default function Dashboard() {
               {filteredVcards.map((card, index) => {
                 // Get analytics for this card
                 const cardViews = analyticsEvents.filter(e => e.vcard_id === card.id && e.event_type === 'view').length;
-                
+                const canEditCard = canEditTeam(card.team_id, card.user_id);
+                const canDeleteCard = canDeleteTeam(card.team_id, card.user_id);
+                const teamRole = getRole(card.team_id);
+
                 return (
                   <motion.div
                     key={card.id}
