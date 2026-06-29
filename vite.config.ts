@@ -38,6 +38,7 @@ export default defineConfig(({ mode }) => ({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: false,
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff,woff2}"],
         runtimeCaching: [
           {
