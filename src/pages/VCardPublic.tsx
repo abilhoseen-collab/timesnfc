@@ -436,8 +436,21 @@ END:VCARD`;
       }).catch(() => {});
 
       toast({ title: 'Appointment booked successfully!' });
+      trackConversion('booking_cta', { vcardId: vcard.id });
+
+      // Optional WhatsApp confirmation deep-link (visitor → owner)
+      const ownerWa = vcard.owner_whatsapp_number || (vcard as any).whatsapp_number;
+      if (ownerWa) {
+        const wa = ownerWa.replace(/[^\d]/g, '');
+        const msg = encodeURIComponent(
+          `আসসালামু আলাইকুম, আমি ${appointmentForm.name}. ${appointmentForm.date} ${appointmentForm.time}-এ একটি appointment book করেছি।`
+        );
+        window.open(`https://wa.me/${wa}?text=${msg}`, '_blank');
+      }
+
       setShowAppointmentModal(false);
       setAppointmentForm({ name: '', email: '', phone: '', date: '', time: '', notes: '' });
+      setPhoneVerified(false);
       trackLinkClick('appointment_booked');
     } catch (error: any) {
       toast({ title: 'Failed to book appointment', variant: 'destructive' });
