@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Users, Search, Loader2, Mail, Phone, MessageSquare, Calendar, Trash2, Download } from 'lucide-react';
+import { ArrowLeft, Users, Search, Loader2, Mail, Phone, MessageSquare, Calendar, Trash2, Download, Tag, X, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -25,8 +25,18 @@ interface Lead {
   status: string;
   message: string | null;
   notes: string | null;
+  tags: string[] | null;
   created_at: string;
 }
+
+const TAG_PRESETS = ['hot', 'follow-up', 'vip', 'cold', 'spam'];
+const TAG_COLORS: Record<string, string> = {
+  hot: 'bg-red-100 text-red-700',
+  'follow-up': 'bg-amber-100 text-amber-700',
+  vip: 'bg-purple-100 text-purple-700',
+  cold: 'bg-sky-100 text-sky-700',
+  spam: 'bg-gray-200 text-gray-700',
+};
 
 const STATUSES = [
   { value: 'new', label: 'নতুন', color: 'bg-blue-100 text-blue-700' },
@@ -51,7 +61,25 @@ export default function Leads() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [tagFilter, setTagFilter] = useState<string>('all');
   const [editingNotes, setEditingNotes] = useState<{ id: string; notes: string } | null>(null);
+  const [editingTags, setEditingTags] = useState<{ id: string; tags: string[]; input: string } | null>(null);
+
+  const toggleTag = async (id: string, current: string[], tag: string) => {
+    const next = current.includes(tag) ? current.filter((t) => t !== tag) : [...current, tag];
+    const { error } = await supabase.from('vcard_leads').update({ tags: next }).eq('id', id);
+    if (error) { toast({ title: 'Tag আপডেট ব্যর্থ', variant: 'destructive' }); return; }
+    setLeads((ls) => ls.map((l) => (l.id === id ? { ...l, tags: next } : l)));
+    if (editingTags?.id === id) setEditingTags({ ...editingTags, tags: next });
+  };
+
+  const addCustomTag = async () => {
+    if (!editingTags) return;
+    const raw = editingTags.input.trim().toLowerCase().replace(/\s+/g, '-').slice(0, 20);
+    if (!raw || editingTags.tags.includes(raw)) { setEditingTags({ ...editingTags, input: '' }); return; }
+    await toggleTag(editingTags.id, editingTags.tags, raw);
+    setEditingTags({ ...editingTags, input: '' });
+  };
 
   useEffect(() => {
     if (user) fetchLeads();
@@ -106,10 +134,11 @@ export default function Leads() {
   };
 
   const exportCsv = () => {
-    const header = ['Name', 'Email', 'Phone', 'Source', 'Status', 'Message', 'Notes', 'Created'];
+    const header = ['Name', 'Email', 'Phone', 'Source', 'Status', 'Tags', 'Message', 'Notes', 'Created'];
     const rows = filtered.map((l) => [
       l.visitor_name, l.visitor_email || '', l.visitor_phone || '',
-      l.source, l.status, (l.message || '').replace(/\n/g, ' '),
+      l.source, l.status, (l.tags || []).join('|'),
+      (l.message || '').replace(/\n/g, ' '),
       (l.notes || '').replace(/\n/g, ' '),
       new Date(l.created_at).toISOString(),
     ]);
@@ -129,8 +158,11 @@ export default function Leads() {
     const matchesSearch = !search || [l.visitor_name, l.visitor_email, l.visitor_phone, l.message]
       .filter(Boolean).some((v) => v!.toLowerCase().includes(search.toLowerCase()));
     const matchesStatus = statusFilter === 'all' || l.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesTag = tagFilter === 'all' || (l.tags || []).includes(tagFilter);
+    return matchesSearch && matchesStatus && matchesTag;
   });
+
+  const allTags = Array.from(new Set(leads.flatMap((l) => l.tags || []))).sort();
 
   const statusCounts = STATUSES.reduce((acc, s) => {
     acc[s.value] = leads.filter((l) => l.status === s.value).length;
@@ -184,10 +216,17 @@ export default function Leads() {
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">সব status</SelectItem>
               {STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={tagFilter} onValueChange={setTagFilter}>
+            <SelectTrigger className="w-32"><SelectValue placeholder="Tag" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">সব tag</SelectItem>
+              {allTags.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -212,6 +251,9 @@ export default function Leads() {
                         <h3 className="font-semibold">{l.visitor_name}</h3>
                         <Badge variant="outline" className="text-xs">{SOURCES[l.source] || l.source}</Badge>
                         <Badge className={`text-xs ${status.color}`}>{status.label}</Badge>
+                        {(l.tags || []).map((t) => (
+                          <span key={t} className={`text-[10px] px-2 py-0.5 rounded-full ${TAG_COLORS[t] || 'bg-muted text-foreground'}`}>#{t}</span>
+                        ))}
                       </div>
                       <div className="mt-2 flex flex-wrap gap-3 text-sm text-muted-foreground">
                         {l.visitor_email && <a href={`mailto:${l.visitor_email}`} className="flex items-center gap-1 hover:text-foreground"><Mail size={12} />{l.visitor_email}</a>}
@@ -232,6 +274,47 @@ export default function Leads() {
                           {STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
+                      <Dialog open={editingTags?.id === l.id} onOpenChange={(o) => !o && setEditingTags(null)}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="outline" onClick={() => setEditingTags({ id: l.id, tags: l.tags || [], input: '' })}>
+                            <Tag size={14} />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader><DialogTitle>Tags - {l.visitor_name}</DialogTitle></DialogHeader>
+                          <div className="space-y-3">
+                            <div className="flex flex-wrap gap-2">
+                              {(editingTags?.tags || []).map((t) => (
+                                <span key={t} className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${TAG_COLORS[t] || 'bg-muted'}`}>
+                                  #{t}
+                                  <button onClick={() => toggleTag(l.id, editingTags!.tags, t)}><X size={12} /></button>
+                                </span>
+                              ))}
+                              {(editingTags?.tags || []).length === 0 && <span className="text-xs text-muted-foreground">কোনো tag নেই</span>}
+                            </div>
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-2">দ্রুত যোগ করুন:</div>
+                              <div className="flex flex-wrap gap-2">
+                                {TAG_PRESETS.filter((t) => !(editingTags?.tags || []).includes(t)).map((t) => (
+                                  <button key={t} onClick={() => toggleTag(l.id, editingTags!.tags, t)} className={`text-xs px-2 py-1 rounded-full border hover:bg-muted ${TAG_COLORS[t] || ''}`}>
+                                    + #{t}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Input
+                                value={editingTags?.input || ''}
+                                onChange={(e) => editingTags && setEditingTags({ ...editingTags, input: e.target.value })}
+                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomTag(); } }}
+                                placeholder="কাস্টম tag..."
+                                className="h-9 text-sm"
+                              />
+                              <Button size="sm" onClick={addCustomTag}><Plus size={14} /></Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                       <Dialog open={editingNotes?.id === l.id} onOpenChange={(o) => !o && setEditingNotes(null)}>
                         <DialogTrigger asChild>
                           <Button size="sm" variant="outline" onClick={() => setEditingNotes({ id: l.id, notes: l.notes || '' })}>
