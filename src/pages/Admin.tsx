@@ -11,6 +11,7 @@ import PackageManager from '@/components/admin/PackageManager';
 import DashboardOverview from '@/components/admin/DashboardOverview';
 import PaymentSettingsManager from '@/components/admin/PaymentSettingsManager';
 import CouponManager from '@/components/admin/CouponManager';
+import MaintenanceSettings from '@/components/admin/MaintenanceSettings';
 import { 
   ArrowLeft,
   CheckCircle,
@@ -115,7 +116,7 @@ export default function Admin() {
   const { toast } = useToast();
 
   // Tab management
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'subscriptions' | 'nfc-orders' | 'upgrades' | 'users' | 'settings' | 'homepage' | 'packages' | 'payment-settings' | 'coupons'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'subscriptions' | 'nfc-orders' | 'upgrades' | 'users' | 'settings' | 'homepage' | 'packages' | 'payment-settings' | 'coupons' | 'maintenance'>('dashboard');
 
   // Subscriptions state
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -1007,6 +1008,17 @@ export default function Admin() {
               <Tag size={18} />
               Coupons
             </button>
+            <button
+              onClick={() => { setActiveTab('maintenance'); }}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${
+                activeTab === 'maintenance'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-card border border-border text-foreground hover:bg-accent'
+              }`}
+            >
+              <Settings size={18} />
+              Maintenance
+            </button>
           </div>
 
           {/* Stats */}
@@ -1092,6 +1104,10 @@ export default function Admin() {
           ) : activeTab === 'coupons' ? (
             <div className="bg-card rounded-2xl border border-border p-6">
               <CouponManager />
+            </div>
+          ) : activeTab === 'maintenance' ? (
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <MaintenanceSettings />
             </div>
           ) : activeTab === 'users' ? (
             <div className="space-y-4">

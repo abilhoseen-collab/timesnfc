@@ -62,6 +62,25 @@ export default function ContactForm({
         user_agent: navigator.userAgent,
       });
 
+      // Capture lead in CRM (best-effort; RLS validates vcard ownership)
+      const { data: ownerRow } = await supabase
+        .from('vcards')
+        .select('user_id')
+        .eq('id', vcardId)
+        .maybeSingle();
+      if (ownerRow?.user_id) {
+        await supabase.from('vcard_leads').insert({
+          vcard_id: vcardId,
+          user_id: ownerRow.user_id,
+          visitor_name: formData.name,
+          visitor_email: formData.email,
+          visitor_phone: formData.phone || null,
+          message: formData.message,
+          source: 'contact_form',
+          status: 'new',
+        });
+      }
+
       // Send email notification via edge function
       await supabase.functions.invoke('send-contact-notification', {
         body: {
@@ -72,6 +91,7 @@ export default function ContactForm({
           message: formData.message,
         },
       });
+
 
       setSubmitted(true);
       onSubmit?.();
