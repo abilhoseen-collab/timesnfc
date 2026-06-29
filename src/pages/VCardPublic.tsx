@@ -381,6 +381,10 @@ END:VCARD`;
       toast({ title: 'Please fill all required fields', variant: 'destructive' });
       return;
     }
+    if (vcard.require_phone_verification && !phoneVerified) {
+      toast({ title: 'ফোন ভেরিফিকেশন প্রয়োজন', variant: 'destructive' });
+      return;
+    }
 
     setBookingAppointment(true);
     try {
@@ -392,7 +396,8 @@ END:VCARD`;
         appointment_date: appointmentForm.date,
         appointment_time: appointmentForm.time,
         notes: appointmentForm.notes || null,
-      }).select().single();
+        phone_verified: phoneVerified,
+      } as any).select().single();
 
       if (error) throw error;
 
