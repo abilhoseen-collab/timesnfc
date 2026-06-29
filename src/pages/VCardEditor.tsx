@@ -33,6 +33,7 @@ import {
 } from '@/components/vcard-editor';
 import CustomDomainManager from '@/components/vcard-editor/CustomDomainManager';
 import IntegrationsPanel from '@/components/vcard-editor/IntegrationsPanel';
+import ThemeBuilderPanel from '@/components/vcard-editor/ThemeBuilderPanel';
 
 export default function VCardEditor() {
   const { id } = useParams();
@@ -389,6 +390,7 @@ export default function VCardEditor() {
                   Analytics
                 </TabsTrigger>
                 <TabsTrigger value="integrations">Integrations</TabsTrigger>
+                <TabsTrigger value="theme">Theme</TabsTrigger>
               </TabsList>
 
               <TabsContent value="content">
