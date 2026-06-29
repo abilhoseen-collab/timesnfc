@@ -278,7 +278,7 @@ export default function Leads() {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <Select value={l.status} onValueChange={(v) => updateStatus(l.id, v)}>
+                      <Select value={l.status} onValueChange={(v) => updateStatus(l.id, v)} disabled={!writable}>
                         <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -286,7 +286,7 @@ export default function Leads() {
                       </Select>
                       <Dialog open={editingTags?.id === l.id} onOpenChange={(o) => !o && setEditingTags(null)}>
                         <DialogTrigger asChild>
-                          <Button size="sm" variant="outline" onClick={() => setEditingTags({ id: l.id, tags: l.tags || [], input: '' })}>
+                          <Button size="sm" variant="outline" disabled={!writable} onClick={() => setEditingTags({ id: l.id, tags: l.tags || [], input: '' })}>
                             <Tag size={14} />
                           </Button>
                         </DialogTrigger>
@@ -327,7 +327,7 @@ export default function Leads() {
                       </Dialog>
                       <Dialog open={editingNotes?.id === l.id} onOpenChange={(o) => !o && setEditingNotes(null)}>
                         <DialogTrigger asChild>
-                          <Button size="sm" variant="outline" onClick={() => setEditingNotes({ id: l.id, notes: l.notes || '' })}>
+                          <Button size="sm" variant="outline" disabled={!writable} onClick={() => setEditingNotes({ id: l.id, notes: l.notes || '' })}>
                             <MessageSquare size={14} />
                           </Button>
                         </DialogTrigger>
@@ -342,9 +342,11 @@ export default function Leads() {
                           <Button onClick={saveNotes}>সংরক্ষণ করুন</Button>
                         </DialogContent>
                       </Dialog>
-                      <Button size="sm" variant="ghost" onClick={() => removeLead(l.id)}>
-                        <Trash2 size={14} className="text-destructive" />
-                      </Button>
+                      {deletable && (
+                        <Button size="sm" variant="ghost" onClick={() => removeLead(l.id)}>
+                          <Trash2 size={14} className="text-destructive" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
