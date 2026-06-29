@@ -40,7 +40,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
+    const referralCode = (typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('ref')
+      : null)?.toUpperCase() || undefined;
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -48,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: redirectUrl,
         data: {
           full_name: fullName,
+          ...(referralCode ? { referred_by_code: referralCode } : {}),
         }
       }
     });
