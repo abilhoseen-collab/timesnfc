@@ -247,6 +247,9 @@ export default function Leads() {
           <div className="space-y-3">
             {filtered.map((l) => {
               const status = STATUSES.find((s) => s.value === l.status) || STATUSES[0];
+              const writable = canEdit(l.team_id, l.user_id);
+              const deletable = canDelete(l.team_id, l.user_id);
+              const role = getRole(l.team_id);
               return (
                 <div key={l.id} className="border rounded-xl p-4 bg-card">
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -255,6 +258,9 @@ export default function Leads() {
                         <h3 className="font-semibold">{l.visitor_name}</h3>
                         <Badge variant="outline" className="text-xs">{SOURCES[l.source] || l.source}</Badge>
                         <Badge className={`text-xs ${status.color}`}>{status.label}</Badge>
+                        {role && role !== 'owner' && (
+                          <Badge variant="outline" className="text-[10px] uppercase">{role}</Badge>
+                        )}
                         {(l.tags || []).map((t) => (
                           <span key={t} className={`text-[10px] px-2 py-0.5 rounded-full ${TAG_COLORS[t] || 'bg-muted text-foreground'}`}>#{t}</span>
                         ))}
