@@ -94,7 +94,6 @@ interface VCard {
   appointment_email: string | null;
   require_phone_verification?: boolean | null;
   owner_whatsapp_number?: string | null;
-  whatsapp_number?: string | null;
 }
 
 interface CustomSection {
