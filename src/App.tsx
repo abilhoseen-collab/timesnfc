@@ -39,6 +39,7 @@ import Support from "./pages/Support";
 import Referrals from "./pages/Referrals";
 import Leads from "./pages/Leads";
 import BulkQR from "./pages/BulkQR";
+import BulkCreate from "./pages/BulkCreate";
 import Maintenance from "./pages/Maintenance";
 import Offline from "./pages/Offline";
 import PWADiagnostics from "./pages/PWADiagnostics";
