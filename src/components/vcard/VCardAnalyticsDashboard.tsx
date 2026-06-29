@@ -30,6 +30,8 @@ import {
   Tooltip,
 } from 'recharts';
 
+import AdvancedAnalytics from './AdvancedAnalytics';
+
 interface AnalyticsData {
   id: string;
   event_type: string;
@@ -40,6 +42,9 @@ interface AnalyticsData {
   is_unique: boolean | null;
   time_on_page: number | null;
   referrer: string | null;
+  user_agent: string | null;
+  country: string | null;
+  city: string | null;
 }
 
 interface VCardAnalyticsDashboardProps {
