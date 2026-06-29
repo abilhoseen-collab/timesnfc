@@ -455,6 +455,9 @@ export default function Dashboard() {
             <Button variant="ghost" size="icon" onClick={() => navigate('/bulk-create')} title="Bulk vCard তৈরি (CSV)" className="hidden sm:inline-flex">
               <FileSpreadsheet size={20} />
             </Button>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/teams')} title="Team Management" className="hidden sm:inline-flex">
+              <UsersIcon size={20} />
+            </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} title="সেটিংস">
               <Settings size={20} />
             </Button>
