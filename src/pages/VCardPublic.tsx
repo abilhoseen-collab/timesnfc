@@ -4,6 +4,8 @@ import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import ShareDialog from '@/components/vcard/ShareDialog';
+import TestimonialsSection from '@/components/vcard/TestimonialsSection';
+import SaveContactButton from '@/components/vcard/SaveContactButton';
 import VCardChatWidget from '@/components/vcard/VCardChatWidget';
 import { 
   Mail, 
@@ -1104,6 +1106,16 @@ END:VCARD`;
               </div>
             </motion.div>
           </motion.div>
+        )}
+
+        {/* Testimonials */}
+        {(vcard as any).testimonials_enabled !== false && (
+          <div className="px-4 max-w-3xl mx-auto">
+            <TestimonialsSection vcardId={vcard.id} />
+            <div className="flex justify-center mb-6">
+              <SaveContactButton vcardId={vcard.id} />
+            </div>
+          </div>
         )}
 
         {/* Footer */}
