@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "home": "হোম",
+    "features": "ফিচার",
+    "templates": "টেমপ্লেট",
+    "pricing": "প্যাকেজ",
+    "nfcStore": "NFC স্টোর",
+    "about": "আমাদের সম্পর্কে",
+    "contact": "যোগাযোগ",
+    "dashboard": "ড্যাশবোর্ড",
+    "login": "লগইন",
+    "register": "রেজিস্টার করুন",
+    "cart": "কার্ট",
+    "logout": "লগআউট"
+  },
+  "common": {
+    "save": "সংরক্ষণ করুন",
+    "cancel": "বাতিল",
+    "delete": "মুছুন",
+    "edit": "এডিট",
+    "loading": "লোড হচ্ছে...",
+    "refresh": "রিফ্রেশ",
+    "export": "এক্সপোর্ট",
+    "download": "ডাউনলোড",
+    "search": "খুঁজুন",
+    "back": "ফিরে যান",
+    "language": "ভাষা"
+  },
+  "analytics": {
+    "title": "অ্যানালিটিক্স",
+    "totalViews": "মোট ভিউ",
+    "uniqueVisitors": "ইউনিক ভিজিটর",
+    "linkClicks": "লিংক ক্লিক",
+    "appointments": "অ্যাপয়েন্টমেন্ট",
+    "bounceRate": "বাউন্স রেট",
+    "avgTime": "গড় সময়",
+    "dailyTrends": "দৈনিক ট্রেন্ড",
+    "topLinks": "টপ লিংক",
+    "trafficSources": "ট্রাফিক সোর্স",
+    "geoMap": "ভৌগোলিক ম্যাপ",
+    "exportPdf": "PDF ডাউনলোড",
+    "exportCsv": "CSV ডাউনলোড",
+    "country": "দেশ"
+  },
+  "lang": {
+    "bn": "বাংলা",
+    "en": "English"
+  }
+}
