@@ -360,47 +360,20 @@ export default function AccountSettings() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="invoices" className="mt-4">
+            <InvoicesList />
+          </TabsContent>
+
+          <TabsContent value="activity" className="mt-4">
+            <LoginActivityList />
+          </TabsContent>
+
           <TabsContent value="security" className="mt-4">
             <TwoFactorAuth />
           </TabsContent>
 
-          <TabsContent value="danger" className="mt-4">
-            <Card className="border-destructive/50">
-              <CardHeader>
-                <CardTitle className="text-destructive">বিপজ্জনক অঞ্চল</CardTitle>
-                <CardDescription>
-                  অ্যাকাউন্ট ডিলিট করলে সব ডেটা (vCard, ল্যান্ডিং পেজ, সাবস্ক্রিপশন) মুছে যাবে।
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive">
-                      <Trash2 size={16} className="mr-2" />
-                      অ্যাকাউন্ট ডিলিট করুন
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>আপনি কি নিশ্চিত?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        এই কাজটি অপরিবর্তনীয়। আপনার সকল vCard, ল্যান্ডিং পেজ এবং অর্ডার
-                        ইতিহাস মুছে যাবে। চূড়ান্ত ডিলিটের জন্য সাপোর্টে যোগাযোগ করতে হবে।
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>বাতিল</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDeleteAccount}
-                        className="bg-destructive hover:bg-destructive/90"
-                      >
-                        হ্যাঁ, ডিলিট করুন
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </CardContent>
-            </Card>
+          <TabsContent value="data" className="mt-4">
+            <GDPRDataPanel />
           </TabsContent>
         </Tabs>
       </div>
