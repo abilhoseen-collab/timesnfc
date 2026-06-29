@@ -337,6 +337,20 @@ export default function AccountSettings() {
             <NotificationSettings />
           </TabsContent>
 
+          <TabsContent value="team" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Team / Users</CardTitle>
+                <CardDescription>
+                  Team member যোগ/বাদ, role পরিবর্তন এবং invitation পাঠান
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TeamManagementPanel />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="security" className="mt-4">
             <TwoFactorAuth />
           </TabsContent>
