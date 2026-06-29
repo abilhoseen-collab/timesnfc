@@ -476,24 +476,6 @@ export default function VCardEditor() {
           <div className="hidden lg:block">
             <div className="sticky top-24">
               <h3 className="text-sm font-medium text-muted-foreground mb-3">Live Preview</h3>
-
-              <TabsContent value="analytics">
-                {currentVcardId ? (
-                  <VCardAnalyticsDashboard vcardId={currentVcardId} />
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <BarChart3 size={48} className="mx-auto mb-4 opacity-50" />
-                    <p>Save your card first to see analytics</p>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </motion.div>
-
-          {/* Preview Section */}
-          <div className="hidden lg:block">
-            <div className="sticky top-24">
-              <h3 className="text-sm font-medium text-muted-foreground mb-3">Live Preview</h3>
               <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-lg">
                 <div className="max-h-[600px] overflow-auto">
                   <VCardPreview formData={formData} />
