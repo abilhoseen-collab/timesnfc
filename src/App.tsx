@@ -37,6 +37,10 @@ import AccountSettings from "./pages/AccountSettings";
 import Billing from "./pages/Billing";
 import Support from "./pages/Support";
 import Referrals from "./pages/Referrals";
+import Leads from "./pages/Leads";
+import BulkQR from "./pages/BulkQR";
+import Maintenance from "./pages/Maintenance";
+import MaintenanceGate from "./components/MaintenanceGate";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +62,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <MaintenanceGate>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
@@ -91,9 +96,13 @@ const App = () => (
                 <Route path="/billing" element={<Billing />} />
                 <Route path="/support" element={<Support />} />
                 <Route path="/referrals" element={<Referrals />} />
+                <Route path="/leads" element={<Leads />} />
+                <Route path="/bulk-qr" element={<BulkQR />} />
+                <Route path="/maintenance" element={<Maintenance />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </MaintenanceGate>
             </BrowserRouter>
           </TooltipProvider>
         </CartProvider>

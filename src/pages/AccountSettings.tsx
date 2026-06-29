@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import TwoFactorAuth from "@/components/TwoFactorAuth";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -197,7 +198,7 @@ export default function AccountSettings() {
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="profile" className="gap-1.5">
               <User size={14} /> প্রোফাইল
             </TabsTrigger>
@@ -206,6 +207,9 @@ export default function AccountSettings() {
             </TabsTrigger>
             <TabsTrigger value="email" className="gap-1.5">
               <Mail size={14} /> ইমেইল
+            </TabsTrigger>
+            <TabsTrigger value="security" className="gap-1.5">
+              <Lock size={14} /> 2FA
             </TabsTrigger>
             <TabsTrigger value="danger" className="gap-1.5 text-destructive">
               <Trash2 size={14} /> ডিলিট
@@ -319,6 +323,10 @@ export default function AccountSettings() {
                 </Button>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="security" className="mt-4">
+            <TwoFactorAuth />
           </TabsContent>
 
           <TabsContent value="danger" className="mt-4">

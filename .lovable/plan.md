@@ -1,24 +1,48 @@
-# Phase 4 — Engagement Bundle ✅
+# Phase 5 — Business Bundle ✅
 
 ## যা যোগ হয়েছে
-- **AI চ্যাটবট (visitor)**: `vcard-chat` edge function (Lovable AI Gateway, streaming Gemini 3 Flash) + `VCardChatWidget` floating bubble in public vCard। vCard owner-এর bio/contact context system prompt-এ inject হয়; বাংলা/ইংরেজি auto-detect। `chat_enabled` true হলে শো হয়।
-- **Social Sharing**: `ShareDialog` — WhatsApp, Facebook, Twitter/X, LinkedIn, Telegram, Email + copy link + native share fallback। OG image preview built-in।
-- **OG Image auto-gen**: `vcard-og-image` edge function — dynamic 1200×630 SVG with photo, name, title, company। Cached 1h।
-- **Per-vCard meta (Helmet)**: title, description, canonical, og:*, twitter:* tags route-level।
-- **PWA (manifest-only)**: `manifest.webmanifest` + icons (192/512/apple-touch) + theme-color + apple-mobile meta — Add to Home Screen ready।
 
-## Known limitations
-- OG image is SVG — LinkedIn/Twitter render it; Facebook/iMessage may fall back to default। (Future: PNG rasterization via resvg-wasm)।
-- Per-vCard meta tags via Helmet work for JS-executing crawlers (Google, Slack, Twitter)। Pure non-JS crawlers see static `index.html` fallback।
-- Manifest-only PWA — offline support and service worker postponed (per default PWA guidance)।
+### 🧲 CRM Lead Manager (`/leads`)
+- নতুন `vcard_leads` টেবিল — সব visitor inquiry এক জায়গায়।
+- Source: contact_form / chat / appointment / manual। Status: new → contacted → qualified → converted / lost।
+- Owner CSV export, status pipeline view (5-column stats), search, status filter, per-lead notes ডায়ালগ।
+- ContactForm স্বয়ংক্রিয়ভাবে lead capture করে।
+- RLS: owner/admin শুধুমাত্র; পাবলিক visitor কেবল contact_form/chat/appointment source দিয়ে insert করতে পারে।
 
-## Phase 3 যা এখনো বাকি (Optional, Phase 5+)
-- i18n (English toggle, পুরো site)
+### 📦 Bulk QR (`/bulk-qr`)
+- ইউজারের সব সক্রিয় vCard থেকে একসাথে QR জেনারেট।
+- কাস্টম সাইজ, color, background।
+- ZIP ডাউনলোড + manifest.csv।
+- Individual download অপশনও আছে।
+
+### 🛠️ Maintenance Mode
+- `MaintenanceGate` wrapper সব রুটে। `site_settings.maintenance_mode = { enabled, message, eta }`।
+- Admin সবসময় bypass করে। `/auth`, `/admin`, legal pages সবসময় খোলা থাকে।
+- Admin panel-এ নতুন "Maintenance" ট্যাব।
+- সুন্দর Bengali maintenance পেজ।
+
+### 🔐 2FA (TOTP)
+- AccountSettings → নতুন "2FA" ট্যাব।
+- Supabase MFA enroll/challenge/verify ফ্লো।
+- QR + manual secret কপি; ৬-ডিজিট কোড দিয়ে চালু/বন্ধ।
+- Google Authenticator, Authy ইত্যাদি সাপোর্টেড।
+
+### 🚦 Navigation
+- Dashboard header-এ Leads (Users) + Bulk QR (QrCode) আইকন যোগ।
+
+## Files
+- new: `src/hooks/useMaintenanceMode.tsx`
+- new: `src/components/MaintenanceGate.tsx`
+- new: `src/components/TwoFactorAuth.tsx`
+- new: `src/components/admin/MaintenanceSettings.tsx`
+- new: `src/pages/Maintenance.tsx`, `Leads.tsx`, `BulkQR.tsx`
+- edited: `App.tsx`, `Admin.tsx`, `AccountSettings.tsx`, `Dashboard.tsx`, `ContactForm.tsx`
+- migration: `vcard_leads` table + RLS + indexes
+
+## Phase 6 candidates
+- i18n English toggle
 - AI image enhancement
-- Geo-map visualization
-- CSV/PDF advanced analytics export
-
-## Phase 5 candidates
-- CRM Lead Manager, Bulk QR, 2FA, Maintenance Mode (Business Bundle)
-- Offline PWA (full service worker)
+- Geo-map analytics
+- Full offline PWA (service worker)
 - True PNG OG image (resvg-wasm)
+- Mobile app wrapper (Capacitor)
