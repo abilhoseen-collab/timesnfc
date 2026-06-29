@@ -661,23 +661,30 @@ END:VCARD`;
           )}
 
           {/* Appointment Booking Button */}
-          {vcard.appointment_enabled && (
-            <div className="px-6 pb-4">
-              <Button
-                onClick={() => {
-                  setShowAppointmentModal(true);
-                  trackLinkClick('appointment_button');
-                }}
-                className={`w-full bg-gradient-to-r ${style.bg} hover:opacity-90 text-white font-semibold py-6`}
-              >
-                <Calendar size={18} className="mr-2" />
-                {vcard.appointment_title || 'Book an Appointment'}
-              </Button>
-              {vcard.appointment_description && (
-                <p className="text-xs text-center text-gray-500 mt-2">{vcard.appointment_description}</p>
-              )}
-            </div>
-          )}
+          {vcard.appointment_enabled && (() => {
+            const ctaVariant = getVariant('booking_cta', ['default', 'urgent'] as const, { vcardId: vcard.id });
+            const ctaLabel =
+              ctaVariant === 'urgent'
+                ? `⚡ এখনই বুক করুন — ${vcard.appointment_duration_minutes || 30} মিনিট`
+                : (vcard.appointment_title || 'Book an Appointment');
+            return (
+              <div className="px-6 pb-4">
+                <Button
+                  onClick={() => {
+                    setShowAppointmentModal(true);
+                    trackLinkClick('appointment_button');
+                  }}
+                  className={`w-full bg-gradient-to-r ${style.bg} hover:opacity-90 text-white font-semibold py-6`}
+                >
+                  <Calendar size={18} className="mr-2" />
+                  {ctaLabel}
+                </Button>
+                {vcard.appointment_description && (
+                  <p className="text-xs text-center text-gray-500 mt-2">{vcard.appointment_description}</p>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Social Links */}
           {socialLinks.length > 0 && (
