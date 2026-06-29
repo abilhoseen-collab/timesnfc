@@ -1121,6 +1121,62 @@ export type Database = {
           },
         ]
       }
+      vcard_leads: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          metadata: Json | null
+          notes: string | null
+          source: string
+          status: string
+          updated_at: string
+          user_id: string
+          vcard_id: string
+          visitor_email: string | null
+          visitor_name: string
+          visitor_phone: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          vcard_id: string
+          visitor_email?: string | null
+          visitor_name: string
+          visitor_phone?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          vcard_id?: string
+          visitor_email?: string | null
+          visitor_name?: string
+          visitor_phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vcard_leads_vcard_id_fkey"
+            columns: ["vcard_id"]
+            isOneToOne: false
+            referencedRelation: "vcards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vcards: {
         Row: {
           address: string | null
