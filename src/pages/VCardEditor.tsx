@@ -483,6 +483,16 @@ export default function VCardEditor() {
                   </div>
                 )}
               </TabsContent>
+
+              <TabsContent value="theme">
+                {currentVcardId ? (
+                  <ThemeBuilderPanel vcardId={currentVcardId} />
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    Save your card first to customize theme
+                  </div>
+                )}
+              </TabsContent>
             </Tabs>
           </motion.div>
 
