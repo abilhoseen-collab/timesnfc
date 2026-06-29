@@ -61,7 +61,25 @@ export default function Leads() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [tagFilter, setTagFilter] = useState<string>('all');
   const [editingNotes, setEditingNotes] = useState<{ id: string; notes: string } | null>(null);
+  const [editingTags, setEditingTags] = useState<{ id: string; tags: string[]; input: string } | null>(null);
+
+  const toggleTag = async (id: string, current: string[], tag: string) => {
+    const next = current.includes(tag) ? current.filter((t) => t !== tag) : [...current, tag];
+    const { error } = await supabase.from('vcard_leads').update({ tags: next }).eq('id', id);
+    if (error) { toast({ title: 'Tag আপডেট ব্যর্থ', variant: 'destructive' }); return; }
+    setLeads((ls) => ls.map((l) => (l.id === id ? { ...l, tags: next } : l)));
+    if (editingTags?.id === id) setEditingTags({ ...editingTags, tags: next });
+  };
+
+  const addCustomTag = async () => {
+    if (!editingTags) return;
+    const raw = editingTags.input.trim().toLowerCase().replace(/\s+/g, '-').slice(0, 20);
+    if (!raw || editingTags.tags.includes(raw)) { setEditingTags({ ...editingTags, input: '' }); return; }
+    await toggleTag(editingTags.id, editingTags.tags, raw);
+    setEditingTags({ ...editingTags, input: '' });
+  };
 
   useEffect(() => {
     if (user) fetchLeads();
