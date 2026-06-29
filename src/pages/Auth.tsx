@@ -88,6 +88,7 @@ export default function Auth() {
   }, [searchParams]);
 
   const redirectPath = searchParams.get('redirect') || '/dashboard';
+  const referralCode = searchParams.get('ref')?.toUpperCase() || null;
 
   // Check NFC order status when email changes during signup
   useEffect(() => {
@@ -341,6 +342,13 @@ export default function Auth() {
 
           {/* NFC Order Status Banner */}
           {renderOrderStatus()}
+
+          {/* Referral Code Banner */}
+          {isSignUp && referralCode && (
+            <div className="bg-primary/10 border border-primary/30 rounded-xl p-3 mb-4 text-sm">
+              🎁 রেফারেল কোড <span className="font-mono font-bold text-primary">{referralCode}</span> প্রয়োগ করা হবে।
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">

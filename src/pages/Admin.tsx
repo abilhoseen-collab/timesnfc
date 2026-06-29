@@ -10,6 +10,7 @@ import HomePageContentManager from '@/components/admin/HomePageContentManager';
 import PackageManager from '@/components/admin/PackageManager';
 import DashboardOverview from '@/components/admin/DashboardOverview';
 import PaymentSettingsManager from '@/components/admin/PaymentSettingsManager';
+import CouponManager from '@/components/admin/CouponManager';
 import { 
   ArrowLeft,
   CheckCircle,
@@ -31,7 +32,8 @@ import {
   Filter,
   UserCog,
   X,
-  LayoutDashboard
+  LayoutDashboard,
+  Tag
 } from 'lucide-react';
 import {
   Select,
@@ -113,7 +115,7 @@ export default function Admin() {
   const { toast } = useToast();
 
   // Tab management
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'subscriptions' | 'nfc-orders' | 'upgrades' | 'users' | 'settings' | 'homepage' | 'packages' | 'payment-settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'subscriptions' | 'nfc-orders' | 'upgrades' | 'users' | 'settings' | 'homepage' | 'packages' | 'payment-settings' | 'coupons'>('dashboard');
 
   // Subscriptions state
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -994,6 +996,17 @@ export default function Admin() {
               <CreditCard size={18} />
               Payment Settings
             </button>
+            <button
+              onClick={() => { setActiveTab('coupons'); }}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${
+                activeTab === 'coupons'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-card border border-border text-foreground hover:bg-accent'
+              }`}
+            >
+              <Tag size={18} />
+              Coupons
+            </button>
           </div>
 
           {/* Stats */}
@@ -1075,6 +1088,10 @@ export default function Admin() {
           ) : activeTab === 'payment-settings' ? (
             <div className="bg-card rounded-2xl border border-border p-6">
               <PaymentSettingsManager />
+            </div>
+          ) : activeTab === 'coupons' ? (
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <CouponManager />
             </div>
           ) : activeTab === 'users' ? (
             <div className="space-y-4">

@@ -44,6 +44,104 @@ export type Database = {
         }
         Relationships: []
       }
+      coupon_redemptions: {
+        Row: {
+          coupon_id: string
+          created_at: string
+          discount_amount: number
+          final_amount: number
+          id: string
+          original_amount: number
+          upgrade_request_id: string | null
+          user_id: string
+        }
+        Insert: {
+          coupon_id: string
+          created_at?: string
+          discount_amount: number
+          final_amount: number
+          id?: string
+          original_amount: number
+          upgrade_request_id?: string | null
+          user_id: string
+        }
+        Update: {
+          coupon_id?: string
+          created_at?: string
+          discount_amount?: number
+          final_amount?: number
+          id?: string
+          original_amount?: number
+          upgrade_request_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          applicable_packages: string[] | null
+          code: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_discount: number | null
+          min_amount: number
+          per_user_limit: number
+          updated_at: string
+          usage_count: number
+          usage_limit: number | null
+        }
+        Insert: {
+          applicable_packages?: string[] | null
+          code: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_type: string
+          discount_value: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_discount?: number | null
+          min_amount?: number
+          per_user_limit?: number
+          updated_at?: string
+          usage_count?: number
+          usage_limit?: number | null
+        }
+        Update: {
+          applicable_packages?: string[] | null
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_discount?: number | null
+          min_amount?: number
+          per_user_limit?: number
+          updated_at?: string
+          usage_count?: number
+          usage_limit?: number | null
+        }
+        Relationships: []
+      }
       domain_verifications: {
         Row: {
           a_record: string | null
@@ -578,7 +676,10 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          onboarding_completed: boolean
           phone: string | null
+          referral_code: string | null
+          referred_by: string | null
           updated_at: string
         }
         Insert: {
@@ -587,7 +688,10 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          onboarding_completed?: boolean
           phone?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           updated_at?: string
         }
         Update: {
@@ -596,7 +700,46 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          onboarding_completed?: boolean
           phone?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          referral_code: string
+          referred_user_id: string
+          referrer_id: string
+          reward_days: number
+          rewarded_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referral_code: string
+          referred_user_id: string
+          referrer_id: string
+          reward_days?: number
+          rewarded_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referred_user_id?: string
+          referrer_id?: string
+          reward_days?: number
+          rewarded_at?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: []
@@ -1130,6 +1273,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_referral_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
