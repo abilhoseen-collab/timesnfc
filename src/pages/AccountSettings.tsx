@@ -203,7 +203,7 @@ export default function AccountSettings() {
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="flex flex-wrap gap-1 h-auto justify-start">
             <TabsTrigger value="profile" className="gap-1.5">
               <User size={14} /> প্রোফাইল
             </TabsTrigger>
@@ -219,11 +219,17 @@ export default function AccountSettings() {
             <TabsTrigger value="team" className="gap-1.5">
               <Users size={14} /> Team
             </TabsTrigger>
-            <TabsTrigger value="security" className="gap-1.5">
-              <Lock size={14} /> 2FA
+            <TabsTrigger value="invoices" className="gap-1.5">
+              <FileText size={14} /> Invoices
             </TabsTrigger>
-            <TabsTrigger value="danger" className="gap-1.5 text-destructive">
-              <Trash2 size={14} /> ডিলিট
+            <TabsTrigger value="activity" className="gap-1.5">
+              <Activity size={14} /> Activity
+            </TabsTrigger>
+            <TabsTrigger value="security" className="gap-1.5">
+              <Shield size={14} /> 2FA
+            </TabsTrigger>
+            <TabsTrigger value="data" className="gap-1.5 text-destructive">
+              <Trash2 size={14} /> Data & Delete
             </TabsTrigger>
           </TabsList>
 
