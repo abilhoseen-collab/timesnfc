@@ -1323,15 +1323,24 @@ export default function Dashboard() {
                         </span>
                       </div>
 
+                      {teamRole && teamRole !== 'owner' && (
+                        <div className="mb-2">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground uppercase">
+                            Team · {teamRole}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <Button 
                           variant="outline" 
                           size="sm" 
                           className="flex-1"
                           onClick={() => navigate(`/vcard/${card.id}`)}
+                          disabled={!canEditCard}
+                          title={!canEditCard ? 'অনুমতি নেই' : 'Edit'}
                         >
                           <Edit size={14} className="mr-1" />
-                          Edit
+                          {canEditCard ? 'Edit' : 'View'}
                         </Button>
                         <Button 
                           variant="ghost" 
@@ -1357,14 +1366,16 @@ export default function Dashboard() {
                         >
                           <ExternalLink size={14} />
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleDelete(card.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 size={14} />
-                        </Button>
+                        {canDeleteCard && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDelete(card.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </motion.div>
