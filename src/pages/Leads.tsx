@@ -250,6 +250,9 @@ export default function Leads() {
                         <h3 className="font-semibold">{l.visitor_name}</h3>
                         <Badge variant="outline" className="text-xs">{SOURCES[l.source] || l.source}</Badge>
                         <Badge className={`text-xs ${status.color}`}>{status.label}</Badge>
+                        {(l.tags || []).map((t) => (
+                          <span key={t} className={`text-[10px] px-2 py-0.5 rounded-full ${TAG_COLORS[t] || 'bg-muted text-foreground'}`}>#{t}</span>
+                        ))}
                       </div>
                       <div className="mt-2 flex flex-wrap gap-3 text-sm text-muted-foreground">
                         {l.visitor_email && <a href={`mailto:${l.visitor_email}`} className="flex items-center gap-1 hover:text-foreground"><Mail size={12} />{l.visitor_email}</a>}
