@@ -32,6 +32,7 @@ import {
   initialFormData,
 } from '@/components/vcard-editor';
 import CustomDomainManager from '@/components/vcard-editor/CustomDomainManager';
+import IntegrationsPanel from '@/components/vcard-editor/IntegrationsPanel';
 
 export default function VCardEditor() {
   const { id } = useParams();
@@ -387,6 +388,7 @@ export default function VCardEditor() {
                   <BarChart3 size={14} />
                   Analytics
                 </TabsTrigger>
+                <TabsTrigger value="integrations">Integrations</TabsTrigger>
               </TabsList>
 
               <TabsContent value="content">
@@ -466,6 +468,16 @@ export default function VCardEditor() {
                   <div className="text-center py-12 text-muted-foreground">
                     <BarChart3 size={48} className="mx-auto mb-4 opacity-50" />
                     <p>Save your card first to see analytics</p>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="integrations">
+                {currentVcardId ? (
+                  <IntegrationsPanel vcardId={currentVcardId} />
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    Save your card first to configure integrations
                   </div>
                 )}
               </TabsContent>

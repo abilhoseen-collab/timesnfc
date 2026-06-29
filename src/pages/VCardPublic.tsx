@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import ShareDialog from '@/components/vcard/ShareDialog';
+import VCardPixelScripts from '@/components/vcard/VCardPixelScripts';
 import TestimonialsSection from '@/components/vcard/TestimonialsSection';
 import SaveContactButton from '@/components/vcard/SaveContactButton';
 import VCardChatWidget from '@/components/vcard/VCardChatWidget';
@@ -392,6 +393,22 @@ END:VCARD`;
         console.log('Notification skipped:', notifError);
       }
 
+      // Fan out to integrations
+      supabase.functions.invoke('dispatch-integrations', {
+        body: {
+          vcard_id: vcard.id,
+          type: 'appointment',
+          payload: {
+            visitor_name: appointmentForm.name,
+            visitor_email: appointmentForm.email,
+            visitor_phone: appointmentForm.phone,
+            appointment_date: appointmentForm.date,
+            appointment_time: appointmentForm.time,
+            notes: appointmentForm.notes,
+          },
+        },
+      }).catch(() => {});
+
       toast({ title: 'Appointment booked successfully!' });
       setShowAppointmentModal(false);
       setAppointmentForm({ name: '', email: '', phone: '', date: '', time: '', notes: '' });
@@ -442,6 +459,7 @@ END:VCARD`;
         <meta name="twitter:description" content={pageDesc} />
         <meta name="twitter:image" content={ogImageUrl} />
       </Helmet>
+      <VCardPixelScripts gaId={(vcard as any).ga_measurement_id} pixelId={(vcard as any).meta_pixel_id} />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

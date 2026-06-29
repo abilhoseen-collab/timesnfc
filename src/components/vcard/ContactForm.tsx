@@ -92,6 +92,20 @@ export default function ContactForm({
         },
       });
 
+      // Fan out to integrations (Zapier / Mailchimp / HubSpot)
+      supabase.functions.invoke('dispatch-integrations', {
+        body: {
+          vcard_id: vcardId,
+          type: 'lead',
+          payload: {
+            visitor_name: formData.name,
+            visitor_email: formData.email,
+            visitor_phone: formData.phone,
+            message: formData.message,
+          },
+        },
+      }).catch(() => {});
+
 
       setSubmitted(true);
       onSubmit?.();
