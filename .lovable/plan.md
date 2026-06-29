@@ -1,13 +1,15 @@
-# Phase 2 সম্পন্ন ✓
+# Phase 3 — আংশিক সম্পন্ন
 
-- **#৪ Onboarding**: নতুন ইউজারের জন্য ৪-স্টেপ Welcome wizard (`OnboardingWizard.tsx`)। `profiles.onboarding_completed` ফ্ল্যাগ দিয়ে কন্ট্রোলড।
-- **#৭ Coupon System**: `coupons` + `coupon_redemptions` টেবিল, অ্যাডমিন প্যানেলে নতুন Coupons ট্যাব (`CouponManager.tsx`) — তৈরি/এডিট/ডিলিট, percent/fixed, এক্সপায়ারি, ইউসেজ লিমিট।
-- **#৬ Referral Program**: `referrals` টেবিল + প্রতি ইউজারের `referral_code`। `/referrals` পেজে কোড + শেয়ার লিংক + হিস্টোরি। `/auth?ref=CODE` দিয়ে সাইনআপে অটো-লিংক।
+## ✅ যা যোগ হয়েছে
+- **#১৭ AI Features**: `generate-vcard-bio` এজ ফাংশন (Lovable AI Gateway, gemini-3-flash-preview)। `BasicInfoEditor`-এ "AI দিয়ে লিখুন" বোতাম — কীওয়ার্ড + টোন (পেশাদার/বন্ধুত্বপূর্ণ/সৃজনশীল) + ভাষা (বাংলা/English) অপশন।
+- **#৯ Advanced Analytics**: `AdvancedAnalytics.tsx` — ডিভাইস (মোবাইল/ট্যাবলেট/ডেস্কটপ), ব্রাউজার, ট্রাফিক সোর্স/রেফারার, দেশ, কনভার্সন ফানেল (view → unique → click) + কনভার্সন রেট। `VCardAnalyticsDashboard`-এ ইন্টিগ্রেট।
 
-# Phase 3 বাকি (পরবর্তী)
-- #৯ Advanced Analytics (Pro): geo map, ডিভাইস ভাঙা, conversion funnel, CSV/PDF এক্সপোর্ট
-- #১৭ AI Features: Lovable AI দিয়ে bio অটো-জেনারেট, চ্যাটবট
-- #১৩ i18n: English টগল পাবলিক vCard-এ
+## ⏳ বাকি (Phase 3)
+- **#১৩ i18n**: পাবলিক vCard-এ English টগল — পুরো সাইটে wide-ranging refactor, পরবর্তী সেশনে নেওয়া যেতে পারে।
+- **AI চ্যাটবট** ভিজিটরদের জন্য — vCard-এ embed (`ChatWidgetSettings`-এর সাথে integration)।
+- **AI ইমেজ এনহান্সমেন্ট** প্রোফাইল ছবির জন্য।
+- জিও-ম্যাপ ভিজ্যুয়াল (currently bar/list; map view requires `country` codes এবং extra library)।
+- CSV/PDF এক্সপোর্ট for advanced analytics (existing `AnalyticsExport` already covers basics)।
 
-# পরে (optional polish)
-- ১২ PWA, ১৪ Social sharing+OG image, ১৫ CRM lead manager, ১৬ Bulk QR, ১৮ Maintenance mode, ১৯ 2FA, ২০ Mobile wrapper
+## পরে (optional polish)
+- ১২ PWA, ১৪ Social sharing + OG image auto-gen, ১৫ CRM lead manager, ১৬ Bulk QR, ১৮ Maintenance mode, ১৯ 2FA, ২০ Mobile app wrapper।
