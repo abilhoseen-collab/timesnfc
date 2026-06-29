@@ -103,6 +103,7 @@ const App = () => (
                 <Route path="/referrals" element={<Referrals />} />
                 <Route path="/leads" element={<Leads />} />
                 <Route path="/bulk-qr" element={<BulkQR />} />
+                <Route path="/bulk-create" element={<BulkCreate />} />
                 <Route path="/maintenance" element={<Maintenance />} />
                 <Route path="/offline" element={<Offline />} />
                 <Route path="/pwa-diagnostics" element={<PWADiagnostics />} />
