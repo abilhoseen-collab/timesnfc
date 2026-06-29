@@ -134,10 +134,11 @@ export default function Leads() {
   };
 
   const exportCsv = () => {
-    const header = ['Name', 'Email', 'Phone', 'Source', 'Status', 'Message', 'Notes', 'Created'];
+    const header = ['Name', 'Email', 'Phone', 'Source', 'Status', 'Tags', 'Message', 'Notes', 'Created'];
     const rows = filtered.map((l) => [
       l.visitor_name, l.visitor_email || '', l.visitor_phone || '',
-      l.source, l.status, (l.message || '').replace(/\n/g, ' '),
+      l.source, l.status, (l.tags || []).join('|'),
+      (l.message || '').replace(/\n/g, ' '),
       (l.notes || '').replace(/\n/g, ' '),
       new Date(l.created_at).toISOString(),
     ]);
