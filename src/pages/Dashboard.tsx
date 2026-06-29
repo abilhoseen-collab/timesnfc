@@ -101,6 +101,8 @@ interface VCard {
   qr_foreground_color: string | null;
   qr_background_color: string | null;
   qr_logo_url: string | null;
+  user_id?: string | null;
+  team_id?: string | null;
 }
 
 interface AnalyticsEvent {
