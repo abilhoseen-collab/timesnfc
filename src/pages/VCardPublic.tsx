@@ -419,8 +419,28 @@ END:VCARD`;
     return slots;
   };
 
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const ogImageUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vcard-og-image?slug=${slug}`;
+  const pageTitle = `${vcard.name}${vcard.job_title ? ` — ${vcard.job_title}` : ''}`;
+  const pageDesc = vcard.bio || `${vcard.name}-এর ডিজিটাল বিজনেস কার্ড। তাৎক্ষণিক যোগাযোগ করুন।`;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDesc} />
+        <link rel="canonical" href={shareUrl} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDesc} />
+        <meta property="og:url" content={shareUrl} />
+        <meta property="og:type" content="profile" />
+        <meta property="og:image" content={ogImageUrl} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDesc} />
+        <meta name="twitter:image" content={ogImageUrl} />
+      </Helmet>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
