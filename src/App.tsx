@@ -41,6 +41,7 @@ import Leads from "./pages/Leads";
 import BulkQR from "./pages/BulkQR";
 import Maintenance from "./pages/Maintenance";
 import Offline from "./pages/Offline";
+import PWADiagnostics from "./pages/PWADiagnostics";
 import MaintenanceGate from "./components/MaintenanceGate";
 import PWAManager from "./components/PWAManager";
 
@@ -103,6 +104,7 @@ const App = () => (
                 <Route path="/bulk-qr" element={<BulkQR />} />
                 <Route path="/maintenance" element={<Maintenance />} />
                 <Route path="/offline" element={<Offline />} />
+                <Route path="/pwa-diagnostics" element={<PWADiagnostics />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
