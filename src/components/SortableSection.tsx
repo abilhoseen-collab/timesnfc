@@ -446,18 +446,15 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 5MB', variant: 'destructive' });
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 10MB', variant: 'destructive' });
       return;
     }
 
     setUploadingProductImage(index);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `products/${section.id}/${Date.now()}-${index}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('profile-photos').upload(fileName, file);
-      if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from('profile-photos').getPublicUrl(fileName);
+      const base = `products/${section.id}/${Date.now()}-${index}`;
+      const { publicUrl } = await uploadOptimizedImage(file, 'profile-photos', base, ImagePresets.cover);
       updateProduct(index, 'image', publicUrl);
       toast({ title: 'ছবি আপলোড হয়েছে!' });
     } catch (err) {
@@ -479,18 +476,15 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 5MB', variant: 'destructive' });
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 10MB', variant: 'destructive' });
       return;
     }
 
     setUploadingGalleryImage(index);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `gallery/${section.id}/${Date.now()}-${index}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('profile-photos').upload(fileName, file);
-      if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from('profile-photos').getPublicUrl(fileName);
+      const base = `gallery/${section.id}/${Date.now()}-${index}`;
+      const { publicUrl } = await uploadOptimizedImage(file, 'profile-photos', base, ImagePresets.cover);
       updateProduct(index, 'image', publicUrl);
       toast({ title: 'ছবি আপলোড হয়েছে!' });
     } catch (err) {
