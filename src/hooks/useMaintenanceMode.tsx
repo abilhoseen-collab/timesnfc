@@ -9,28 +9,30 @@ export interface MaintenanceConfig {
 }
 
 export function useMaintenanceMode() {
-  const { isAdmin } = useAuth();
+  const { user } = useAuth();
   const [config, setConfig] = useState<MaintenanceConfig>({ enabled: false });
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     (async () => {
-      const { data } = await supabase
-        .from('site_settings')
-        .select('value')
-        .eq('key', 'maintenance_mode')
-        .maybeSingle();
-      if (active) {
-        const v = (data?.value as unknown as MaintenanceConfig) ?? { enabled: false };
-        setConfig(v);
-        setLoading(false);
-      }
+      const [settingsRes, roleRes] = await Promise.all([
+        supabase.from('site_settings').select('value').eq('key', 'maintenance_mode').maybeSingle(),
+        user
+          ? supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+      if (!active) return;
+      const v = (settingsRes.data?.value as unknown as MaintenanceConfig) ?? { enabled: false };
+      setConfig(v);
+      setIsAdmin(!!roleRes.data);
+      setLoading(false);
     })();
     return () => { active = false; };
-  }, []);
+  }, [user]);
 
-  // Admins always bypass
   const blocked = config.enabled && !isAdmin;
   return { config, loading, blocked, isAdmin };
 }
+
