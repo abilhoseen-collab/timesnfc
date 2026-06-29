@@ -43,7 +43,8 @@ import {
   Receipt,
   LifeBuoy,
   Gift,
-  Users as UsersIcon
+  Users as UsersIcon,
+  FileSpreadsheet
 } from 'lucide-react';
 import { NotificationBell } from '@/components/NotificationBell';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
@@ -450,6 +451,9 @@ export default function Dashboard() {
             </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/bulk-qr')} title="Bulk QR" className="hidden sm:inline-flex">
               <QrCode size={20} />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/bulk-create')} title="Bulk vCard তৈরি (CSV)" className="hidden sm:inline-flex">
+              <FileSpreadsheet size={20} />
             </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} title="সেটিংস">
               <Settings size={20} />
