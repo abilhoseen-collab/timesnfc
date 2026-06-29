@@ -43,7 +43,8 @@ import {
   Receipt,
   LifeBuoy,
   Gift,
-  Users as UsersIcon
+  Users as UsersIcon,
+  FileSpreadsheet
 } from 'lucide-react';
 import { NotificationBell } from '@/components/NotificationBell';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
