@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import Joyride, { type Step, STATUS } from 'react-joyride';
+import { Joyride, type Step, STATUS } from 'react-joyride';
 import { useAuth } from '@/hooks/useAuth';
 
 const STORAGE_KEY = 'lovable_onboarding_tour_done';
