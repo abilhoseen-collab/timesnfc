@@ -64,7 +64,7 @@ export function trackConversion(
       event: 'convert',
       vcard_id: opts.vcardId ?? null,
       session_id: getSessionId(),
-      metadata: opts.metadata ?? null,
+      metadata: (opts.metadata as any) ?? null,
     })
     .then(() => {}, () => {});
 }
