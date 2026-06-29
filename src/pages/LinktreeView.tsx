@@ -38,6 +38,10 @@ export default function LinktreeView() {
         .from('vcards')
         .select('*')
         .or(`slug.eq.${slug},id.eq.${slug}`)
+        .maybeSingle();
+      const dataAny: any = data;
+      const fakeRest = async () => null;
+      void fakeRest;
         .eq('is_published', true)
         .maybeSingle();
       setVc(data as any);

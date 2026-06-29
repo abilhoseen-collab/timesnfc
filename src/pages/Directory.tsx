@@ -32,7 +32,6 @@ export default function Directory() {
         .from('vcards')
         .select('id, slug, name, job_title, company, photo_url, directory_category, address')
         .eq('listed_in_directory', true)
-        .eq('is_published', true)
         .order('created_at', { ascending: false })
         .limit(200);
       setCards((data as any) || []);
