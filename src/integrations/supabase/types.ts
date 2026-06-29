@@ -363,6 +363,7 @@ export type Database = {
           og_image_url: string | null
           slug: string
           ssl_status: string | null
+          team_id: string | null
           text_color: string | null
           theme_color: string | null
           total_views: number | null
@@ -397,6 +398,7 @@ export type Database = {
           og_image_url?: string | null
           slug: string
           ssl_status?: string | null
+          team_id?: string | null
           text_color?: string | null
           theme_color?: string | null
           total_views?: number | null
@@ -431,13 +433,22 @@ export type Database = {
           og_image_url?: string | null
           slug?: string
           ssl_status?: string | null
+          team_id?: string | null
           text_color?: string | null
           theme_color?: string | null
           total_views?: number | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "landing_pages_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       nfc_guest_orders: {
         Row: {
@@ -938,6 +949,109 @@ export type Database = {
         }
         Relationships: []
       }
+      team_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          role: Database["public"]["Enums"]["team_role"]
+          team_id: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          role?: Database["public"]["Enums"]["team_role"]
+          team_id: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          role?: Database["public"]["Enums"]["team_role"]
+          team_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_invitations_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_members: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["team_role"]
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["team_role"]
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["team_role"]
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string
+          id: string
+          is_personal: boolean
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_personal?: boolean
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_personal?: boolean
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       upgrade_requests: {
         Row: {
           account_holder_name: string | null
@@ -1191,6 +1305,7 @@ export type Database = {
           source: string
           status: string
           tags: string[]
+          team_id: string | null
           updated_at: string
           user_id: string
           vcard_id: string
@@ -1207,6 +1322,7 @@ export type Database = {
           source?: string
           status?: string
           tags?: string[]
+          team_id?: string | null
           updated_at?: string
           user_id: string
           vcard_id: string
@@ -1223,6 +1339,7 @@ export type Database = {
           source?: string
           status?: string
           tags?: string[]
+          team_id?: string | null
           updated_at?: string
           user_id?: string
           vcard_id?: string
@@ -1231,6 +1348,13 @@ export type Database = {
           visitor_phone?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "vcard_leads_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vcard_leads_vcard_id_fkey"
             columns: ["vcard_id"]
@@ -1280,6 +1404,7 @@ export type Database = {
           qr_foreground_color: string | null
           qr_logo_url: string | null
           slug: string | null
+          team_id: string | null
           telegram_username: string | null
           template: string | null
           twitter_url: string | null
@@ -1328,6 +1453,7 @@ export type Database = {
           qr_foreground_color?: string | null
           qr_logo_url?: string | null
           slug?: string | null
+          team_id?: string | null
           telegram_username?: string | null
           template?: string | null
           twitter_url?: string | null
@@ -1376,6 +1502,7 @@ export type Database = {
           qr_foreground_color?: string | null
           qr_logo_url?: string | null
           slug?: string | null
+          team_id?: string | null
           telegram_username?: string | null
           template?: string | null
           twitter_url?: string | null
@@ -1385,14 +1512,31 @@ export type Database = {
           whatsapp_number?: string | null
           youtube_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vcards_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      accept_team_invitation: { Args: { _token: string }; Returns: string }
+      create_personal_team_for_user: {
+        Args: { _name: string; _user_id: string }
+        Returns: string
+      }
       generate_referral_code: { Args: never; Returns: string }
+      get_team_role: {
+        Args: { _team_id: string; _user_id: string }
+        Returns: Database["public"]["Enums"]["team_role"]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1400,9 +1544,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_team_role: {
+        Args: {
+          _min: Database["public"]["Enums"]["team_role"]
+          _team_id: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_team_member: {
+        Args: { _team_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      team_role: "owner" | "admin" | "editor" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1531,6 +1688,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      team_role: ["owner", "admin", "editor", "viewer"],
     },
   },
 } as const
