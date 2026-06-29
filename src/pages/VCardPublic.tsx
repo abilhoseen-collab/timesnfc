@@ -12,7 +12,7 @@ import SaveContactButton from '@/components/vcard/SaveContactButton';
 import VCardChatWidget from '@/components/vcard/VCardChatWidget';
 import BookingSlotPicker from '@/components/vcard/BookingSlotPicker';
 import PhoneOtpVerifier from '@/components/vcard/PhoneOtpVerifier';
-import { trackConversion } from '@/lib/abTesting';
+import { trackConversion, getVariant } from '@/lib/abTesting';
 import { 
   Mail, 
   Phone, 
