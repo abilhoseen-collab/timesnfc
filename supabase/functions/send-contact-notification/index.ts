@@ -157,6 +157,28 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Contact notification email sent:", emailResponse);
 
+    // Fire web push (best-effort)
+    try {
+      const { data: owner } = await supabase
+        .from("vcards")
+        .select("user_id")
+        .eq("id", vcard_id)
+        .maybeSingle();
+      if (owner?.user_id) {
+        await supabase.functions.invoke("send-web-push", {
+          body: {
+            user_id: owner.user_id,
+            title: "📥 নতুন Lead",
+            body: `${visitor_name} আপনার কার্ডে যোগাযোগ করেছেন`,
+            url: "/leads",
+            tag: "new-lead",
+          },
+        });
+      }
+    } catch (pushErr) {
+      console.error("push dispatch failed", pushErr);
+    }
+
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
