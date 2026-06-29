@@ -211,8 +211,8 @@ export default function Dashboard() {
     try {
       const { data, error } = await supabase
         .from('vcards')
-        .select('id, name, job_title, company, template, is_active, slug, created_at, qr_foreground_color, qr_background_color, qr_logo_url')
-        .eq('user_id', user?.id)
+        .select('id, name, job_title, company, template, is_active, slug, created_at, qr_foreground_color, qr_background_color, qr_logo_url, user_id, team_id')
+        .or(`user_id.eq.${user?.id},team_id.not.is.null`)
         .order('created_at', { ascending: false });
       if (error) throw error;
       setVcards((data as VCard[]) || []);
