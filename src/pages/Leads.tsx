@@ -273,6 +273,47 @@ export default function Leads() {
                           {STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
+                      <Dialog open={editingTags?.id === l.id} onOpenChange={(o) => !o && setEditingTags(null)}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="outline" onClick={() => setEditingTags({ id: l.id, tags: l.tags || [], input: '' })}>
+                            <Tag size={14} />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader><DialogTitle>Tags - {l.visitor_name}</DialogTitle></DialogHeader>
+                          <div className="space-y-3">
+                            <div className="flex flex-wrap gap-2">
+                              {(editingTags?.tags || []).map((t) => (
+                                <span key={t} className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${TAG_COLORS[t] || 'bg-muted'}`}>
+                                  #{t}
+                                  <button onClick={() => toggleTag(l.id, editingTags!.tags, t)}><X size={12} /></button>
+                                </span>
+                              ))}
+                              {(editingTags?.tags || []).length === 0 && <span className="text-xs text-muted-foreground">কোনো tag নেই</span>}
+                            </div>
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-2">দ্রুত যোগ করুন:</div>
+                              <div className="flex flex-wrap gap-2">
+                                {TAG_PRESETS.filter((t) => !(editingTags?.tags || []).includes(t)).map((t) => (
+                                  <button key={t} onClick={() => toggleTag(l.id, editingTags!.tags, t)} className={`text-xs px-2 py-1 rounded-full border hover:bg-muted ${TAG_COLORS[t] || ''}`}>
+                                    + #{t}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Input
+                                value={editingTags?.input || ''}
+                                onChange={(e) => editingTags && setEditingTags({ ...editingTags, input: e.target.value })}
+                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomTag(); } }}
+                                placeholder="কাস্টম tag..."
+                                className="h-9 text-sm"
+                              />
+                              <Button size="sm" onClick={addCustomTag}><Plus size={14} /></Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                       <Dialog open={editingNotes?.id === l.id} onOpenChange={(o) => !o && setEditingNotes(null)}>
                         <DialogTrigger asChild>
                           <Button size="sm" variant="outline" onClick={() => setEditingNotes({ id: l.id, notes: l.notes || '' })}>
