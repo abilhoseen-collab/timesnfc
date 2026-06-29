@@ -199,7 +199,7 @@ export default function AccountSettings() {
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="profile" className="gap-1.5">
               <User size={14} /> প্রোফাইল
             </TabsTrigger>
@@ -208,6 +208,9 @@ export default function AccountSettings() {
             </TabsTrigger>
             <TabsTrigger value="email" className="gap-1.5">
               <Mail size={14} /> ইমেইল
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-1.5">
+              <Bell size={14} /> Notifications
             </TabsTrigger>
             <TabsTrigger value="security" className="gap-1.5">
               <Lock size={14} /> 2FA
