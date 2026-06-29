@@ -189,6 +189,36 @@ export type Database = {
           },
         ]
       }
+      feature_flags: {
+        Row: {
+          created_at: string
+          description: string | null
+          enabled: boolean
+          id: string
+          key: string
+          rollout_percent: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          key: string
+          rollout_percent?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          key?: string
+          rollout_percent?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       home_page_content: {
         Row: {
           content: Json | null
@@ -1287,9 +1317,13 @@ export type Database = {
           is_unique: boolean | null
           link_name: string | null
           referrer: string | null
+          scroll_depth: number | null
           session_id: string | null
           time_on_page: number | null
           user_agent: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
           vcard_id: string
           visitor_id: string | null
           visitor_ip: string | null
@@ -1303,9 +1337,13 @@ export type Database = {
           is_unique?: boolean | null
           link_name?: string | null
           referrer?: string | null
+          scroll_depth?: number | null
           session_id?: string | null
           time_on_page?: number | null
           user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
           vcard_id: string
           visitor_id?: string | null
           visitor_ip?: string | null
@@ -1319,9 +1357,13 @@ export type Database = {
           is_unique?: boolean | null
           link_name?: string | null
           referrer?: string | null
+          scroll_depth?: number | null
           session_id?: string | null
           time_on_page?: number | null
           user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
           vcard_id?: string
           visitor_id?: string | null
           visitor_ip?: string | null
@@ -1483,6 +1525,8 @@ export type Database = {
       vcard_leads: {
         Row: {
           created_at: string
+          follow_up_at: string | null
+          follow_up_sent_at: string | null
           id: string
           message: string | null
           metadata: Json | null
@@ -1500,6 +1544,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          follow_up_at?: string | null
+          follow_up_sent_at?: string | null
           id?: string
           message?: string | null
           metadata?: Json | null
@@ -1517,6 +1563,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          follow_up_at?: string | null
+          follow_up_sent_at?: string | null
           id?: string
           message?: string | null
           metadata?: Json | null
@@ -1630,7 +1678,9 @@ export type Database = {
       }
       vcards: {
         Row: {
+          accent_color: string | null
           address: string | null
+          animated_background: boolean
           appointment_available_days: Json | null
           appointment_description: string | null
           appointment_duration_minutes: number | null
@@ -1640,10 +1690,12 @@ export type Database = {
           appointment_start_time: string | null
           appointment_title: string | null
           bio: string | null
+          brand_color: string | null
           chat_enabled: boolean | null
           company: string | null
           cover_image_url: string | null
           created_at: string
+          custom_font: string | null
           directory_category: string | null
           email: string | null
           facebook_url: string | null
@@ -1691,7 +1743,9 @@ export type Database = {
           zapier_webhook_url: string | null
         }
         Insert: {
+          accent_color?: string | null
           address?: string | null
+          animated_background?: boolean
           appointment_available_days?: Json | null
           appointment_description?: string | null
           appointment_duration_minutes?: number | null
@@ -1701,10 +1755,12 @@ export type Database = {
           appointment_start_time?: string | null
           appointment_title?: string | null
           bio?: string | null
+          brand_color?: string | null
           chat_enabled?: boolean | null
           company?: string | null
           cover_image_url?: string | null
           created_at?: string
+          custom_font?: string | null
           directory_category?: string | null
           email?: string | null
           facebook_url?: string | null
@@ -1752,7 +1808,9 @@ export type Database = {
           zapier_webhook_url?: string | null
         }
         Update: {
+          accent_color?: string | null
           address?: string | null
+          animated_background?: boolean
           appointment_available_days?: Json | null
           appointment_description?: string | null
           appointment_duration_minutes?: number | null
@@ -1762,10 +1820,12 @@ export type Database = {
           appointment_start_time?: string | null
           appointment_title?: string | null
           bio?: string | null
+          brand_color?: string | null
           chat_enabled?: boolean | null
           company?: string | null
           cover_image_url?: string | null
           created_at?: string
+          custom_font?: string | null
           directory_category?: string | null
           email?: string | null
           facebook_url?: string | null

@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import ShareDialog from '@/components/vcard/ShareDialog';
 import VCardPixelScripts from '@/components/vcard/VCardPixelScripts';
+import VCardThemeInjector from '@/components/vcard/VCardThemeInjector';
+import { readUTM, attachScrollTracking } from '@/lib/utmAndScroll';
 import TestimonialsSection from '@/components/vcard/TestimonialsSection';
 import SaveContactButton from '@/components/vcard/SaveContactButton';
 import VCardChatWidget from '@/components/vcard/VCardChatWidget';
@@ -204,6 +206,7 @@ export default function VCardPublic() {
         sessionStorage.setItem(visitedKey, 'true');
       }
 
+      const utm = readUTM();
       await supabase.from('vcard_analytics').insert({
         vcard_id: data.id,
         event_type: 'view',
@@ -212,6 +215,18 @@ export default function VCardPublic() {
         is_unique: isUnique,
         referrer: document.referrer || null,
         user_agent: navigator.userAgent,
+        ...utm,
+      } as any);
+
+      // Track scroll milestones
+      attachScrollTracking((pct) => {
+        supabase.from('vcard_analytics').insert({
+          vcard_id: data.id,
+          event_type: 'scroll',
+          visitor_id: visitorId,
+          session_id: sessionId,
+          scroll_depth: pct,
+        } as any);
       });
 
       // Send notification (fire and forget)
@@ -460,6 +475,12 @@ END:VCARD`;
         <meta name="twitter:image" content={ogImageUrl} />
       </Helmet>
       <VCardPixelScripts gaId={(vcard as any).ga_measurement_id} pixelId={(vcard as any).meta_pixel_id} />
+      <VCardThemeInjector
+        brandColor={(vcard as any).brand_color}
+        accentColor={(vcard as any).accent_color}
+        animated={(vcard as any).animated_background}
+        customFont={(vcard as any).custom_font}
+      />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
