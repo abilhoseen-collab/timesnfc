@@ -133,6 +133,35 @@ export default function AppointmentSettings({ formData, onChange, currentVcardId
                     Get notified when someone books an appointment
                   </p>
                 </div>
+
+                <div className="border-t border-border pt-4 space-y-3">
+                  <label className="flex items-center gap-3 cursor-pointer p-3 bg-muted/50 rounded-xl">
+                    <input
+                      type="checkbox"
+                      checked={!!(formData as any).require_phone_verification}
+                      onChange={(e) => onChange('require_phone_verification' as any, e.target.checked)}
+                      className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-foreground">SMS OTP ফোন ভেরিফিকেশন</span>
+                      <p className="text-xs text-muted-foreground">বুকিং confirm করার আগে visitor-এর ফোন verify হবে</p>
+                    </div>
+                  </label>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      Owner WhatsApp Number (বুকিং confirmation এর জন্য)
+                    </label>
+                    <Input
+                      value={(formData as any).owner_whatsapp_number || ''}
+                      onChange={(e) => onChange('owner_whatsapp_number' as any, e.target.value)}
+                      placeholder="+8801XXXXXXXXX"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      বুকিং complete হলে visitor এই নম্বরে wa.me link-এ যাবেন
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
