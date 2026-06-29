@@ -357,26 +357,15 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 5MB', variant: 'destructive' });
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 10MB', variant: 'destructive' });
       return;
     }
 
     setUploadingServiceImage(index);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `services/${section.id}/${Date.now()}-${index}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('profile-photos')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('profile-photos')
-        .getPublicUrl(fileName);
-
+      const base = `services/${section.id}/${Date.now()}-${index}`;
+      const { publicUrl } = await uploadOptimizedImage(file, 'profile-photos', base, ImagePresets.cover);
       updateService(index, 'image', publicUrl);
       toast({ title: 'ছবি আপলোড হয়েছে!' });
     } catch (error) {
@@ -415,26 +404,15 @@ export function SortableSection({ section, onUpdate, onDelete }: SortableSection
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 2MB', variant: 'destructive' });
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'ফাইল খুব বড়', description: 'সর্বোচ্চ 5MB', variant: 'destructive' });
       return;
     }
 
     setUploadingTestimonialAvatar(index);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `testimonials/${section.id}/${Date.now()}-${index}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('profile-photos')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('profile-photos')
-        .getPublicUrl(fileName);
-
+      const base = `testimonials/${section.id}/${Date.now()}-${index}`;
+      const { publicUrl } = await uploadOptimizedImage(file, 'profile-photos', base, ImagePresets.avatar);
       updateTestimonial(index, 'avatar', publicUrl);
       toast({ title: 'অ্যাভাটার আপলোড হয়েছে!' });
     } catch (error) {
