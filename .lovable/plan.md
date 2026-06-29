@@ -1,15 +1,24 @@
-# Phase 3 — আংশিক সম্পন্ন
+# Phase 4 — Engagement Bundle ✅
 
-## ✅ যা যোগ হয়েছে
-- **#১৭ AI Features**: `generate-vcard-bio` এজ ফাংশন (Lovable AI Gateway, gemini-3-flash-preview)। `BasicInfoEditor`-এ "AI দিয়ে লিখুন" বোতাম — কীওয়ার্ড + টোন (পেশাদার/বন্ধুত্বপূর্ণ/সৃজনশীল) + ভাষা (বাংলা/English) অপশন।
-- **#৯ Advanced Analytics**: `AdvancedAnalytics.tsx` — ডিভাইস (মোবাইল/ট্যাবলেট/ডেস্কটপ), ব্রাউজার, ট্রাফিক সোর্স/রেফারার, দেশ, কনভার্সন ফানেল (view → unique → click) + কনভার্সন রেট। `VCardAnalyticsDashboard`-এ ইন্টিগ্রেট।
+## যা যোগ হয়েছে
+- **AI চ্যাটবট (visitor)**: `vcard-chat` edge function (Lovable AI Gateway, streaming Gemini 3 Flash) + `VCardChatWidget` floating bubble in public vCard। vCard owner-এর bio/contact context system prompt-এ inject হয়; বাংলা/ইংরেজি auto-detect। `chat_enabled` true হলে শো হয়।
+- **Social Sharing**: `ShareDialog` — WhatsApp, Facebook, Twitter/X, LinkedIn, Telegram, Email + copy link + native share fallback। OG image preview built-in।
+- **OG Image auto-gen**: `vcard-og-image` edge function — dynamic 1200×630 SVG with photo, name, title, company। Cached 1h।
+- **Per-vCard meta (Helmet)**: title, description, canonical, og:*, twitter:* tags route-level।
+- **PWA (manifest-only)**: `manifest.webmanifest` + icons (192/512/apple-touch) + theme-color + apple-mobile meta — Add to Home Screen ready।
 
-## ⏳ বাকি (Phase 3)
-- **#১৩ i18n**: পাবলিক vCard-এ English টগল — পুরো সাইটে wide-ranging refactor, পরবর্তী সেশনে নেওয়া যেতে পারে।
-- **AI চ্যাটবট** ভিজিটরদের জন্য — vCard-এ embed (`ChatWidgetSettings`-এর সাথে integration)।
-- **AI ইমেজ এনহান্সমেন্ট** প্রোফাইল ছবির জন্য।
-- জিও-ম্যাপ ভিজ্যুয়াল (currently bar/list; map view requires `country` codes এবং extra library)।
-- CSV/PDF এক্সপোর্ট for advanced analytics (existing `AnalyticsExport` already covers basics)।
+## Known limitations
+- OG image is SVG — LinkedIn/Twitter render it; Facebook/iMessage may fall back to default। (Future: PNG rasterization via resvg-wasm)।
+- Per-vCard meta tags via Helmet work for JS-executing crawlers (Google, Slack, Twitter)। Pure non-JS crawlers see static `index.html` fallback।
+- Manifest-only PWA — offline support and service worker postponed (per default PWA guidance)।
 
-## পরে (optional polish)
-- ১২ PWA, ১৪ Social sharing + OG image auto-gen, ১৫ CRM lead manager, ১৬ Bulk QR, ১৮ Maintenance mode, ১৯ 2FA, ২০ Mobile app wrapper।
+## Phase 3 যা এখনো বাকি (Optional, Phase 5+)
+- i18n (English toggle, পুরো site)
+- AI image enhancement
+- Geo-map visualization
+- CSV/PDF advanced analytics export
+
+## Phase 5 candidates
+- CRM Lead Manager, Bulk QR, 2FA, Maintenance Mode (Business Bundle)
+- Offline PWA (full service worker)
+- True PNG OG image (resvg-wasm)
