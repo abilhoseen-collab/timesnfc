@@ -1101,38 +1101,48 @@ END:VCARD`;
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone (Optional)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone {vcard.require_phone_verification ? '*' : '(Optional)'}
+                  </label>
                   <Input
                     value={appointmentForm.phone}
-                    onChange={(e) => setAppointmentForm(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="Your phone number"
+                    onChange={(e) => { setAppointmentForm(prev => ({ ...prev, phone: e.target.value })); setPhoneVerified(false); }}
+                    placeholder="+8801XXXXXXXXX"
+                  />
+                  {vcard.require_phone_verification && appointmentForm.phone && (
+                    <div className="mt-2">
+                      <PhoneOtpVerifier
+                        phone={appointmentForm.phone}
+                        verified={phoneVerified}
+                        onVerified={() => setPhoneVerified(true)}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                  <Input
+                    type="date"
+                    value={appointmentForm.date}
+                    onChange={(e) => setAppointmentForm(prev => ({ ...prev, date: e.target.value, time: '' }))}
+                    min={new Date().toISOString().split('T')[0]}
                   />
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
-                    <Input
-                      type="date"
-                      value={appointmentForm.date}
-                      onChange={(e) => setAppointmentForm(prev => ({ ...prev, date: e.target.value }))}
-                      min={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
-                    <select
-                      value={appointmentForm.time}
-                      onChange={(e) => setAppointmentForm(prev => ({ ...prev, time: e.target.value }))}
-                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                    >
-                      <option value="">Select</option>
-                      {getTimeSlots().map(time => (
-                        <option key={time} value={time}>{time}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">উপলভ্য টাইম স্লট *</label>
+                  <BookingSlotPicker
+                    vcardId={vcard.id}
+                    date={appointmentForm.date}
+                    startTime={vcard.appointment_start_time}
+                    endTime={vcard.appointment_end_time}
+                    durationMinutes={vcard.appointment_duration_minutes}
+                    availableDays={vcard.appointment_available_days}
+                    value={appointmentForm.time}
+                    onChange={(t) => setAppointmentForm(prev => ({ ...prev, time: t }))}
+                  />
                 </div>
+
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
