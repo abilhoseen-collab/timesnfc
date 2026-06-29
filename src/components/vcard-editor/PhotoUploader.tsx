@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, User, Loader2, Layout } from 'lucide-react';
+import { Camera, User, Loader2, Layout, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { FormData } from './types';
@@ -11,12 +11,53 @@ interface PhotoUploaderProps {
   userId: string | undefined;
 }
 
+async function urlToBase64(url: string): Promise<string> {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onloadend = () => resolve(r.result as string);
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+
 export default function PhotoUploader({ formData, onChange, userId }: PhotoUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [enhancing, setEnhancing] = useState(false);
   const { toast } = useToast();
+
+  const handleEnhance = async () => {
+    if (!formData.photo_url || !userId) return;
+    setEnhancing(true);
+    try {
+      const base64 = await urlToBase64(formData.photo_url);
+      const { data, error } = await supabase.functions.invoke('enhance-image', {
+        body: { imageBase64: base64 },
+      });
+      if (error) throw error;
+      if (!data?.imageUrl) throw new Error('No enhanced image returned');
+
+      // Upload data URL → storage
+      const blobRes = await fetch(data.imageUrl);
+      const blob = await blobRes.blob();
+      const fileName = `${userId}/enhanced-${Date.now()}.png`;
+      const { error: upErr } = await supabase.storage.from('profile-photos').upload(fileName, blob, {
+        contentType: 'image/png',
+      });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from('profile-photos').getPublicUrl(fileName);
+      onChange('photo_url', publicUrl);
+      toast({ title: 'ছবি উন্নত হয়েছে ✨', description: 'AI দিয়ে ছবির কোয়ালিটি বাড়ানো হয়েছে' });
+    } catch (e: any) {
+      toast({ title: 'AI Enhancement ব্যর্থ', description: e.message || 'আবার চেষ্টা করুন', variant: 'destructive' });
+    } finally {
+      setEnhancing(false);
+    }
+  };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -133,13 +174,25 @@ export default function PhotoUploader({ formData, onChange, userId }: PhotoUploa
               type="button"
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingPhoto}
+              disabled={uploadingPhoto || enhancing}
             >
               <Camera size={16} className="mr-2" />
               {uploadingPhoto ? 'Uploading...' : formData.photo_url ? 'Change Photo' : 'Upload Photo'}
             </Button>
+            {formData.photo_url && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleEnhance}
+                disabled={enhancing || uploadingPhoto}
+                className="ml-2"
+              >
+                {enhancing ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Sparkles size={16} className="mr-2" />}
+                {enhancing ? 'Enhancing...' : 'AI Enhance ✨'}
+              </Button>
+            )}
             <p className="text-xs text-muted-foreground mt-2">
-              JPG, PNG or GIF. Max 5MB.
+              JPG, PNG or GIF. Max 5MB. AI Enhance দিয়ে professional লুক দিন।
             </p>
           </div>
         </div>
