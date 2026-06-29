@@ -139,6 +139,7 @@ export default function VCardPublic() {
     notes: ''
   });
   const [bookingAppointment, setBookingAppointment] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
 
   const [shareOpen, setShareOpen] = useState(false);
 
