@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdmin } from '@/hooks/useAdmin';
+import { useTeamRoles } from '@/hooks/useTeamRoles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { QRCodeSVG } from 'qrcode.react';
@@ -101,6 +102,8 @@ interface VCard {
   qr_foreground_color: string | null;
   qr_background_color: string | null;
   qr_logo_url: string | null;
+  user_id?: string | null;
+  team_id?: string | null;
 }
 
 interface AnalyticsEvent {
@@ -130,6 +133,7 @@ export default function Dashboard() {
   const { isAdmin } = useAdmin();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { canEdit: canEditTeam, canDelete: canDeleteTeam, getRole } = useTeamRoles();
   const [vcards, setVcards] = useState<VCard[]>([]);
   const [analyticsEvents, setAnalyticsEvents] = useState<AnalyticsEvent[]>([]);
   const [analytics, setAnalytics] = useState<Analytics>({
@@ -207,8 +211,8 @@ export default function Dashboard() {
     try {
       const { data, error } = await supabase
         .from('vcards')
-        .select('id, name, job_title, company, template, is_active, slug, created_at, qr_foreground_color, qr_background_color, qr_logo_url')
-        .eq('user_id', user?.id)
+        .select('id, name, job_title, company, template, is_active, slug, created_at, qr_foreground_color, qr_background_color, qr_logo_url, user_id, team_id')
+        .or(`user_id.eq.${user?.id},team_id.not.is.null`)
         .order('created_at', { ascending: false });
       if (error) throw error;
       setVcards((data as VCard[]) || []);
@@ -1234,7 +1238,10 @@ export default function Dashboard() {
               {filteredVcards.map((card, index) => {
                 // Get analytics for this card
                 const cardViews = analyticsEvents.filter(e => e.vcard_id === card.id && e.event_type === 'view').length;
-                
+                const canEditCard = canEditTeam(card.team_id, card.user_id);
+                const canDeleteCard = canDeleteTeam(card.team_id, card.user_id);
+                const teamRole = getRole(card.team_id);
+
                 return (
                   <motion.div
                     key={card.id}
@@ -1316,15 +1323,24 @@ export default function Dashboard() {
                         </span>
                       </div>
 
+                      {teamRole && teamRole !== 'owner' && (
+                        <div className="mb-2">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground uppercase">
+                            Team · {teamRole}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <Button 
                           variant="outline" 
                           size="sm" 
                           className="flex-1"
                           onClick={() => navigate(`/vcard/${card.id}`)}
+                          disabled={!canEditCard}
+                          title={!canEditCard ? 'অনুমতি নেই' : 'Edit'}
                         >
                           <Edit size={14} className="mr-1" />
-                          Edit
+                          {canEditCard ? 'Edit' : 'View'}
                         </Button>
                         <Button 
                           variant="ghost" 
@@ -1350,14 +1366,16 @@ export default function Dashboard() {
                         >
                           <ExternalLink size={14} />
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleDelete(card.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 size={14} />
-                        </Button>
+                        {canDeleteCard && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDelete(card.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </motion.div>

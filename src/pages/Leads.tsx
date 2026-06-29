@@ -14,10 +14,13 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useTeamRoles } from '@/hooks/useTeamRoles';
 
 interface Lead {
   id: string;
   vcard_id: string;
+  user_id: string | null;
+  team_id: string | null;
   visitor_name: string;
   visitor_email: string | null;
   visitor_phone: string | null;
@@ -57,6 +60,7 @@ const SOURCES: Record<string, string> = {
 export default function Leads() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { canEdit, canDelete, getRole } = useTeamRoles();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -243,6 +247,9 @@ export default function Leads() {
           <div className="space-y-3">
             {filtered.map((l) => {
               const status = STATUSES.find((s) => s.value === l.status) || STATUSES[0];
+              const writable = canEdit(l.team_id, l.user_id);
+              const deletable = canDelete(l.team_id, l.user_id);
+              const role = getRole(l.team_id);
               return (
                 <div key={l.id} className="border rounded-xl p-4 bg-card">
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -251,6 +258,9 @@ export default function Leads() {
                         <h3 className="font-semibold">{l.visitor_name}</h3>
                         <Badge variant="outline" className="text-xs">{SOURCES[l.source] || l.source}</Badge>
                         <Badge className={`text-xs ${status.color}`}>{status.label}</Badge>
+                        {role && role !== 'owner' && (
+                          <Badge variant="outline" className="text-[10px] uppercase">{role}</Badge>
+                        )}
                         {(l.tags || []).map((t) => (
                           <span key={t} className={`text-[10px] px-2 py-0.5 rounded-full ${TAG_COLORS[t] || 'bg-muted text-foreground'}`}>#{t}</span>
                         ))}
@@ -268,7 +278,7 @@ export default function Leads() {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <Select value={l.status} onValueChange={(v) => updateStatus(l.id, v)}>
+                      <Select value={l.status} onValueChange={(v) => updateStatus(l.id, v)} disabled={!writable}>
                         <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -276,7 +286,7 @@ export default function Leads() {
                       </Select>
                       <Dialog open={editingTags?.id === l.id} onOpenChange={(o) => !o && setEditingTags(null)}>
                         <DialogTrigger asChild>
-                          <Button size="sm" variant="outline" onClick={() => setEditingTags({ id: l.id, tags: l.tags || [], input: '' })}>
+                          <Button size="sm" variant="outline" disabled={!writable} onClick={() => setEditingTags({ id: l.id, tags: l.tags || [], input: '' })}>
                             <Tag size={14} />
                           </Button>
                         </DialogTrigger>
@@ -317,7 +327,7 @@ export default function Leads() {
                       </Dialog>
                       <Dialog open={editingNotes?.id === l.id} onOpenChange={(o) => !o && setEditingNotes(null)}>
                         <DialogTrigger asChild>
-                          <Button size="sm" variant="outline" onClick={() => setEditingNotes({ id: l.id, notes: l.notes || '' })}>
+                          <Button size="sm" variant="outline" disabled={!writable} onClick={() => setEditingNotes({ id: l.id, notes: l.notes || '' })}>
                             <MessageSquare size={14} />
                           </Button>
                         </DialogTrigger>
@@ -332,9 +342,11 @@ export default function Leads() {
                           <Button onClick={saveNotes}>সংরক্ষণ করুন</Button>
                         </DialogContent>
                       </Dialog>
-                      <Button size="sm" variant="ghost" onClick={() => removeLead(l.id)}>
-                        <Trash2 size={14} className="text-destructive" />
-                      </Button>
+                      {deletable && (
+                        <Button size="sm" variant="ghost" onClick={() => removeLead(l.id)}>
+                          <Trash2 size={14} className="text-destructive" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
