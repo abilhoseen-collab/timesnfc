@@ -75,6 +75,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <PWAManager />
+            <OnboardingTour />
             <BrowserRouter>
               <MaintenanceGate>
               <Routes>
@@ -123,6 +124,7 @@ const App = () => (
                 <Route path="/network" element={<Network />} />
                 <Route path="/affiliate" element={<AffiliateDashboard />} />
                 <Route path="/l/:slug" element={<LinktreeView />} />
+                <Route path="/help" element={<HelpCenter />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
