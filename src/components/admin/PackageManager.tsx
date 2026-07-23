@@ -287,10 +287,26 @@ export default function PackageManager() {
       </div>
 
       {packages.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          No packages found. Create your first package.
-        </div>
+        <EmptyState
+          icon={Package}
+          title="কোনো প্যাকেজ নেই"
+          description="প্রথম প্যাকেজ তৈরি করে শুরু করুন।"
+        />
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
+        title={deleteTarget ? `"${deleteTarget.name}" ডিলিট করবেন?` : 'ডিলিট করবেন?'}
+        description="এই প্যাকেজ ডিলিট করলে যেসব সাবস্ক্রিপশনে এটি ব্যবহৃত হয়েছে সেগুলোতে সমস্যা হতে পারে। এই কাজটি ফেরানো যাবে না।"
+        confirmLabel="ডিলিট করুন"
+        destructive
+        onConfirm={async () => {
+          if (deleteTarget) await performDelete(deleteTarget);
+          setDeleteTarget(null);
+        }}
+      />
+
 
       {/* Create/Edit Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
