@@ -304,7 +304,7 @@ export default function CouponManager() {
                   <Button size="sm" variant="outline" onClick={() => startEdit(c)}>
                     <Edit2 size={14} />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => remove(c.id)}>
+                  <Button size="sm" variant="outline" onClick={() => setConfirmDeleteId(c.id)}>
                     <Trash2 size={14} />
                   </Button>
                 </div>
@@ -313,6 +313,19 @@ export default function CouponManager() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        onOpenChange={(v) => !v && setConfirmDeleteId(null)}
+        title="এই কুপনটি ডিলিট করবেন?"
+        description="ডিলিট করলে এই কুপন আর ব্যবহার করা যাবে না। এই কাজটি ফেরানো যাবে না।"
+        confirmLabel="ডিলিট করুন"
+        destructive
+        onConfirm={async () => {
+          if (confirmDeleteId) await remove(confirmDeleteId);
+          setConfirmDeleteId(null);
+        }}
+      />
     </div>
   );
 }
