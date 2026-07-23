@@ -93,58 +93,60 @@ const App = () => (
                 <MaintenanceGate>
                   <Suspense fallback={<RouteFallback />}>
                     <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/forgot-password" element={<ForgotPassword />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/admin" element={<Admin />} />
-                    <Route path="/vcard/new" element={<VCardEditor />} />
-                    <Route path="/vcard/:id" element={<VCardEditor />} />
-                    <Route path="/c/:slug" element={<VCardPublic />} />
-                    <Route path="/cart" element={<Cart />} />
-                    <Route path="/orders" element={<Orders />} />
-                    <Route path="/payment" element={<Payment />} />
-                    <Route path="/template/:templateId" element={<TemplatePreview />} />
-                    <Route path="/nfc-payment" element={<NFCPayment />} />
-                    <Route path="/track-order" element={<TrackOrder />} />
-                    <Route path="/templates/construction" element={<ConstructionTemplate />} />
-                    <Route path="/templates/doctor" element={<DoctorTemplate />} />
-                    <Route path="/templates/realestate" element={<RealEstateTemplate />} />
-                    <Route path="/p/construction/:userId" element={<ConstructionPublic />} />
-                    <Route path="/p/doctor/:userId" element={<DoctorPublic />} />
-                    <Route path="/p/realestate/:userId" element={<RealEstatePublic />} />
-                    <Route path="/landing-builder" element={<LandingPageBuilder />} />
-                    <Route path="/landing-builder/:id" element={<LandingPageBuilder />} />
-                    <Route path="/site/:slug" element={<LandingPagePublic />} />
-                    <Route path="/refund-policy" element={<RefundPolicy />} />
-                    <Route path="/shipping-policy" element={<ShippingPolicy />} />
-                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                    <Route path="/terms-of-service" element={<TermsOfService />} />
-                    <Route path="/settings" element={<AccountSettings />} />
-                    <Route path="/billing" element={<Billing />} />
-                    <Route path="/support" element={<Support />} />
-                    <Route path="/referrals" element={<Referrals />} />
-                    <Route path="/leads" element={<Leads />} />
-                    <Route path="/bulk-qr" element={<BulkQR />} />
-                    <Route path="/bulk-create" element={<BulkCreate />} />
-                    <Route path="/teams" element={<Teams />} />
-                    <Route path="/accept-invite" element={<AcceptInvite />} />
-                    <Route path="/maintenance" element={<Maintenance />} />
-                    <Route path="/offline" element={<Offline />} />
-                    <Route path="/pwa-diagnostics" element={<PWADiagnostics />} />
-                    <Route path="/directory" element={<Directory />} />
-                    <Route path="/leaderboard" element={<Leaderboard />} />
-                    <Route path="/network" element={<Network />} />
-                    <Route path="/affiliate" element={<AffiliateDashboard />} />
-                    <Route path="/l/:slug" element={<LinktreeView />} />
-                    <Route path="/help" element={<HelpCenter />} />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </Suspense>
-              </MaintenanceGate>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/forgot-password" element={<ForgotPassword />} />
+                      <Route path="/reset-password" element={<ResetPassword />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/admin" element={<Admin />} />
+                      <Route path="/vcard/new" element={<VCardEditor />} />
+                      <Route path="/vcard/:id" element={<VCardEditor />} />
+                      <Route path="/c/:slug" element={<VCardPublic />} />
+                      <Route path="/cart" element={<Cart />} />
+                      <Route path="/orders" element={<Orders />} />
+                      <Route path="/payment" element={<Payment />} />
+                      <Route path="/template/:templateId" element={<TemplatePreview />} />
+                      <Route path="/nfc-payment" element={<NFCPayment />} />
+                      <Route path="/track-order" element={<TrackOrder />} />
+                      <Route path="/templates/construction" element={<ConstructionTemplate />} />
+                      <Route path="/templates/doctor" element={<DoctorTemplate />} />
+                      <Route path="/templates/realestate" element={<RealEstateTemplate />} />
+                      <Route path="/p/construction/:userId" element={<ConstructionPublic />} />
+                      <Route path="/p/doctor/:userId" element={<DoctorPublic />} />
+                      <Route path="/p/realestate/:userId" element={<RealEstatePublic />} />
+                      <Route path="/landing-builder" element={<LandingPageBuilder />} />
+                      <Route path="/landing-builder/:id" element={<LandingPageBuilder />} />
+                      <Route path="/site/:slug" element={<LandingPagePublic />} />
+                      <Route path="/refund-policy" element={<RefundPolicy />} />
+                      <Route path="/shipping-policy" element={<ShippingPolicy />} />
+                      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                      <Route path="/terms-of-service" element={<TermsOfService />} />
+                      <Route path="/settings" element={<AccountSettings />} />
+                      <Route path="/billing" element={<Billing />} />
+                      <Route path="/support" element={<Support />} />
+                      <Route path="/referrals" element={<Referrals />} />
+                      <Route path="/leads" element={<Leads />} />
+                      <Route path="/bulk-qr" element={<BulkQR />} />
+                      <Route path="/bulk-create" element={<BulkCreate />} />
+                      <Route path="/teams" element={<Teams />} />
+                      <Route path="/accept-invite" element={<AcceptInvite />} />
+                      <Route path="/maintenance" element={<Maintenance />} />
+                      <Route path="/offline" element={<Offline />} />
+                      <Route path="/pwa-diagnostics" element={<PWADiagnostics />} />
+                      <Route path="/directory" element={<Directory />} />
+                      <Route path="/leaderboard" element={<Leaderboard />} />
+                      <Route path="/network" element={<Network />} />
+                      <Route path="/affiliate" element={<AffiliateDashboard />} />
+                      <Route path="/l/:slug" element={<LinktreeView />} />
+                      <Route path="/help" element={<HelpCenter />} />
+                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
+                </MaintenanceGate>
+              </ErrorBoundary>
             </BrowserRouter>
+
           </TooltipProvider>
         </CartProvider>
       </AuthProvider>
