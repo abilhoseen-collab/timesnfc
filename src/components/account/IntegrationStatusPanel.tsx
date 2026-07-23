@@ -38,10 +38,10 @@ export default function IntegrationStatusPanel() {
     (async () => {
       const { data } = await supabase
         .from('vcards')
-        .select('id, name, slug, zapier_webhook_url, google_analytics_id, meta_pixel_id, mailchimp_api_key, hubspot_token, require_phone_verification')
+        .select('id, name, slug, zapier_webhook_url, ga_measurement_id, meta_pixel_id, mailchimp_api_key, hubspot_token, require_phone_verification')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      setCards((data as VCardIntegration[]) || []);
+      setCards(((data as unknown) as VCardIntegration[]) || []);
       setLoading(false);
     })();
   }, [user]);
