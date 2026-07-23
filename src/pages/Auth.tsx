@@ -45,6 +45,10 @@ export default function Auth() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Derive route params BEFORE any handler closes over them (avoid TDZ / ordering bugs).
+  const redirectPath = searchParams.get('redirect') || '/dashboard';
+  const referralCode = searchParams.get('ref')?.toUpperCase() || null;
+
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
