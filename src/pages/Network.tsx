@@ -5,8 +5,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Trash2, Loader2, UserPlus } from 'lucide-react';
+import { ArrowLeft, Trash2, UserPlus, Users } from 'lucide-react';
+import { LoadingState } from '@/components/common/LoadingState';
+import { EmptyState } from '@/components/common/EmptyState';
+import { getUserFriendlyError } from '@/lib/errorHandler';
+import { toast } from 'sonner';
 
 interface Saved {
   id: string;
@@ -24,7 +27,6 @@ interface Saved {
 export default function Network() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [rows, setRows] = useState<Saved[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,22 +37,37 @@ export default function Network() {
   const load = async () => {
     if (!user) return;
     setLoading(true);
-    const { data } = await (supabase as any)
-      .from('vcard_saved_contacts')
-      .select('id, note, vcard:vcards(id, slug, name, job_title, company, photo_url)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    setRows(data || []);
-    setLoading(false);
+    try {
+      const { data, error } = await (supabase as any)
+        .from('vcard_saved_contacts')
+        .select('id, note, vcard:vcards(id, slug, name, job_title, company, photo_url)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setRows(data || []);
+    } catch (e) {
+      toast.error(getUserFriendlyError(e));
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { if (user) load(); }, [user]);
 
   const remove = async (id: string) => {
-    await (supabase as any).from('vcard_saved_contacts').delete().eq('id', id);
-    toast({ title: 'সরিয়ে ফেলা হয়েছে' });
-    load();
+    try {
+      const { error } = await (supabase as any).from('vcard_saved_contacts').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('সরিয়ে ফেলা হয়েছে');
+      setRows((r) => r.filter((x) => x.id !== id));
+    } catch (e) {
+      toast.error(getUserFriendlyError(e));
+    }
   };
+
+  if (authLoading) {
+    return <LoadingState variant="spinner" label="যাচাই করা হচ্ছে..." className="min-h-screen" />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -65,11 +82,14 @@ export default function Network() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+              <LoadingState variant="list" rows={4} />
             ) : rows.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
-                এখনো কোনো কার্ড save করেননি। অন্য vCard থেকে "Save Contact" বাটন ব্যবহার করুন।
-              </p>
+              <EmptyState
+                icon={<Users className="w-12 h-12" />}
+                title="Network এখনো খালি"
+                description={'অন্য vCard থেকে "Save Contact" বাটন ব্যবহার করে কার্ড save করুন।'}
+                action={{ label: 'ডিরেক্টরি দেখুন', onClick: () => navigate('/directory') }}
+              />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {rows.map((s) =>
@@ -77,7 +97,7 @@ export default function Network() {
                     <div key={s.id} className="flex items-center gap-3 p-3 border rounded-lg">
                       <div className="w-12 h-12 rounded-full bg-muted overflow-hidden flex-shrink-0">
                         {s.vcard.photo_url ? (
-                          <img src={s.vcard.photo_url} className="w-full h-full object-cover" alt="" />
+                          <img src={s.vcard.photo_url} loading="lazy" className="w-full h-full object-cover" alt={s.vcard.name} />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center font-bold">{s.vcard.name?.[0]}</div>
                         )}
@@ -90,7 +110,7 @@ export default function Network() {
                           {s.vcard.job_title}{s.vcard.company ? ` @ ${s.vcard.company}` : ''}
                         </p>
                       </div>
-                      <Button size="icon" variant="ghost" onClick={() => remove(s.id)}>
+                      <Button size="icon" variant="ghost" onClick={() => remove(s.id)} aria-label="সরান">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
