@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { z } from 'zod';
 import { getUserFriendlyError } from '@/lib/errorHandler';
+import { bnCurrency } from '@/lib/formatters';
 import logo from '@/assets/logo.png';
 
 const guestOrderSchema = z.object({
@@ -234,7 +235,7 @@ export default function NFCPayment() {
                 <p className="text-sm text-muted-foreground">Quantity: {cartItem.quantity}</p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-foreground">৳{totalAmount}</p>
+                <p className="text-2xl font-bold text-foreground">{bnCurrency(totalAmount)}</p>
               </div>
             </div>
           </div>
@@ -374,7 +375,7 @@ export default function NFCPayment() {
                         {copiedField === 'number' ? <CheckCircle size={20} className="text-primary" /> : <Copy size={20} className="text-muted-foreground" />}
                       </button>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-2">Amount: ৳{totalAmount}</p>
+                    <p className="text-sm text-muted-foreground mt-2">Amount: {bnCurrency(totalAmount)}</p>
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground text-center mt-4">{currentMethod.instructions}</p>
