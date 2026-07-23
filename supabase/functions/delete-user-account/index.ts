@@ -10,9 +10,12 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+  const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
+
+  try {
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace("Bearer ", "");
-    if (!token) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    if (!token) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: jsonHeaders });
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -21,7 +24,7 @@ Deno.serve(async (req) => {
 
     const { data: userData } = await supabase.auth.getUser(token);
     if (!userData?.user) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers: jsonHeaders });
     }
     const userId = userData.user.id;
 
@@ -29,10 +32,8 @@ Deno.serve(async (req) => {
     const { error } = await supabase.auth.admin.deleteUser(userId);
     if (error) throw error;
 
-    return new Response(JSON.stringify({ deleted: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ deleted: true }), { headers: jsonHeaders });
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: jsonHeaders });
   }
 });
