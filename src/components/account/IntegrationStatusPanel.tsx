@@ -21,7 +21,7 @@ interface VCardIntegration {
 
 const items = [
   { key: 'zapier_webhook_url', label: 'Zapier', icon: Zap },
-  { key: 'google_analytics_id', label: 'Google Analytics', icon: BarChart3 },
+  { key: 'ga_measurement_id', label: 'Google Analytics', icon: BarChart3 },
   { key: 'meta_pixel_id', label: 'Meta Pixel', icon: Target },
   { key: 'mailchimp_api_key', label: 'Mailchimp', icon: Mail },
   { key: 'hubspot_token', label: 'HubSpot', icon: Plug },
