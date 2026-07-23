@@ -1950,6 +1950,15 @@ export type Database = {
         Returns: string
       }
       generate_referral_code: { Args: never; Returns: string }
+      get_guest_order_status: {
+        Args: { _email: string; _order_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          shipping_status: string
+          status: string
+        }[]
+      }
       get_team_role: {
         Args: { _team_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["team_role"]
