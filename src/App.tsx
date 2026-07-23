@@ -11,7 +11,7 @@ import { CartProvider } from "@/hooks/useCart";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import OnboardingTour from "./components/OnboardingTour";
+
 import MaintenanceGate from "./components/MaintenanceGate";
 import PWAManager from "./components/PWAManager";
 
@@ -85,7 +85,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <PWAManager />
-            <OnboardingTour />
+            
             <BrowserRouter>
               <MaintenanceGate>
                 <Suspense fallback={<RouteFallback />}>
