@@ -352,7 +352,12 @@ export default function AccountSettings() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="integrations" className="mt-4">
+            <IntegrationStatusPanel />
+          </TabsContent>
+
           <TabsContent value="notifications" className="mt-4">
+
             <NotificationSettings />
           </TabsContent>
 
