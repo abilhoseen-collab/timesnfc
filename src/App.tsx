@@ -89,9 +89,10 @@ const App = () => (
             <PWAManager />
             
             <BrowserRouter>
-              <MaintenanceGate>
-                <Suspense fallback={<RouteFallback />}>
-                  <Routes>
+              <ErrorBoundary>
+                <MaintenanceGate>
+                  <Suspense fallback={<RouteFallback />}>
+                    <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
