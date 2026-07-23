@@ -205,7 +205,11 @@ export default function AccountSettings() {
           <p className="text-muted-foreground mt-1">প্রোফাইল ও সিকিউরিটি ম্যানেজ করুন</p>
         </div>
 
-        <Tabs defaultValue="profile" className="w-full">
+        <Tabs
+          value={tabParam}
+          onValueChange={(v) => setSearchParams({ tab: v }, { replace: true })}
+          className="w-full"
+        >
           <TabsList className="flex flex-wrap gap-1 h-auto justify-start">
             <TabsTrigger value="profile" className="gap-1.5">
               <User size={14} /> প্রোফাইল
@@ -215,6 +219,9 @@ export default function AccountSettings() {
             </TabsTrigger>
             <TabsTrigger value="email" className="gap-1.5">
               <Mail size={14} /> ইমেইল
+            </TabsTrigger>
+            <TabsTrigger value="integrations" className="gap-1.5">
+              <Plug size={14} /> Integrations
             </TabsTrigger>
             <TabsTrigger value="notifications" className="gap-1.5">
               <Bell size={14} /> Notifications
