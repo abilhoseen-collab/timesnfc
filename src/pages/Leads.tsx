@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useTeamRoles } from '@/hooks/useTeamRoles';
+import { getUserFriendlyError } from '@/lib/errorHandler';
 
 interface Lead {
   id: string;
