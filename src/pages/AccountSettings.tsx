@@ -57,11 +57,13 @@ const emailSchema = z.object({
 export default function AccountSettings() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState({ full_name: "", phone: "" });
   const [passwords, setPasswords] = useState({ newPassword: "", confirmPassword: "" });
   const [newEmail, setNewEmail] = useState("");
+  const tabParam = searchParams.get("tab") || "profile";
 
   useEffect(() => {
     if (!user) {
