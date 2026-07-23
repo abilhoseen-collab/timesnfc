@@ -197,23 +197,15 @@ export default function Auth() {
 
         const { error } = await signUp(email, password, fullName);
         if (error) {
-          if (error.message.includes('already registered')) {
-            toast({
-              title: 'Account exists',
-              description: 'This email is already registered. Please sign in instead.',
-              variant: 'destructive',
-            });
-          } else {
-            toast({
-              title: 'Sign up failed',
-              description: error.message,
-              variant: 'destructive',
-            });
-          }
+          toast({
+            title: 'সাইন আপ ব্যর্থ',
+            description: getUserFriendlyError(error),
+            variant: 'destructive',
+          });
         } else {
           toast({
-            title: 'Account created!',
-            description: 'Welcome to Times Digital. You are now logged in.',
+            title: 'অ্যাকাউন্ট তৈরি হয়েছে!',
+            description: 'Times Digital-এ স্বাগতম। আপনি এখন লগইন অবস্থায় আছেন।',
           });
           navigate(redirectPath);
         }
@@ -234,28 +226,29 @@ export default function Auth() {
         const { error } = await signIn(email, password);
         if (error) {
           toast({
-            title: 'Sign in failed',
-            description: 'Invalid email or password. Please try again.',
+            title: 'সাইন ইন ব্যর্থ',
+            description: getUserFriendlyError(error),
             variant: 'destructive',
           });
         } else {
           toast({
-            title: 'Welcome back!',
-            description: 'You have successfully signed in.',
+            title: 'স্বাগতম!',
+            description: 'আপনি সফলভাবে সাইন ইন করেছেন।',
           });
           navigate(redirectPath);
         }
       }
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'An unexpected error occurred. Please try again.',
+        title: 'ত্রুটি',
+        description: getUserFriendlyError(error),
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   };
+
 
   const renderOrderStatus = () => {
     if (!isSignUp || !nfcOrderStatus) return null;
