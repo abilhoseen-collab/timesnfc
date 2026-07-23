@@ -72,16 +72,25 @@ export default function Leads() {
 
   const toggleTag = async (id: string, current: string[], tag: string) => {
     const next = current.includes(tag) ? current.filter((t) => t !== tag) : [...current, tag];
-    const { error } = await supabase.from('vcard_leads').update({ tags: next }).eq('id', id);
-    if (error) { toast({ title: 'Tag আপডেট ব্যর্থ', variant: 'destructive' }); return; }
-    setLeads((ls) => ls.map((l) => (l.id === id ? { ...l, tags: next } : l)));
-    if (editingTags?.id === id) setEditingTags({ ...editingTags, tags: next });
+    try {
+      const { error } = await supabase.from('vcard_leads').update({ tags: next }).eq('id', id);
+      if (error) throw error;
+      setLeads((ls) => ls.map((l) => (l.id === id ? { ...l, tags: next } : l)));
+      if (editingTags?.id === id) setEditingTags({ ...editingTags, tags: next });
+    } catch (err) {
+      toast({ title: 'Tag আপডেট ব্যর্থ', description: getUserFriendlyError(err), variant: 'destructive' });
+    }
   };
 
   const addCustomTag = async () => {
     if (!editingTags) return;
     const raw = editingTags.input.trim().toLowerCase().replace(/\s+/g, '-').slice(0, 20);
-    if (!raw || editingTags.tags.includes(raw)) { setEditingTags({ ...editingTags, input: '' }); return; }
+    if (!raw) { setEditingTags({ ...editingTags, input: '' }); return; }
+    if (!/^[a-z0-9-]+$/.test(raw)) {
+      toast({ title: 'অবৈধ tag', description: 'শুধু ইংরেজি অক্ষর, সংখ্যা ও হাইফেন ব্যবহার করুন।', variant: 'destructive' });
+      return;
+    }
+    if (editingTags.tags.includes(raw)) { setEditingTags({ ...editingTags, input: '' }); return; }
     await toggleTag(editingTags.id, editingTags.tags, raw);
     setEditingTags({ ...editingTags, input: '' });
   };
