@@ -73,12 +73,15 @@ export default function PackageManager() {
       .select('*')
       .order('price', { ascending: true });
 
-    if (!error && data) {
-      const packagesData = data.map(pkg => ({
-        ...pkg,
-        features: Array.isArray(pkg.features) ? pkg.features as string[] : []
-      }));
-      setPackages(packagesData);
+    if (error) {
+      toast({ title: 'প্যাকেজ লোড করা যায়নি', description: getUserFriendlyError(error), variant: 'destructive' });
+    } else if (data) {
+      setPackages(
+        data.map((pkg) => ({
+          ...pkg,
+          features: Array.isArray(pkg.features) ? (pkg.features as string[]) : [],
+        }))
+      );
     }
     setLoading(false);
   };
@@ -112,85 +115,79 @@ export default function PackageManager() {
   };
 
   const addFeature = () => {
-    if (newFeature.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        features: [...prev.features, newFeature.trim()]
-      }));
-      setNewFeature('');
+    const value = newFeature.trim();
+    if (!value) return;
+    if (value.length > 200) {
+      toast({ title: 'ফিচার ২০০ অক্ষরের বেশি হতে পারবে না', variant: 'destructive' });
+      return;
     }
+    if (formData.features.length >= 50) {
+      toast({ title: 'সর্বোচ্চ ৫০টি ফিচার যোগ করা যাবে', variant: 'destructive' });
+      return;
+    }
+    setFormData((prev) => ({ ...prev, features: [...prev.features, value] }));
+    setNewFeature('');
   };
 
   const removeFeature = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      features: prev.features.filter((_, i) => i !== index)
+      features: prev.features.filter((_, i) => i !== index),
     }));
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim()) {
-      toast({ title: 'Package name is required', variant: 'destructive' });
+    const parsed = packageSchema.safeParse({
+      name: formData.name,
+      description: formData.description || undefined,
+      price: Number(formData.price),
+      duration_days: Number(formData.duration_days),
+      features: formData.features,
+      is_active: formData.is_active,
+    });
+
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      toast({ title: 'ভ্যালিডেশন ব্যর্থ', description: first?.message ?? 'ইনপুট চেক করুন', variant: 'destructive' });
       return;
     }
 
     setSaving(true);
-
-    const packageData = {
-      name: formData.name.trim(),
-      description: formData.description.trim() || null,
-      price: formData.price,
-      duration_days: formData.duration_days,
-      features: formData.features,
-      is_active: formData.is_active,
+    const payload = {
+      name: parsed.data.name,
+      description: parsed.data.description ?? null,
+      price: parsed.data.price,
+      duration_days: parsed.data.duration_days,
+      features: parsed.data.features,
+      is_active: parsed.data.is_active,
     };
 
-    if (editingPackage) {
-      // Update existing package
-      const { error } = await supabase
-        .from('packages')
-        .update(packageData)
-        .eq('id', editingPackage.id);
-
-      if (error) {
-        toast({ title: 'Failed to update package', variant: 'destructive' });
-      } else {
-        toast({ title: 'Package updated successfully' });
-        setShowModal(false);
-        fetchPackages();
-      }
-    } else {
-      // Create new package
-      const { error } = await supabase
-        .from('packages')
-        .insert(packageData);
-
-      if (error) {
-        toast({ title: 'Failed to create package', variant: 'destructive' });
-      } else {
-        toast({ title: 'Package created successfully' });
-        setShowModal(false);
-        fetchPackages();
-      }
-    }
+    const { error } = editingPackage
+      ? await supabase.from('packages').update(payload).eq('id', editingPackage.id)
+      : await supabase.from('packages').insert(payload);
 
     setSaving(false);
+    if (error) {
+      toast({
+        title: editingPackage ? 'প্যাকেজ আপডেট ব্যর্থ' : 'প্যাকেজ তৈরি ব্যর্থ',
+        description: getUserFriendlyError(error),
+        variant: 'destructive',
+      });
+      return;
+    }
+    toast({ title: editingPackage ? 'প্যাকেজ আপডেট হয়েছে' : 'প্যাকেজ তৈরি হয়েছে' });
+    setShowModal(false);
+    fetchPackages();
   };
 
-  const handleDelete = async (pkg: PackageType) => {
-    if (!confirm(`Are you sure you want to delete "${pkg.name}"?`)) return;
-
-    const { error } = await supabase
-      .from('packages')
-      .delete()
-      .eq('id', pkg.id);
-
+  const performDelete = async (pkg: PackageType) => {
+    const { error } = await supabase.from('packages').delete().eq('id', pkg.id);
     if (error) {
-      toast({ title: 'Failed to delete package', variant: 'destructive' });
-    } else {
-      toast({ title: 'Package deleted successfully' });
-      fetchPackages();
+      toast({ title: 'প্যাকেজ ডিলিট ব্যর্থ', description: getUserFriendlyError(error), variant: 'destructive' });
+      throw error;
     }
+    toast({ title: 'প্যাকেজ ডিলিট হয়েছে' });
+    fetchPackages();
   };
 
   const toggleActive = async (pkg: PackageType) => {
@@ -200,7 +197,7 @@ export default function PackageManager() {
       .eq('id', pkg.id);
 
     if (error) {
-      toast({ title: 'Failed to update package', variant: 'destructive' });
+      toast({ title: 'প্যাকেজ আপডেট ব্যর্থ', description: getUserFriendlyError(error), variant: 'destructive' });
     } else {
       fetchPackages();
     }
