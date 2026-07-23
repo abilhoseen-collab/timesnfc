@@ -52,6 +52,8 @@ export function useSubscriptionLimits(): SubscriptionLimits {
       return data;
     },
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   // Count current VCards
@@ -73,6 +75,8 @@ export function useSubscriptionLimits(): SubscriptionLimits {
       return count || 0;
     },
     enabled: !!user?.id,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   // Count current Landing Pages
@@ -94,6 +98,8 @@ export function useSubscriptionLimits(): SubscriptionLimits {
       return count || 0;
     },
     enabled: !!user?.id,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const isLoading = subscriptionLoading || vcardsLoading || landingPagesLoading;
