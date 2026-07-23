@@ -1,7 +1,9 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from "@tanstack/react-query";
+import { toast as sonnerToast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { lazy, Suspense } from "react";
@@ -62,10 +64,23 @@ const AffiliateDashboard = lazy(() => import("./pages/AffiliateDashboard"));
 const HelpCenter = lazy(() => import("./pages/HelpCenter"));
 
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (err) => {
+      // Only surface query errors that aren't 404-like "no rows" cases.
+      const code = (err as any)?.code;
+      if (code === "PGRST116") return;
+      sonnerToast.error(getUserFriendlyError(err));
+    },
+  }),
+  mutationCache: new MutationCache({
+    onError: (err, _vars, _ctx, mutation) => {
+      // Skip if the mutation has its own onError to avoid double toasts.
+      if (mutation.options.onError) return;
+      sonnerToast.error(getUserFriendlyError(err));
+    },
+  }),
   defaultOptions: {
     queries: {
-      // Rarely-changing data (subscription, roles, settings) reads from cache
-      // instead of re-querying on every mount / route change.
       staleTime: 5 * 60 * 1000,
       gcTime: 10 * 60 * 1000,
       refetchOnWindowFocus: false,

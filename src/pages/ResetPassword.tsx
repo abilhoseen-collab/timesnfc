@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Lock, Eye, EyeOff, Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { useNavigate } from 'react-router-dom';
+import { getUserFriendlyError } from '@/lib/errorHandler';
+
+const passwordSchema = z
+  .string()
+  .min(6, 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে')
+  .max(128, 'পাসওয়ার্ড ১২৮ অক্ষরের বেশি হতে পারবে না');
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('');
@@ -41,20 +48,13 @@ export default function ResetPassword() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!password.trim()) {
-      toast({
-        title: 'পাসওয়ার্ড প্রয়োজন',
-        description: 'অনুগ্রহ করে নতুন পাসওয়ার্ড দিন',
-        variant: 'destructive',
-      });
-      return;
-    }
+    if (loading) return;
 
-    if (password.length < 6) {
+    const parsed = passwordSchema.safeParse(password);
+    if (!parsed.success) {
       toast({
-        title: 'পাসওয়ার্ড খুব ছোট',
-        description: 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে',
+        title: 'পাসওয়ার্ড অবৈধ',
+        description: parsed.error.issues[0]?.message ?? 'পাসওয়ার্ড যাচাই করুন',
         variant: 'destructive',
       });
       return;
@@ -73,7 +73,7 @@ export default function ResetPassword() {
 
     try {
       const { error } = await supabase.auth.updateUser({
-        password: password,
+        password: parsed.data,
       });
 
       if (error) throw error;
@@ -84,15 +84,14 @@ export default function ResetPassword() {
         description: 'আপনার পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে।',
       });
 
-      // Sign out and redirect to login
       await supabase.auth.signOut();
       setTimeout(() => {
         navigate('/auth');
       }, 2000);
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'ত্রুটি',
-        description: error.message || 'পাসওয়ার্ড পরিবর্তন করতে ব্যর্থ হয়েছে',
+        description: getUserFriendlyError(error),
         variant: 'destructive',
       });
     } finally {

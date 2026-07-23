@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Users, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 
 export default function AcceptInvite() {
   const [params] = useSearchParams();
@@ -19,13 +20,14 @@ export default function AcceptInvite() {
   const [errorMsg, setErrorMsg] = useState("");
 
   async function accept() {
-    if (!token) return;
+    if (!token || status === "accepting") return;
     setStatus("accepting");
     const { error } = await supabase.rpc("accept_team_invitation", { _token: token });
     if (error) {
-      setErrorMsg(error.message);
+      const friendly = getUserFriendlyError(error);
+      setErrorMsg(friendly);
       setStatus("error");
-      toast.error(error.message);
+      toast.error(friendly);
     } else {
       setStatus("done");
       toast.success("Team-এ যুক্ত হয়েছেন!");

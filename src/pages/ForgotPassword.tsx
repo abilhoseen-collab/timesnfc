@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -7,30 +8,36 @@ import { Input } from '@/components/ui/input';
 import { Mail, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { useNavigate } from 'react-router-dom';
+import { getUserFriendlyError } from '@/lib/errorHandler';
+
+const emailSchema = z
+  .string()
+  .trim()
+  .email('সঠিক ইমেইল ঠিকানা দিন')
+  .max(255, 'ইমেইল ২৫৫ অক্ষরের বেশি হতে পারবে না');
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [fieldError, setFieldError] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email.trim()) {
-      toast({
-        title: 'ইমেইল প্রয়োজন',
-        description: 'অনুগ্রহ করে আপনার ইমেইল ঠিকানা দিন',
-        variant: 'destructive',
-      });
+    if (loading) return;
+    setFieldError(null);
+
+    const parsed = emailSchema.safeParse(email);
+    if (!parsed.success) {
+      setFieldError(parsed.error.issues[0]?.message ?? 'ইমেইল ঠিকানা যাচাই করুন');
       return;
     }
 
     setLoading(true);
-
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
 
@@ -41,10 +48,10 @@ export default function ForgotPassword() {
         title: 'ইমেইল পাঠানো হয়েছে',
         description: 'পাসওয়ার্ড রিসেট লিংক আপনার ইমেইলে পাঠানো হয়েছে।',
       });
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'ত্রুটি',
-        description: error.message || 'পাসওয়ার্ড রিসেট ইমেইল পাঠাতে ব্যর্থ হয়েছে',
+        description: getUserFriendlyError(error),
         variant: 'destructive',
       });
     } finally {
@@ -135,11 +142,18 @@ export default function ForgotPassword() {
                   type="email"
                   placeholder="you@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); if (fieldError) setFieldError(null); }}
                   className="pl-10 bg-background"
+                  aria-invalid={!!fieldError}
+                  aria-describedby={fieldError ? 'email-error' : undefined}
                   required
                 />
               </div>
+              {fieldError && (
+                <p id="email-error" role="alert" className="text-xs text-destructive mt-1">
+                  {fieldError}
+                </p>
+              )}
             </div>
 
             <Button
