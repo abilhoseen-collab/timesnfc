@@ -231,9 +231,30 @@ export default function VCardEditor() {
     e?.preventDefault();
     
     if (!formData.name.trim()) {
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) {
       toast({
-        title: 'Error',
-        description: 'Name is required',
+        title: 'ত্রুটি',
+        description: 'নাম প্রয়োজন।',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (trimmedName.length > 100) {
+      toast({
+        title: 'ত্রুটি',
+        description: 'নাম সর্বোচ্চ ১০০ অক্ষরের হতে পারবে।',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      toast({
+        title: 'ত্রুটি',
+        description: 'সঠিক ইমেইল ঠিকানা দিন।',
         variant: 'destructive',
       });
       return;
@@ -247,23 +268,24 @@ export default function VCardEditor() {
           .from('vcards')
           .update({
             ...formData,
-            slug: formData.slug || generateSlug(formData.name),
+            name: trimmedName,
+            slug: formData.slug || generateSlug(trimmedName),
           })
           .eq('id', currentVcardId)
           .eq('user_id', user?.id);
 
         if (error) throw error;
-        
+
         toast({
-          title: 'Success',
-          description: 'Card saved successfully',
+          title: 'সফল',
+          description: 'কার্ড সংরক্ষিত হয়েছে।',
         });
       }
-      
+
       navigate('/dashboard');
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: 'সংরক্ষণ ব্যর্থ',
         description: getUserFriendlyError(error),
         variant: 'destructive',
       });
