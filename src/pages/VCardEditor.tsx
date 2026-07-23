@@ -16,6 +16,7 @@ import VCardAnalyticsDashboard from '@/components/vcard/VCardAnalyticsDashboard'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 // Import refactored components
 import {
@@ -417,104 +418,112 @@ export default function VCardEditor() {
               </TabsList>
 
               <TabsContent value="content">
-                <form onSubmit={handleSubmit} className="space-y-8">
-                  {/* Photo Uploader */}
-                  <PhotoUploader 
-                    formData={formData} 
-                    onChange={handleChange} 
-                    userId={user?.id} 
-                  />
-
-                  {/* Basic Info */}
-                  <BasicInfoEditor formData={formData} onChange={handleChange} />
-
-                  {/* Social Links */}
-                  <SocialLinksEditor formData={formData} onChange={handleChange} />
-
-                  {/* QR Code */}
-                  <QRCodeSettings 
-                    formData={formData} 
-                    onChange={handleChange} 
-                    userId={user?.id} 
-                  />
-
-                  {/* Notifications */}
-                  <NotificationSettings formData={formData} onChange={handleChange} />
-
-                  {/* Chat Widget */}
-                  <ChatWidgetSettings formData={formData} onChange={handleChange} />
-
-                  {/* Payment */}
-                  <PaymentSettings formData={formData} onChange={handleChange} />
-
-                  {/* Appointment */}
-                  <AppointmentSettings 
-                    formData={formData} 
-                    onChange={handleChange} 
-                    currentVcardId={currentVcardId} 
-                  />
-
-                  {/* Template Selector */}
-                  <TemplateSelector 
-                    selectedTemplate={formData.template} 
-                    onChange={handleChange} 
-                  />
-
-                  {/* Custom Sections */}
-                  {currentVcardId && (
-                    <div className="bg-card rounded-2xl p-6 border border-border">
-                      <CustomSectionsEditor vcardId={currentVcardId} />
-                    </div>
-                  )}
-
-                  {/* Custom Domain */}
-                  {currentVcardId && <CustomDomainManager vcardId={currentVcardId} />}
-
-                  {/* Branding (hide_branding for paid tiers) */}
-                  <div className="bg-card rounded-2xl p-6 border border-border flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <Label className="font-medium">"Powered by" badge সরান</Label>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Business tier ইউজার তাদের vCard ফুটার থেকে branding সরাতে পারবেন।
-                      </p>
-                    </div>
-                    <Switch
-                      checked={!!(formData as any).hide_branding}
-                      onCheckedChange={(v) => handleChange('hide_branding' as any, v)}
+                <ErrorBoundary>
+                  <form onSubmit={handleSubmit} className="space-y-8">
+                    {/* Photo Uploader */}
+                    <PhotoUploader 
+                      formData={formData} 
+                      onChange={handleChange} 
+                      userId={user?.id} 
                     />
-                  </div>
-                </form>
+
+                    {/* Basic Info */}
+                    <BasicInfoEditor formData={formData} onChange={handleChange} />
+
+                    {/* Social Links */}
+                    <SocialLinksEditor formData={formData} onChange={handleChange} />
+
+                    {/* QR Code */}
+                    <QRCodeSettings 
+                      formData={formData} 
+                      onChange={handleChange} 
+                      userId={user?.id} 
+                    />
+
+                    {/* Notifications */}
+                    <NotificationSettings formData={formData} onChange={handleChange} />
+
+                    {/* Chat Widget */}
+                    <ChatWidgetSettings formData={formData} onChange={handleChange} />
+
+                    {/* Payment */}
+                    <PaymentSettings formData={formData} onChange={handleChange} />
+
+                    {/* Appointment */}
+                    <AppointmentSettings 
+                      formData={formData} 
+                      onChange={handleChange} 
+                      currentVcardId={currentVcardId} 
+                    />
+
+                    {/* Template Selector */}
+                    <TemplateSelector 
+                      selectedTemplate={formData.template} 
+                      onChange={handleChange} 
+                    />
+
+                    {/* Custom Sections */}
+                    {currentVcardId && (
+                      <div className="bg-card rounded-2xl p-6 border border-border">
+                        <CustomSectionsEditor vcardId={currentVcardId} />
+                      </div>
+                    )}
+
+                    {/* Custom Domain */}
+                    {currentVcardId && <CustomDomainManager vcardId={currentVcardId} />}
+
+                    {/* Branding (hide_branding for paid tiers) */}
+                    <div className="bg-card rounded-2xl p-6 border border-border flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <Label className="font-medium">"Powered by" badge সরান</Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Business tier ইউজার তাদের vCard ফুটার থেকে branding সরাতে পারবেন।
+                        </p>
+                      </div>
+                      <Switch
+                        checked={!!(formData as any).hide_branding}
+                        onCheckedChange={(v) => handleChange('hide_branding' as any, v)}
+                      />
+                    </div>
+                  </form>
+                </ErrorBoundary>
               </TabsContent>
 
               <TabsContent value="analytics">
-                {currentVcardId ? (
-                  <VCardAnalyticsDashboard vcardId={currentVcardId} />
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <BarChart3 size={48} className="mx-auto mb-4 opacity-50" />
-                    <p>Save your card first to see analytics</p>
-                  </div>
-                )}
+                <ErrorBoundary>
+                  {currentVcardId ? (
+                    <VCardAnalyticsDashboard vcardId={currentVcardId} />
+                  ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <BarChart3 size={48} className="mx-auto mb-4 opacity-50" />
+                      <p>Save your card first to see analytics</p>
+                    </div>
+                  )}
+                </ErrorBoundary>
               </TabsContent>
 
               <TabsContent value="integrations">
-                {currentVcardId ? (
-                  <IntegrationsPanel vcardId={currentVcardId} />
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    Save your card first to configure integrations
-                  </div>
-                )}
+                <ErrorBoundary>
+                  {currentVcardId ? (
+                    <IntegrationsPanel vcardId={currentVcardId} />
+                  ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                      Save your card first to configure integrations
+                    </div>
+                  )}
+                </ErrorBoundary>
               </TabsContent>
 
               <TabsContent value="theme">
-                {currentVcardId ? (
-                  <ThemeBuilderPanel vcardId={currentVcardId} />
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    Save your card first to customize theme
-                  </div>
-                )}
+                <ErrorBoundary>
+                  {currentVcardId ? (
+                    <ThemeBuilderPanel vcardId={currentVcardId} />
+                  ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                      Save your card first to customize theme
+                    </div>
+                  )}
+                </ErrorBoundary>
               </TabsContent>
             </Tabs>
           </motion.div>
