@@ -7,20 +7,34 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { getUserFriendlyError } from '@/lib/errorHandler';
 import { Mail, Lock, User, ArrowLeft, Eye, EyeOff, Clock, CheckCircle, XCircle, Chrome } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { Separator } from '@/components/ui/separator';
 
+
 const signUpSchema = z.object({
-  fullName: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  fullName: z
+    .string()
+    .trim()
+    .min(2, 'নাম কমপক্ষে ২ অক্ষরের হতে হবে')
+    .max(100, 'নাম ১০০ অক্ষরের বেশি হতে পারবে না'),
+  email: z
+    .string()
+    .trim()
+    .email('সঠিক ইমেইল ঠিকানা দিন')
+    .max(255, 'ইমেইল ২৫৫ অক্ষরের বেশি হতে পারবে না'),
+  password: z
+    .string()
+    .min(6, 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে')
+    .max(128, 'পাসওয়ার্ড ১২৮ অক্ষরের বেশি হতে পারবে না'),
 });
 
 const signInSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().trim().email('সঠিক ইমেইল ঠিকানা দিন').max(255),
+  password: z.string().min(1, 'পাসওয়ার্ড লিখুন'),
 });
+
 
 interface NFCOrderStatus {
   status: 'pending' | 'approved' | 'rejected';
@@ -60,21 +74,22 @@ export default function Auth() {
       });
       if (error) {
         toast({
-          title: 'Google Sign In Failed',
-          description: error.message,
+          title: 'Google সাইন ইন ব্যর্থ',
+          description: getUserFriendlyError(error),
           variant: 'destructive',
         });
       }
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'An unexpected error occurred. Please try again.',
+        title: 'ত্রুটি',
+        description: getUserFriendlyError(error),
         variant: 'destructive',
       });
     } finally {
       setGoogleLoading(false);
     }
   };
+
 
   // Check for prefilled email from NFC payment and redirect param
   useEffect(() => {
@@ -182,23 +197,15 @@ export default function Auth() {
 
         const { error } = await signUp(email, password, fullName);
         if (error) {
-          if (error.message.includes('already registered')) {
-            toast({
-              title: 'Account exists',
-              description: 'This email is already registered. Please sign in instead.',
-              variant: 'destructive',
-            });
-          } else {
-            toast({
-              title: 'Sign up failed',
-              description: error.message,
-              variant: 'destructive',
-            });
-          }
+          toast({
+            title: 'সাইন আপ ব্যর্থ',
+            description: getUserFriendlyError(error),
+            variant: 'destructive',
+          });
         } else {
           toast({
-            title: 'Account created!',
-            description: 'Welcome to Times Digital. You are now logged in.',
+            title: 'অ্যাকাউন্ট তৈরি হয়েছে!',
+            description: 'Times Digital-এ স্বাগতম। আপনি এখন লগইন অবস্থায় আছেন।',
           });
           navigate(redirectPath);
         }
@@ -219,28 +226,29 @@ export default function Auth() {
         const { error } = await signIn(email, password);
         if (error) {
           toast({
-            title: 'Sign in failed',
-            description: 'Invalid email or password. Please try again.',
+            title: 'সাইন ইন ব্যর্থ',
+            description: getUserFriendlyError(error),
             variant: 'destructive',
           });
         } else {
           toast({
-            title: 'Welcome back!',
-            description: 'You have successfully signed in.',
+            title: 'স্বাগতম!',
+            description: 'আপনি সফলভাবে সাইন ইন করেছেন।',
           });
           navigate(redirectPath);
         }
       }
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'An unexpected error occurred. Please try again.',
+        title: 'ত্রুটি',
+        description: getUserFriendlyError(error),
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   };
+
 
   const renderOrderStatus = () => {
     if (!isSignUp || !nfcOrderStatus) return null;

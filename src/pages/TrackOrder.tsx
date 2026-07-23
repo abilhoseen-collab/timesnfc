@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getUserFriendlyError } from '@/lib/errorHandler';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -40,6 +42,18 @@ interface OrderDetails {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const trackSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .email('সঠিক ইমেইল ঠিকানা দিন')
+    .max(255, 'ইমেইল অনেক বড়'),
+  orderId: z
+    .string()
+    .trim()
+    .regex(UUID_RE, 'সঠিক অর্ডার আইডি দিন (কনফার্মেশন ইমেইলে পাবেন)'),
+});
+
 export default function TrackOrder() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -52,13 +66,13 @@ export default function TrackOrder() {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email.trim() || !email.includes('@')) {
-      toast({ title: 'সঠিক ইমেইল ঠিকানা দিন', variant: 'destructive' });
-      return;
-    }
-    const trimmedId = orderId.trim();
-    if (!UUID_RE.test(trimmedId)) {
-      toast({ title: 'সঠিক অর্ডার আইডি দিন', variant: 'destructive' });
+    const parsed = trackSchema.safeParse({ email, orderId });
+    if (!parsed.success) {
+      toast({
+        title: 'ইনপুট পরীক্ষা করুন',
+        description: parsed.error.errors[0]?.message ?? 'সঠিক তথ্য দিন',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -67,19 +81,25 @@ export default function TrackOrder() {
 
     try {
       const { data, error } = await supabase.rpc('get_guest_order_status', {
-        _email: email.toLowerCase().trim(),
-        _order_id: trimmedId,
+        _email: parsed.data.email.toLowerCase(),
+        _order_id: parsed.data.orderId,
       });
 
       if (error) throw error;
 
       setOrders((data as OrderDetails[]) || []);
-    } catch (error: any) {
-      toast({ title: 'অর্ডার খুঁজতে সমস্যা হয়েছে', variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({
+        title: 'অর্ডার খুঁজতে সমস্যা হয়েছে',
+        description: getUserFriendlyError(error),
+        variant: 'destructive',
+      });
+      setOrders([]);
     } finally {
       setLoading(false);
     }
   };
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
