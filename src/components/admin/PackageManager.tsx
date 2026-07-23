@@ -49,6 +49,7 @@ export default function PackageManager() {
   const [showModal, setShowModal] = useState(false);
   const [editingPackage, setEditingPackage] = useState<PackageType | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<PackageType | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
