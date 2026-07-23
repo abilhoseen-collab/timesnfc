@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +18,18 @@ import { Label } from '@/components/ui/label';
 import { Plus, Pencil, Trash2, Loader2, Package, X } from 'lucide-react';
 import { LoadingState } from '@/components/common/LoadingState';
 import { EmptyState } from '@/components/common/EmptyState';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { getUserFriendlyError } from '@/lib/errorHandler';
 import { bnCurrency } from '@/lib/formatters';
+
+const packageSchema = z.object({
+  name: z.string().trim().min(1, 'প্যাকেজের নাম দিন').max(100, 'নাম ১০০ অক্ষরের বেশি হতে পারবে না'),
+  description: z.string().trim().max(500, 'বিবরণ ৫০০ অক্ষরের বেশি হতে পারবে না').optional(),
+  price: z.number().min(0, 'মূল্য ঋণাত্মক হতে পারবে না').max(1_000_000, 'মূল্য অনেক বেশি'),
+  duration_days: z.number().int('পূর্ণ সংখ্যা দিন').min(1, 'অন্তত ১ দিন হতে হবে').max(3650, 'সর্বোচ্চ ১০ বছর'),
+  features: z.array(z.string().trim().min(1).max(200)).max(50, 'সর্বোচ্চ ৫০টি ফিচার'),
+  is_active: z.boolean(),
+});
 
 interface PackageType {
   id: string;
