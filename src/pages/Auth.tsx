@@ -74,21 +74,22 @@ export default function Auth() {
       });
       if (error) {
         toast({
-          title: 'Google Sign In Failed',
-          description: error.message,
+          title: 'Google সাইন ইন ব্যর্থ',
+          description: getUserFriendlyError(error),
           variant: 'destructive',
         });
       }
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'An unexpected error occurred. Please try again.',
+        title: 'ত্রুটি',
+        description: getUserFriendlyError(error),
         variant: 'destructive',
       });
     } finally {
       setGoogleLoading(false);
     }
   };
+
 
   // Check for prefilled email from NFC payment and redirect param
   useEffect(() => {
