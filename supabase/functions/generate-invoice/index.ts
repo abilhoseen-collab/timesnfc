@@ -1,79 +1,49 @@
-// Creates an invoice row for a completed order / subscription
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+// Creates an invoice row for a completed order / subscription.
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { withHandler, json, parseJson } from "../_shared/handler.ts";
+import { HttpError } from "../_shared/errors.ts";
+import { z, zEmail, zPositiveAmount, zUUID } from "../_shared/validate.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const FN = "generate-invoice";
 
-interface InvoiceLineItem {
-  description: string;
-  quantity: number;
-  unit_price: number;
-  total: number;
-}
-
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-
-  try {
-    const body = await req.json();
-    const {
-      user_id,
-      order_id,
-      subscription_id,
-      amount,
-      currency = "BDT",
-      customer_name,
-      customer_email,
-      customer_address,
-      line_items,
-    } = body as {
-      user_id: string;
-      order_id?: string;
-      subscription_id?: string;
-      amount: number;
-      currency?: string;
-      customer_name?: string;
-      customer_email?: string;
-      customer_address?: string;
-      line_items: InvoiceLineItem[];
-    };
-
-    if (!user_id || !amount || !line_items) {
-      return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400, headers: corsHeaders });
-    }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    const invoice_number = `INV-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`;
-
-    const { data, error } = await supabase
-      .from("invoices")
-      .insert({
-        user_id,
-        invoice_number,
-        order_id,
-        subscription_id,
-        amount,
-        currency,
-        customer_name,
-        customer_email,
-        customer_address,
-        line_items,
-        status: "paid",
-      })
-      .select()
-      .single();
-    if (error) throw error;
-
-    return new Response(JSON.stringify({ invoice: data }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (e: any) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
-  }
+const LineItem = z.object({
+  description: z.string().trim().min(1).max(500),
+  quantity: z.number().int().positive(),
+  unit_price: z.number().finite().nonnegative(),
+  total: z.number().finite().nonnegative(),
 });
+
+const Body = z.object({
+  user_id: zUUID,
+  order_id: zUUID.optional(),
+  subscription_id: zUUID.optional(),
+  amount: zPositiveAmount,
+  currency: z.string().trim().length(3).toUpperCase().default("BDT"),
+  customer_name: z.string().trim().max(200).optional(),
+  customer_email: zEmail.optional(),
+  customer_address: z.string().trim().max(1000).optional(),
+  line_items: z.array(LineItem).min(1).max(50),
+});
+
+Deno.serve(withHandler(FN, async (req) => {
+  const body = await parseJson(req, Body);
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  const invoice_number = `INV-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`;
+
+  const { data, error } = await supabase
+    .from("invoices")
+    .insert({ ...body, invoice_number, status: "paid" })
+    .select()
+    .single();
+
+  if (error) {
+    throw new HttpError(500, "DB_INSERT_FAILED", "Invoice তৈরি করতে ব্যর্থ।", { detail: error.message });
+  }
+
+  return json({ invoice: data });
+}));
