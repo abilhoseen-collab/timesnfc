@@ -48,7 +48,8 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import { NotificationBell } from '@/components/NotificationBell';
-import { OnboardingWizard } from '@/components/OnboardingWizard';
+import QuickShortcuts from '@/components/dashboard/QuickShortcuts';
+import RecentActivityWidget from '@/components/dashboard/RecentActivityWidget';
 import {
   Dialog,
   DialogContent,
