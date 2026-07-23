@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useTeamRoles } from '@/hooks/useTeamRoles';
+import { getUserFriendlyError } from '@/lib/errorHandler';
 
 interface Lead {
   id: string;
@@ -71,16 +72,25 @@ export default function Leads() {
 
   const toggleTag = async (id: string, current: string[], tag: string) => {
     const next = current.includes(tag) ? current.filter((t) => t !== tag) : [...current, tag];
-    const { error } = await supabase.from('vcard_leads').update({ tags: next }).eq('id', id);
-    if (error) { toast({ title: 'Tag আপডেট ব্যর্থ', variant: 'destructive' }); return; }
-    setLeads((ls) => ls.map((l) => (l.id === id ? { ...l, tags: next } : l)));
-    if (editingTags?.id === id) setEditingTags({ ...editingTags, tags: next });
+    try {
+      const { error } = await supabase.from('vcard_leads').update({ tags: next }).eq('id', id);
+      if (error) throw error;
+      setLeads((ls) => ls.map((l) => (l.id === id ? { ...l, tags: next } : l)));
+      if (editingTags?.id === id) setEditingTags({ ...editingTags, tags: next });
+    } catch (err) {
+      toast({ title: 'Tag আপডেট ব্যর্থ', description: getUserFriendlyError(err), variant: 'destructive' });
+    }
   };
 
   const addCustomTag = async () => {
     if (!editingTags) return;
     const raw = editingTags.input.trim().toLowerCase().replace(/\s+/g, '-').slice(0, 20);
-    if (!raw || editingTags.tags.includes(raw)) { setEditingTags({ ...editingTags, input: '' }); return; }
+    if (!raw) { setEditingTags({ ...editingTags, input: '' }); return; }
+    if (!/^[a-z0-9-]+$/.test(raw)) {
+      toast({ title: 'অবৈধ tag', description: 'শুধু ইংরেজি অক্ষর, সংখ্যা ও হাইফেন ব্যবহার করুন।', variant: 'destructive' });
+      return;
+    }
+    if (editingTags.tags.includes(raw)) { setEditingTags({ ...editingTags, input: '' }); return; }
     await toggleTag(editingTags.id, editingTags.tags, raw);
     setEditingTags({ ...editingTags, input: '' });
   };
@@ -91,71 +101,85 @@ export default function Leads() {
 
   const fetchLeads = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('vcard_leads')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) {
-      toast({ title: 'লোড ব্যর্থ', description: error.message, variant: 'destructive' });
-    } else {
-      setLeads(data as Lead[]);
+    try {
+      const { data, error } = await supabase
+        .from('vcard_leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setLeads((data || []) as Lead[]);
+    } catch (err) {
+      toast({ title: 'লোড ব্যর্থ', description: getUserFriendlyError(err), variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const updateStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from('vcard_leads').update({ status }).eq('id', id);
-    if (error) {
-      toast({ title: 'আপডেট ব্যর্থ', variant: 'destructive' });
-      return;
+    try {
+      const { error } = await supabase.from('vcard_leads').update({ status }).eq('id', id);
+      if (error) throw error;
+      setLeads((ls) => ls.map((l) => (l.id === id ? { ...l, status } : l)));
+    } catch (err) {
+      toast({ title: 'আপডেট ব্যর্থ', description: getUserFriendlyError(err), variant: 'destructive' });
     }
-    setLeads((ls) => ls.map((l) => (l.id === id ? { ...l, status } : l)));
   };
 
   const saveNotes = async () => {
     if (!editingNotes) return;
-    const { error } = await supabase
-      .from('vcard_leads')
-      .update({ notes: editingNotes.notes })
-      .eq('id', editingNotes.id);
-    if (error) {
-      toast({ title: 'সংরক্ষণ ব্যর্থ', variant: 'destructive' });
+    if (editingNotes.notes.length > 5000) {
+      toast({ title: 'নোট অনেক বড়', description: 'সর্বোচ্চ ৫০০০ অক্ষর।', variant: 'destructive' });
       return;
     }
-    setLeads((ls) => ls.map((l) => (l.id === editingNotes.id ? { ...l, notes: editingNotes.notes } : l)));
-    setEditingNotes(null);
-    toast({ title: 'নোট সংরক্ষিত' });
+    try {
+      const { error } = await supabase
+        .from('vcard_leads')
+        .update({ notes: editingNotes.notes })
+        .eq('id', editingNotes.id);
+      if (error) throw error;
+      setLeads((ls) => ls.map((l) => (l.id === editingNotes.id ? { ...l, notes: editingNotes.notes } : l)));
+      setEditingNotes(null);
+      toast({ title: 'নোট সংরক্ষিত' });
+    } catch (err) {
+      toast({ title: 'সংরক্ষণ ব্যর্থ', description: getUserFriendlyError(err), variant: 'destructive' });
+    }
   };
 
   const removeLead = async (id: string) => {
     if (!confirm('এই lead মুছবেন?')) return;
-    const { error } = await supabase.from('vcard_leads').delete().eq('id', id);
-    if (error) {
-      toast({ title: 'মুছতে ব্যর্থ', variant: 'destructive' });
-      return;
+    try {
+      const { error } = await supabase.from('vcard_leads').delete().eq('id', id);
+      if (error) throw error;
+      setLeads((ls) => ls.filter((l) => l.id !== id));
+      toast({ title: 'Lead মুছে ফেলা হয়েছে' });
+    } catch (err) {
+      toast({ title: 'মুছতে ব্যর্থ', description: getUserFriendlyError(err), variant: 'destructive' });
     }
-    setLeads((ls) => ls.filter((l) => l.id !== id));
   };
 
   const exportCsv = () => {
-    const header = ['Name', 'Email', 'Phone', 'Source', 'Status', 'Tags', 'Message', 'Notes', 'Created'];
-    const rows = filtered.map((l) => [
-      l.visitor_name, l.visitor_email || '', l.visitor_phone || '',
-      l.source, l.status, (l.tags || []).join('|'),
-      (l.message || '').replace(/\n/g, ' '),
-      (l.notes || '').replace(/\n/g, ' '),
-      new Date(l.created_at).toISOString(),
-    ]);
-    const csv = [header, ...rows]
-      .map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `leads-${Date.now()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const header = ['Name', 'Email', 'Phone', 'Source', 'Status', 'Tags', 'Message', 'Notes', 'Created'];
+      const rows = filtered.map((l) => [
+        l.visitor_name, l.visitor_email || '', l.visitor_phone || '',
+        l.source, l.status, (l.tags || []).join('|'),
+        (l.message || '').replace(/\n/g, ' '),
+        (l.notes || '').replace(/\n/g, ' '),
+        new Date(l.created_at).toISOString(),
+      ]);
+      const csv = [header, ...rows]
+        .map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `leads-${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast({ title: 'Export ব্যর্থ', description: getUserFriendlyError(err), variant: 'destructive' });
+    }
   };
 
   const filtered = leads.filter((l) => {
