@@ -14,6 +14,8 @@ import NotFound from "./pages/NotFound";
 
 import MaintenanceGate from "./components/MaintenanceGate";
 import PWAManager from "./components/PWAManager";
+import ErrorBoundary from "./components/ErrorBoundary";
+
 
 // Code-split heavy pages: editor, public card, dashboards
 const Dashboard = lazy(() => import("./pages/Dashboard"));
