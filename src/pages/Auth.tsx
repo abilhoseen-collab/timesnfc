@@ -91,8 +91,8 @@ export default function Auth() {
     }
   }, [searchParams]);
 
-  const redirectPath = searchParams.get('redirect') || '/dashboard';
-  const referralCode = searchParams.get('ref')?.toUpperCase() || null;
+
+
 
   // Check NFC order status when email changes during signup
   useEffect(() => {
