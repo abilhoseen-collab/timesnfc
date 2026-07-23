@@ -310,10 +310,13 @@ export default function Auth() {
     return null;
   };
 
-  const isSignUpDisabled = isSignUp && nfcOrderStatus && nfcOrderStatus.status !== 'approved' && nfcOrderStatus.status !== undefined;
+  const isSignUpDisabled: boolean = Boolean(
+    isSignUp && nfcOrderStatus && nfcOrderStatus.status !== 'approved'
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-background to-orange-50/30 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
