@@ -1,216 +1,98 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "https://esm.sh/resend@2.0.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { Resend } from "npm:resend@2.0.0";
+import { z } from "npm:zod@3.23.8";
+import { withHandler, parseJson, json } from "../_shared/handler.ts";
+import { HttpError } from "../_shared/errors.ts";
+import { zUUID } from "../_shared/validate.ts";
+import { logInfo, logError } from "../_shared/logger.ts";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+// In-memory best-effort rate limit (10/hour per vcard).
+const MAX_PER_HOUR = 10;
+const WINDOW_MS = 60 * 60 * 1000;
+const bucket = new Map<string, { count: number; resetAt: number }>();
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-// Rate limiting configuration
-const MAX_NOTIFICATIONS_PER_HOUR = 10;
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour in milliseconds
-
-// In-memory rate limiting (resets on function restart, but provides basic protection)
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(vcardId: string): { allowed: boolean; remaining: number } {
+function checkRate(id: string): { allowed: boolean; remaining: number } {
   const now = Date.now();
-  const entry = rateLimitMap.get(vcardId);
-  
+  const entry = bucket.get(id);
   if (!entry || now > entry.resetAt) {
-    // Reset or create new entry
-    rateLimitMap.set(vcardId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return { allowed: true, remaining: MAX_NOTIFICATIONS_PER_HOUR - 1 };
+    bucket.set(id, { count: 1, resetAt: now + WINDOW_MS });
+    return { allowed: true, remaining: MAX_PER_HOUR - 1 };
   }
-  
-  if (entry.count >= MAX_NOTIFICATIONS_PER_HOUR) {
-    return { allowed: false, remaining: 0 };
-  }
-  
+  if (entry.count >= MAX_PER_HOUR) return { allowed: false, remaining: 0 };
   entry.count++;
-  return { allowed: true, remaining: MAX_NOTIFICATIONS_PER_HOUR - entry.count };
+  return { allowed: true, remaining: MAX_PER_HOUR - entry.count };
 }
 
-// Clean up old entries periodically (prevent memory leak)
-function cleanupRateLimitMap() {
-  const now = Date.now();
-  for (const [key, value] of rateLimitMap.entries()) {
-    if (now > value.resetAt) {
-      rateLimitMap.delete(key);
-    }
+const Body = z.object({
+  vcard_id: zUUID,
+  event_type: z.enum(["view", "link_click"]),
+  link_name: z.string().trim().max(100).optional(),
+});
+
+Deno.serve(withHandler("send-notification", async (req, ctx) => {
+  const { vcard_id, event_type, link_name } = await parseJson(req, Body);
+
+  const rate = checkRate(vcard_id);
+  if (!rate.allowed) {
+    logInfo("send-notification", "rate.limited", { requestId: ctx.requestId, vcard_id });
+    throw new HttpError(429, "RATE_LIMITED", "অনেক বেশি অনুরোধ। কিছুক্ষণ পরে আবার চেষ্টা করুন।");
   }
-}
 
-interface NotificationRequest {
-  vcard_id: string;
-  event_type: "view" | "link_click";
-  link_name?: string;
-}
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+  const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
-const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+  const { data: vcard, error: vcardError } = await supabase
+    .from("vcards")
+    .select("name, notification_email, notify_on_view, notify_on_click")
+    .eq("id", vcard_id)
+    .maybeSingle();
+  if (vcardError) {
+    logError("send-notification", "vcard.load", vcardError, { requestId: ctx.requestId });
+    throw new HttpError(500, "DB_ERROR", "কার্ড লোড করা যায়নি।");
   }
+  if (!vcard) throw new HttpError(404, "VCARD_NOT_FOUND", "কার্ড পাওয়া যায়নি।");
+
+  const shouldNotify =
+    (event_type === "view" && vcard.notify_on_view) ||
+    (event_type === "link_click" && vcard.notify_on_click);
+
+  if (!shouldNotify || !vcard.notification_email) {
+    return json({ message: "Notification not required", requestId: ctx.requestId });
+  }
+
+  const sanitizedLinkName = link_name ? link_name.replace(/[<>'"&]/g, "").substring(0, 100) : "a link";
+  const subject =
+    event_type === "view"
+      ? `🎉 Someone viewed your business card: ${vcard.name}`
+      : `👆 Someone clicked a link on your card: ${vcard.name}`;
+  const eventDescription =
+    event_type === "view"
+      ? "Your digital business card was just viewed!"
+      : `Someone clicked the "${sanitizedLinkName}" on your digital business card!`;
 
   try {
-    const { vcard_id, event_type, link_name }: NotificationRequest = await req.json();
-
-    // Input validation
-    if (!vcard_id || typeof vcard_id !== 'string' || vcard_id.length > 50) {
-      console.log("Invalid vcard_id provided");
-      return new Response(JSON.stringify({ error: "Invalid request" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
-    if (!event_type || !["view", "link_click"].includes(event_type)) {
-      console.log("Invalid event_type provided");
-      return new Response(JSON.stringify({ error: "Invalid request" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
-    // Check rate limit
-    const rateLimitResult = checkRateLimit(vcard_id);
-    if (!rateLimitResult.allowed) {
-      console.log(`Rate limit exceeded for vcard: ${vcard_id}`);
-      return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
-        status: 429,
-        headers: { 
-          "Content-Type": "application/json",
-          "X-RateLimit-Remaining": "0",
-          "Retry-After": "3600",
-          ...corsHeaders 
-        },
-      });
-    }
-
-    console.log(`Processing notification for vcard: ${vcard_id}, event: ${event_type}, remaining: ${rateLimitResult.remaining}`);
-
-    // Cleanup old rate limit entries periodically
-    if (Math.random() < 0.1) { // 10% chance to cleanup on each request
-      cleanupRateLimitMap();
-    }
-
-    // Create Supabase client
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Fetch vcard details
-    const { data: vcard, error: vcardError } = await supabase
-      .from("vcards")
-      .select("name, notification_email, notify_on_view, notify_on_click")
-      .eq("id", vcard_id)
-      .single();
-
-    if (vcardError || !vcard) {
-      console.error("VCard not found:", vcardError);
-      return new Response(JSON.stringify({ error: "VCard not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
-    // Check if notifications are enabled
-    const shouldNotify =
-      (event_type === "view" && vcard.notify_on_view) ||
-      (event_type === "link_click" && vcard.notify_on_click);
-
-    if (!shouldNotify || !vcard.notification_email) {
-      console.log("Notifications not enabled or no email configured");
-      return new Response(JSON.stringify({ message: "Notification not required" }), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
-    // Sanitize link_name to prevent injection
-    const sanitizedLinkName = link_name 
-      ? link_name.replace(/[<>'"&]/g, '').substring(0, 100)
-      : 'a link';
-
-    // Send email notification
-    const subject =
-      event_type === "view"
-        ? `🎉 Someone viewed your business card: ${vcard.name}`
-        : `👆 Someone clicked a link on your card: ${vcard.name}`;
-
-    const eventDescription =
-      event_type === "view"
-        ? "Your digital business card was just viewed!"
-        : `Someone clicked the "${sanitizedLinkName}" on your digital business card!`;
-
-    const emailResponse = await resend.emails.send({
+    await resend.emails.send({
       from: "Notifications <onboarding@resend.dev>",
       to: [vcard.notification_email],
-      subject: subject,
+      subject,
       html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; margin-top: 20px; margin-bottom: 20px;">
-            <tr>
-              <td style="background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); padding: 40px 30px; text-align: center;">
-                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">
-                  ${event_type === "view" ? "👀 New Card View!" : "🔗 Link Clicked!"}
-                </h1>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 40px 30px;">
-                <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-                  ${eventDescription}
-                </p>
-                <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                  <p style="color: #6b7280; font-size: 14px; margin: 0 0 5px 0;">Card Name</p>
-                  <p style="color: #111827; font-size: 18px; font-weight: 600; margin: 0;">${vcard.name}</p>
-                </div>
-                <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0;">
-                  Time: ${new Date().toLocaleString()}
-                </p>
-              </td>
-            </tr>
-            <tr>
-              <td style="background-color: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
-                <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-                  Digital Business Card Notifications
-                </p>
-              </td>
-            </tr>
-          </table>
-        </body>
-        </html>
-      `,
+        <div style="font-family: sans-serif; padding: 24px; background:#f5f5f5;">
+          <h1 style="color:#0d9488;">${event_type === "view" ? "👀 New Card View!" : "🔗 Link Clicked!"}</h1>
+          <p>${eventDescription}</p>
+          <p><strong>Card:</strong> ${(vcard.name || "").replace(/[<>]/g, "")}</p>
+          <p style="color:#6b7280;">Time: ${new Date().toLocaleString()}</p>
+        </div>`,
     });
-
-    console.log("Email sent successfully:", emailResponse);
-
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { 
-        "Content-Type": "application/json",
-        "X-RateLimit-Remaining": String(rateLimitResult.remaining),
-        ...corsHeaders 
-      },
-    });
-  } catch (error: any) {
-    console.error("Error in send-notification function:", error);
-    return new Response(JSON.stringify({ error: "An error occurred processing your request" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+  } catch (e) {
+    logError("send-notification", "resend.send", e, { requestId: ctx.requestId });
+    throw new HttpError(502, "EMAIL_SEND_FAILED", "ইমেইল পাঠাতে ব্যর্থ।");
   }
-};
 
-serve(handler);
+  logInfo("send-notification", "sent", { requestId: ctx.requestId, event_type, remaining: rate.remaining });
+  return json({ success: true, remaining: rate.remaining, requestId: ctx.requestId }, {
+    headers: { "X-RateLimit-Remaining": String(rate.remaining) },
+  });
+}));
