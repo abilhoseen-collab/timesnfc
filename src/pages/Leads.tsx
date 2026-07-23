@@ -16,6 +16,9 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useTeamRoles } from '@/hooks/useTeamRoles';
 import { getUserFriendlyError } from '@/lib/errorHandler';
+import { EmptyState } from '@/components/common/EmptyState';
+import { LoadingState } from '@/components/common/LoadingState';
+import { bnDateTime } from '@/lib/formatters';
 
 interface Lead {
   id: string;
@@ -261,12 +264,13 @@ export default function Leads() {
 
         {/* List */}
         {loading ? (
-          <div className="flex justify-center py-12"><Loader2 className="animate-spin" /></div>
+          <LoadingState variant="list" rows={4} label="Lead লোড হচ্ছে..." />
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <Users size={48} className="mx-auto mb-3 opacity-30" />
-            <p>কোনো lead পাওয়া যায়নি।</p>
-          </div>
+          <EmptyState
+            icon={<Users size={48} className="opacity-40" />}
+            title="কোনো lead পাওয়া যায়নি"
+            description={leads.length === 0 ? 'আপনার vCard-এ কেউ যোগাযোগ করলে এখানে দেখাবে।' : 'ফিল্টার পরিবর্তন করে দেখুন।'}
+          />
         ) : (
           <div className="space-y-3">
             {filtered.map((l) => {

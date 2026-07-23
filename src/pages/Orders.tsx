@@ -6,6 +6,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Package, Clock, Truck, CheckCircle, XCircle } from 'lucide-react';
 import logo from '@/assets/logo.png';
+import { getUserFriendlyError } from '@/lib/errorHandler';
+import { EmptyState } from '@/components/common/EmptyState';
+import { LoadingState } from '@/components/common/LoadingState';
+import { bnDateTime, bnCurrency } from '@/lib/formatters';
+import { toast } from 'sonner';
 
 interface Order {
   id: string;
@@ -52,50 +57,41 @@ export default function Orders() {
   }, [user]);
 
   const fetchOrders = async () => {
-    const { data: ordersData, error: ordersError } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('user_id', user?.id)
-      .order('created_at', { ascending: false });
+    try {
+      const { data: ordersData, error: ordersError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
 
-    if (ordersError || !ordersData) {
+      if (ordersError) throw ordersError;
+      if (!ordersData) {
+        setOrders([]);
+        return;
+      }
+
+      const ordersWithItems = await Promise.all(
+        ordersData.map(async (order) => {
+          const { data: itemsData } = await supabase
+            .from('order_items')
+            .select('*')
+            .eq('order_id', order.id);
+          return { ...order, order_items: itemsData || [] };
+        })
+      );
+
+      setOrders(ordersWithItems);
+    } catch (err) {
+      toast.error(getUserFriendlyError(err));
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Fetch order items for each order
-    const ordersWithItems = await Promise.all(
-      ordersData.map(async (order) => {
-        const { data: itemsData } = await supabase
-          .from('order_items')
-          .select('*')
-          .eq('order_id', order.id);
-        
-        return {
-          ...order,
-          order_items: itemsData || [],
-        };
-      })
-    );
-
-    setOrders(ordersWithItems);
-    setLoading(false);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
   };
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-background">
+        <LoadingState variant="page" label="অর্ডার লোড হচ্ছে..." />
       </div>
     );
   }
@@ -127,26 +123,20 @@ export default function Orders() {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-4xl mx-auto"
         >
-          <h1 className="text-3xl font-bold text-foreground mb-2">Your Orders</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">আপনার অর্ডার</h1>
           <p className="text-muted-foreground mb-8">
-            Track and manage your NFC card orders
+            NFC কার্ড অর্ডারের অবস্থা ও তথ্য দেখুন
           </p>
 
           {orders.length === 0 ? (
-            <motion.div 
-              className="bg-card rounded-2xl p-12 border border-border text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              <Package size={48} className="mx-auto text-muted-foreground mb-4" />
-              <h2 className="text-xl font-bold text-foreground mb-2">No orders yet</h2>
-              <p className="text-muted-foreground mb-6">
-                You haven't placed any orders yet
-              </p>
-              <Button variant="secondary" onClick={() => navigate('/#nfc-store')}>
-                Shop NFC Cards
-              </Button>
-            </motion.div>
+            <div className="bg-card rounded-2xl border border-border">
+              <EmptyState
+                icon={<Package size={48} className="opacity-40" />}
+                title="এখনো কোনো অর্ডার নেই"
+                description="আপনি এখনো কোনো অর্ডার করেননি।"
+                action={{ label: 'NFC কার্ড দেখুন', onClick: () => navigate('/#nfc-store') }}
+              />
+            </div>
           ) : (
             <div className="space-y-6">
               {orders.map((order, index) => {
@@ -169,12 +159,12 @@ export default function Orders() {
                           <p className="font-mono text-sm text-foreground">{order.id.slice(0, 8)}...</p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Date</p>
-                          <p className="text-sm text-foreground">{formatDate(order.created_at)}</p>
+                          <p className="text-sm text-muted-foreground">তারিখ</p>
+                          <p className="text-sm text-foreground">{bnDateTime(order.created_at)}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Total</p>
-                          <p className="text-lg font-bold text-foreground">৳{order.total_amount}</p>
+                          <p className="text-sm text-muted-foreground">মোট</p>
+                          <p className="text-lg font-bold text-foreground">{bnCurrency(order.total_amount)}</p>
                         </div>
                         <div className={`px-3 py-1.5 rounded-full flex items-center gap-2 ${status.bg}`}>
                           <StatusIcon size={16} className={status.color} />

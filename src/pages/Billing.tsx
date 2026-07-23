@@ -26,6 +26,11 @@ import {
   ArrowUpCircle,
   RefreshCw,
 } from "lucide-react";
+import { getUserFriendlyError } from "@/lib/errorHandler";
+import { toast } from "sonner";
+import { LoadingState } from "@/components/common/LoadingState";
+import { EmptyState } from "@/components/common/EmptyState";
+import { bnCurrency, bnDate } from "@/lib/formatters";
 
 interface Subscription {
   id: string;
@@ -62,7 +67,7 @@ export default function Billing() {
       if (error) throw error;
       setSubscriptions((data || []) as any);
     } catch (e) {
-      console.error(e);
+      toast.error(getUserFriendlyError(e));
     } finally {
       setLoading(false);
     }
@@ -142,9 +147,7 @@ export default function Billing() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="animate-spin text-primary" size={32} />
-          </div>
+          <LoadingState variant="page" label="বিলিং তথ্য লোড হচ্ছে..." />
         ) : (
           <>
             {/* Active Subscription */}
@@ -172,7 +175,7 @@ export default function Billing() {
                     </div>
                     <div className="p-4 bg-muted/30 rounded-lg">
                       <p className="text-xs text-muted-foreground mb-1">মাসিক মূল্য</p>
-                      <p className="text-lg font-bold text-foreground">৳ {activeSub.amount}</p>
+                      <p className="text-lg font-bold text-foreground">{bnCurrency(activeSub.amount)}</p>
                     </div>
                     <div className="p-4 bg-muted/30 rounded-lg">
                       <p className="text-xs text-muted-foreground mb-1">মেয়াদ বাকি</p>
@@ -184,19 +187,16 @@ export default function Billing() {
                       <p className="text-xs text-muted-foreground mb-1">মেয়াদ শেষ</p>
                       <p className="text-sm font-bold text-foreground flex items-center gap-1">
                         <Calendar size={14} />
-                        {activeSub.expires_at
-                          ? new Date(activeSub.expires_at).toLocaleDateString("bn-BD")
-                          : "—"}
+                        {activeSub.expires_at ? bnDate(activeSub.expires_at) : "—"}
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground mb-4">কোনো সক্রিয় সাবস্ক্রিপশন নেই</p>
-                    <Button onClick={() => navigate("/#pricing")}>
-                      প্যাকেজ দেখুন
-                    </Button>
-                  </div>
+                  <EmptyState
+                    icon={<CreditCard size={40} className="opacity-40" />}
+                    title="কোনো সক্রিয় সাবস্ক্রিপশন নেই"
+                    action={{ label: 'প্যাকেজ দেখুন', onClick: () => navigate('/#pricing') }}
+                  />
                 )}
 
                 {activeSub && (
@@ -235,13 +235,11 @@ export default function Billing() {
                     <TableBody>
                       {subscriptions.map((sub) => (
                         <TableRow key={sub.id}>
-                          <TableCell className="text-sm">
-                            {new Date(sub.created_at).toLocaleDateString("bn-BD")}
-                          </TableCell>
+                          <TableCell className="text-sm">{bnDate(sub.created_at)}</TableCell>
                           <TableCell className="font-medium">
                             {sub.packages?.name || "—"}
                           </TableCell>
-                          <TableCell>৳ {sub.amount}</TableCell>
+                          <TableCell>{bnCurrency(sub.amount)}</TableCell>
                           <TableCell>{getStatusBadge(sub.status)}</TableCell>
                           <TableCell className="text-right">
                             {sub.status === "approved" && (
