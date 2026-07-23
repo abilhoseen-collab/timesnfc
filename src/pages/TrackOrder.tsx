@@ -38,19 +38,27 @@ interface OrderDetails {
   created_at: string;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default function TrackOrder() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
+  const [orderId, setOrderId] = useState('');
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState<OrderDetails[]>([]);
   const [searched, setSearched] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email.trim() || !email.includes('@')) {
       toast({ title: 'সঠিক ইমেইল ঠিকানা দিন', variant: 'destructive' });
+      return;
+    }
+    const trimmedId = orderId.trim();
+    if (!UUID_RE.test(trimmedId)) {
+      toast({ title: 'সঠিক অর্ডার আইডি দিন', variant: 'destructive' });
       return;
     }
 
@@ -58,11 +66,10 @@ export default function TrackOrder() {
     setSearched(true);
 
     try {
-      const { data, error } = await supabase
-        .from('nfc_guest_orders')
-        .select('*')
-        .eq('email', email.toLowerCase().trim())
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.rpc('get_guest_order_status', {
+        _email: email.toLowerCase().trim(),
+        _order_id: trimmedId,
+      });
 
       if (error) throw error;
 
@@ -142,7 +149,7 @@ export default function TrackOrder() {
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">অর্ডার ট্র্যাক করুন</h1>
           <p className="text-muted-foreground">
-            আপনার NFC কার্ড অর্ডারের স্ট্যাটাস দেখতে ইমেইল দিন
+            আপনার NFC কার্ড অর্ডারের স্ট্যাটাস দেখতে অর্ডার আইডি এবং ইমেইল দিন
           </p>
         </motion.div>
 
@@ -152,14 +159,24 @@ export default function TrackOrder() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           onSubmit={handleSearch}
-          className="bg-card rounded-2xl p-6 border border-border shadow-lg mb-8"
+          className="bg-card rounded-2xl p-6 border border-border shadow-lg mb-8 space-y-3"
         >
+          <div className="relative">
+            <Package size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="অর্ডার আইডি (কনফার্মেশন ইমেইলে পাবেন)"
+              value={orderId}
+              onChange={(e) => setOrderId(e.target.value)}
+              className="pl-10"
+            />
+          </div>
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="email"
-                placeholder="আপনার ইমেইল ঠিকানা লিখুন"
+                placeholder="অর্ডারের সময় দেওয়া ইমেইল"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10"

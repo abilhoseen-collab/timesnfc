@@ -1950,6 +1950,39 @@ export type Database = {
         Returns: string
       }
       generate_referral_code: { Args: never; Returns: string }
+      get_guest_order_status: {
+        Args: { _email: string; _order_id: string }
+        Returns: {
+          account_holder_name: string | null
+          admin_notes: string | null
+          bank_name: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          payment_method: string
+          payment_screenshot_url: string | null
+          phone: string
+          price: number
+          product_name: string
+          product_type: string
+          quantity: number
+          sender_number: string | null
+          shipping_address: string
+          shipping_city: string
+          shipping_status: string | null
+          status: string | null
+          total_amount: number
+          transaction_id: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "nfc_guest_orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_team_role: {
         Args: { _team_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["team_role"]
