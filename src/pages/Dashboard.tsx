@@ -48,7 +48,8 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import { NotificationBell } from '@/components/NotificationBell';
-import { OnboardingWizard } from '@/components/OnboardingWizard';
+import QuickShortcuts from '@/components/dashboard/QuickShortcuts';
+import RecentActivityWidget from '@/components/dashboard/RecentActivityWidget';
 import {
   Dialog,
   DialogContent,
@@ -474,7 +475,6 @@ export default function Dashboard() {
       </header>
 
 
-      <OnboardingWizard />
       <main className="container-custom py-8">
         {/* Welcome Section */}
         <motion.div
@@ -489,6 +489,13 @@ export default function Dashboard() {
             Manage your digital business cards and track their performance.
           </p>
         </motion.div>
+
+        {/* Quick shortcut cards */}
+        <QuickShortcuts />
+
+        {/* Recent bookings & reminders widget */}
+        <RecentActivityWidget userId={user?.id} />
+
 
         {/* Quick Access Templates - Only for Subscribed Users */}
         {subscription?.status === 'approved' && subscription.expires_at && new Date(subscription.expires_at) > new Date() && (
