@@ -288,7 +288,7 @@ export default function PackageManager() {
 
       {packages.length === 0 && (
         <EmptyState
-          icon={Package}
+          icon={<Package className="w-12 h-12" />}
           title="কোনো প্যাকেজ নেই"
           description="প্রথম প্যাকেজ তৈরি করে শুরু করুন।"
         />
