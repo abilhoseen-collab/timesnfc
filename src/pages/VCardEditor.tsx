@@ -229,10 +229,6 @@ export default function VCardEditor() {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    
-    if (!formData.name.trim()) {
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
 
     const trimmedName = formData.name.trim();
     if (!trimmedName) {
