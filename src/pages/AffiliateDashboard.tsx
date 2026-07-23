@@ -6,15 +6,17 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Copy, DollarSign, Users, Award, Loader2 } from 'lucide-react';
+import { ArrowLeft, Copy, DollarSign, Users, Award } from 'lucide-react';
+import { LoadingState } from '@/components/common/LoadingState';
+import { getUserFriendlyError } from '@/lib/errorHandler';
+import { bnCurrency, bnNumber } from '@/lib/formatters';
+import { toast } from 'sonner';
 
 const COMMISSION_BDT = 100; // per completed referral
 
 export default function AffiliateDashboard() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [code, setCode] = useState<string | null>(null);
   const [stats, setStats] = useState({ total: 0, completed: 0, pending: 0, rewarded: 0 });
   const [loading, setLoading] = useState(true);
@@ -26,40 +28,60 @@ export default function AffiliateDashboard() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     (async () => {
       setLoading(true);
-      const [pRes, rRes, allRes] = await Promise.all([
-        supabase.from('profiles').select('referral_code').eq('id', user.id).maybeSingle(),
-        supabase.from('referrals').select('status').eq('referrer_id', user.id),
-        supabase.from('referrals').select('referrer_id, status'),
-      ]);
-      setCode((pRes.data as any)?.referral_code || null);
-      const rows = (rRes.data as any[]) || [];
-      const s = { total: rows.length, completed: 0, pending: 0, rewarded: 0 };
-      rows.forEach((r) => {
-        if (r.status === 'completed') s.completed++;
-        else if (r.status === 'rewarded') s.rewarded++;
-        else s.pending++;
-      });
-      setStats(s);
+      try {
+        const [pRes, rRes, allRes] = await Promise.all([
+          supabase.from('profiles').select('referral_code').eq('id', user.id).maybeSingle(),
+          supabase.from('referrals').select('status').eq('referrer_id', user.id),
+          supabase.from('referrals').select('referrer_id, status'),
+        ]);
+        if (pRes.error) throw pRes.error;
+        if (rRes.error) throw rRes.error;
+        if (allRes.error) throw allRes.error;
+        if (cancelled) return;
 
-      // compute rank
-      const grouped = new Map<string, number>();
-      ((allRes.data as any[]) || []).forEach((r) => {
-        if (r.status === 'completed' || r.status === 'rewarded') {
-          grouped.set(r.referrer_id, (grouped.get(r.referrer_id) || 0) + 1);
-        }
-      });
-      const sorted = Array.from(grouped.entries()).sort((a, b) => b[1] - a[1]);
-      const idx = sorted.findIndex(([id]) => id === user.id);
-      setRank(idx >= 0 ? idx + 1 : null);
+        setCode((pRes.data as any)?.referral_code || null);
+        const rows = (rRes.data as any[]) || [];
+        const s = { total: rows.length, completed: 0, pending: 0, rewarded: 0 };
+        rows.forEach((r) => {
+          if (r.status === 'completed') s.completed++;
+          else if (r.status === 'rewarded') s.rewarded++;
+          else s.pending++;
+        });
+        setStats(s);
 
-      setLoading(false);
+        const grouped = new Map<string, number>();
+        ((allRes.data as any[]) || []).forEach((r) => {
+          if (r.status === 'completed' || r.status === 'rewarded') {
+            grouped.set(r.referrer_id, (grouped.get(r.referrer_id) || 0) + 1);
+          }
+        });
+        const sorted = Array.from(grouped.entries()).sort((a, b) => b[1] - a[1]);
+        const idx = sorted.findIndex(([id]) => id === user.id);
+        setRank(idx >= 0 ? idx + 1 : null);
+      } catch (e) {
+        if (!cancelled) toast.error(getUserFriendlyError(e));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
+    return () => { cancelled = true; };
   }, [user]);
 
   const link = code ? `${window.location.origin}/auth?ref=${code}` : '';
   const earnings = (stats.completed + stats.rewarded) * COMMISSION_BDT;
+
+  const copyLink = async () => {
+    if (!link) return;
+    try {
+      await navigator.clipboard.writeText(link);
+      toast.success('কপি হয়েছে');
+    } catch {
+      toast.error('কপি করা যায়নি — ম্যানুয়ালি সিলেক্ট করে কপি করুন');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -71,28 +93,28 @@ export default function AffiliateDashboard() {
         <h1 className="text-3xl font-bold mb-6">Affiliate Dashboard</h1>
 
         {loading ? (
-          <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin" /></div>
+          <LoadingState variant="card" />
         ) : (
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
               <Card><CardContent className="p-4">
                 <Users className="h-5 w-5 text-muted-foreground mb-1" />
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-2xl font-bold">{bnNumber(stats.total)}</p>
                 <p className="text-xs text-muted-foreground">মোট রেফার</p>
               </CardContent></Card>
               <Card><CardContent className="p-4">
                 <Award className="h-5 w-5 text-green-500 mb-1" />
-                <p className="text-2xl font-bold">{stats.completed + stats.rewarded}</p>
+                <p className="text-2xl font-bold">{bnNumber(stats.completed + stats.rewarded)}</p>
                 <p className="text-xs text-muted-foreground">সফল</p>
               </CardContent></Card>
               <Card><CardContent className="p-4">
                 <DollarSign className="h-5 w-5 text-yellow-500 mb-1" />
-                <p className="text-2xl font-bold">৳{earnings}</p>
+                <p className="text-2xl font-bold">{bnCurrency(earnings)}</p>
                 <p className="text-xs text-muted-foreground">আয় (অনুমান)</p>
               </CardContent></Card>
               <Card><CardContent className="p-4">
                 <Award className="h-5 w-5 text-purple-500 mb-1" />
-                <p className="text-2xl font-bold">{rank ? `#${rank}` : '-'}</p>
+                <p className="text-2xl font-bold">{rank ? `#${bnNumber(rank)}` : '-'}</p>
                 <p className="text-xs text-muted-foreground">Leaderboard rank</p>
               </CardContent></Card>
             </div>
@@ -100,14 +122,20 @@ export default function AffiliateDashboard() {
             <Card className="mb-4">
               <CardHeader><CardTitle>আপনার Affiliate Link</CardTitle></CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex gap-2">
-                  <Input value={link} readOnly />
-                  <Button onClick={() => { navigator.clipboard.writeText(link); toast({ title: 'কপি হয়েছে' }); }}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
+                {link ? (
+                  <div className="flex gap-2">
+                    <Input value={link} readOnly aria-label="Affiliate লিংক" />
+                    <Button onClick={copyLink} aria-label="লিংক কপি করুন">
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    আপনার referral code এখনো তৈরি হয়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।
+                  </p>
+                )}
                 <p className="text-sm text-muted-foreground">
-                  প্রতি সফল referral-এ ৳{COMMISSION_BDT} কমিশন। Approved হওয়ার পর আপনার ব্যালান্সে যোগ হবে।
+                  প্রতি সফল referral-এ {bnCurrency(COMMISSION_BDT)} কমিশন। Approved হওয়ার পর আপনার ব্যালান্সে যোগ হবে।
                 </p>
                 <Button asChild variant="outline">
                   <Link to="/leaderboard">🏆 Leaderboard দেখুন</Link>

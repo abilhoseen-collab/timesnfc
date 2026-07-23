@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, Loader2 } from "lucide-react";
+import { ArrowLeft, Users } from "lucide-react";
 import TeamManagementPanel from "@/components/TeamManagementPanel";
+import { LoadingState } from "@/components/common/LoadingState";
 
 export default function Teams() {
   const navigate = useNavigate();
@@ -15,11 +16,7 @@ export default function Teams() {
   }, [authLoading, user, navigate]);
 
   if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
+    return <LoadingState variant="spinner" label="যাচাই করা হচ্ছে..." className="min-h-screen" />;
   }
 
   return (
