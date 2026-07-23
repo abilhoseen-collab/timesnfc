@@ -43,12 +43,24 @@ export const getUserFriendlyError = (error: any): string => {
     return 'ফাইলের সাইজ অনেক বড়। ছোট ফাইল আপলোড করুন।';
   }
 
-  // Network
-  if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('network')) {
+  // Offline / Network
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return 'আপনি অফলাইন। ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।';
+  }
+  if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('network') || msg.includes('ERR_INTERNET_DISCONNECTED')) {
     return 'নেটওয়ার্ক সমস্যা। ইন্টারনেট সংযোগ পরীক্ষা করুন।';
   }
-  if (msg.includes('timeout') || msg.includes('Timeout')) {
+  if (msg.includes('timeout') || msg.includes('Timeout') || msg.includes('AbortError')) {
     return 'অনুরোধটি টাইমআউট হয়েছে। আবার চেষ্টা করুন।';
+  }
+  if (msg.includes('429') || msg.includes('Too Many Requests')) {
+    return 'অনেকবার চেষ্টা করেছেন। কিছুক্ষণ পর আবার চেষ্টা করুন।';
+  }
+  if (msg.includes('402') || msg.includes('Payment Required')) {
+    return 'এই ফিচার ব্যবহারের জন্য পেমেন্ট প্রয়োজন।';
+  }
+  if (msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('502')) {
+    return 'সার্ভার এখন ব্যস্ত। কিছুক্ষণ পর আবার চেষ্টা করুন।';
   }
 
   return 'একটি ত্রুটি ঘটেছে। আবার চেষ্টা করুন বা সাপোর্টে যোগাযোগ করুন।';
