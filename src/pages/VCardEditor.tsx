@@ -118,8 +118,8 @@ export default function VCardEditor() {
 
       if (error) {
         toast({
-          title: 'Error',
-          description: 'Failed to create card',
+          title: 'ত্রুটি',
+          description: getUserFriendlyError(error),
           variant: 'destructive',
         });
         navigate('/dashboard');
@@ -133,6 +133,11 @@ export default function VCardEditor() {
       }
     } catch (error) {
       console.error('Failed to create draft:', error);
+      toast({
+        title: 'ত্রুটি',
+        description: getUserFriendlyError(error),
+        variant: 'destructive',
+      });
       navigate('/dashboard');
     }
     setLoading(false);
