@@ -12,7 +12,7 @@ interface VCardIntegration {
   name: string;
   slug: string;
   zapier_webhook_url: string | null;
-  google_analytics_id: string | null;
+  ga_measurement_id: string | null;
   meta_pixel_id: string | null;
   mailchimp_api_key: string | null;
   hubspot_token: string | null;
