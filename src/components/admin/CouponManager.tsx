@@ -15,6 +15,7 @@ import { Plus, Trash2, Edit2, Copy, Loader2, Tag } from 'lucide-react';
 import { getUserFriendlyError } from '@/lib/errorHandler';
 import { LoadingState } from '@/components/common/LoadingState';
 import { EmptyState } from '@/components/common/EmptyState';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { bnCurrency, bnDate } from '@/lib/formatters';
 
 interface Coupon {
@@ -53,6 +54,7 @@ export default function CouponManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const load = async () => {
@@ -133,14 +135,13 @@ export default function CouponManager() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm('এই কুপনটি ডিলিট করবেন?')) return;
     const { error } = await supabase.from('coupons').delete().eq('id', id);
     if (error) {
       toast({ title: 'ডিলিট ব্যর্থ', description: getUserFriendlyError(error), variant: 'destructive' });
-    } else {
-      toast({ title: 'কুপন ডিলিট হয়েছে' });
-      load();
+      throw error;
     }
+    toast({ title: 'কুপন ডিলিট হয়েছে' });
+    load();
   };
 
   const copyCode = (code: string) => {
@@ -303,7 +304,7 @@ export default function CouponManager() {
                   <Button size="sm" variant="outline" onClick={() => startEdit(c)}>
                     <Edit2 size={14} />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => remove(c.id)}>
+                  <Button size="sm" variant="outline" onClick={() => setConfirmDeleteId(c.id)}>
                     <Trash2 size={14} />
                   </Button>
                 </div>
@@ -312,6 +313,19 @@ export default function CouponManager() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        onOpenChange={(v) => !v && setConfirmDeleteId(null)}
+        title="এই কুপনটি ডিলিট করবেন?"
+        description="ডিলিট করলে এই কুপন আর ব্যবহার করা যাবে না। এই কাজটি ফেরানো যাবে না।"
+        confirmLabel="ডিলিট করুন"
+        destructive
+        onConfirm={async () => {
+          if (confirmDeleteId) await remove(confirmDeleteId);
+          setConfirmDeleteId(null);
+        }}
+      />
     </div>
   );
 }

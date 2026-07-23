@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +18,18 @@ import { Label } from '@/components/ui/label';
 import { Plus, Pencil, Trash2, Loader2, Package, X } from 'lucide-react';
 import { LoadingState } from '@/components/common/LoadingState';
 import { EmptyState } from '@/components/common/EmptyState';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { getUserFriendlyError } from '@/lib/errorHandler';
 import { bnCurrency } from '@/lib/formatters';
+
+const packageSchema = z.object({
+  name: z.string().trim().min(1, 'প্যাকেজের নাম দিন').max(100, 'নাম ১০০ অক্ষরের বেশি হতে পারবে না'),
+  description: z.string().trim().max(500, 'বিবরণ ৫০০ অক্ষরের বেশি হতে পারবে না').optional(),
+  price: z.number().min(0, 'মূল্য ঋণাত্মক হতে পারবে না').max(1_000_000, 'মূল্য অনেক বেশি'),
+  duration_days: z.number().int('পূর্ণ সংখ্যা দিন').min(1, 'অন্তত ১ দিন হতে হবে').max(3650, 'সর্বোচ্চ ১০ বছর'),
+  features: z.array(z.string().trim().min(1).max(200)).max(50, 'সর্বোচ্চ ৫০টি ফিচার'),
+  is_active: z.boolean(),
+});
 
 interface PackageType {
   id: string;
@@ -37,6 +49,7 @@ export default function PackageManager() {
   const [showModal, setShowModal] = useState(false);
   const [editingPackage, setEditingPackage] = useState<PackageType | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<PackageType | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -60,12 +73,15 @@ export default function PackageManager() {
       .select('*')
       .order('price', { ascending: true });
 
-    if (!error && data) {
-      const packagesData = data.map(pkg => ({
-        ...pkg,
-        features: Array.isArray(pkg.features) ? pkg.features as string[] : []
-      }));
-      setPackages(packagesData);
+    if (error) {
+      toast({ title: 'প্যাকেজ লোড করা যায়নি', description: getUserFriendlyError(error), variant: 'destructive' });
+    } else if (data) {
+      setPackages(
+        data.map((pkg) => ({
+          ...pkg,
+          features: Array.isArray(pkg.features) ? (pkg.features as string[]) : [],
+        }))
+      );
     }
     setLoading(false);
   };
@@ -99,85 +115,79 @@ export default function PackageManager() {
   };
 
   const addFeature = () => {
-    if (newFeature.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        features: [...prev.features, newFeature.trim()]
-      }));
-      setNewFeature('');
+    const value = newFeature.trim();
+    if (!value) return;
+    if (value.length > 200) {
+      toast({ title: 'ফিচার ২০০ অক্ষরের বেশি হতে পারবে না', variant: 'destructive' });
+      return;
     }
+    if (formData.features.length >= 50) {
+      toast({ title: 'সর্বোচ্চ ৫০টি ফিচার যোগ করা যাবে', variant: 'destructive' });
+      return;
+    }
+    setFormData((prev) => ({ ...prev, features: [...prev.features, value] }));
+    setNewFeature('');
   };
 
   const removeFeature = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      features: prev.features.filter((_, i) => i !== index)
+      features: prev.features.filter((_, i) => i !== index),
     }));
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim()) {
-      toast({ title: 'Package name is required', variant: 'destructive' });
+    const parsed = packageSchema.safeParse({
+      name: formData.name,
+      description: formData.description || undefined,
+      price: Number(formData.price),
+      duration_days: Number(formData.duration_days),
+      features: formData.features,
+      is_active: formData.is_active,
+    });
+
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      toast({ title: 'ভ্যালিডেশন ব্যর্থ', description: first?.message ?? 'ইনপুট চেক করুন', variant: 'destructive' });
       return;
     }
 
     setSaving(true);
-
-    const packageData = {
-      name: formData.name.trim(),
-      description: formData.description.trim() || null,
-      price: formData.price,
-      duration_days: formData.duration_days,
-      features: formData.features,
-      is_active: formData.is_active,
+    const payload = {
+      name: parsed.data.name,
+      description: parsed.data.description ?? null,
+      price: parsed.data.price,
+      duration_days: parsed.data.duration_days,
+      features: parsed.data.features,
+      is_active: parsed.data.is_active,
     };
 
-    if (editingPackage) {
-      // Update existing package
-      const { error } = await supabase
-        .from('packages')
-        .update(packageData)
-        .eq('id', editingPackage.id);
-
-      if (error) {
-        toast({ title: 'Failed to update package', variant: 'destructive' });
-      } else {
-        toast({ title: 'Package updated successfully' });
-        setShowModal(false);
-        fetchPackages();
-      }
-    } else {
-      // Create new package
-      const { error } = await supabase
-        .from('packages')
-        .insert(packageData);
-
-      if (error) {
-        toast({ title: 'Failed to create package', variant: 'destructive' });
-      } else {
-        toast({ title: 'Package created successfully' });
-        setShowModal(false);
-        fetchPackages();
-      }
-    }
+    const { error } = editingPackage
+      ? await supabase.from('packages').update(payload).eq('id', editingPackage.id)
+      : await supabase.from('packages').insert(payload);
 
     setSaving(false);
+    if (error) {
+      toast({
+        title: editingPackage ? 'প্যাকেজ আপডেট ব্যর্থ' : 'প্যাকেজ তৈরি ব্যর্থ',
+        description: getUserFriendlyError(error),
+        variant: 'destructive',
+      });
+      return;
+    }
+    toast({ title: editingPackage ? 'প্যাকেজ আপডেট হয়েছে' : 'প্যাকেজ তৈরি হয়েছে' });
+    setShowModal(false);
+    fetchPackages();
   };
 
-  const handleDelete = async (pkg: PackageType) => {
-    if (!confirm(`Are you sure you want to delete "${pkg.name}"?`)) return;
-
-    const { error } = await supabase
-      .from('packages')
-      .delete()
-      .eq('id', pkg.id);
-
+  const performDelete = async (pkg: PackageType) => {
+    const { error } = await supabase.from('packages').delete().eq('id', pkg.id);
     if (error) {
-      toast({ title: 'Failed to delete package', variant: 'destructive' });
-    } else {
-      toast({ title: 'Package deleted successfully' });
-      fetchPackages();
+      toast({ title: 'প্যাকেজ ডিলিট ব্যর্থ', description: getUserFriendlyError(error), variant: 'destructive' });
+      throw error;
     }
+    toast({ title: 'প্যাকেজ ডিলিট হয়েছে' });
+    fetchPackages();
   };
 
   const toggleActive = async (pkg: PackageType) => {
@@ -187,7 +197,7 @@ export default function PackageManager() {
       .eq('id', pkg.id);
 
     if (error) {
-      toast({ title: 'Failed to update package', variant: 'destructive' });
+      toast({ title: 'প্যাকেজ আপডেট ব্যর্থ', description: getUserFriendlyError(error), variant: 'destructive' });
     } else {
       fetchPackages();
     }
@@ -266,7 +276,7 @@ export default function PackageManager() {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => handleDelete(pkg)}
+                  onClick={() => setDeleteTarget(pkg)}
                 >
                   <Trash2 className="h-3 w-3" />
                 </Button>
@@ -277,10 +287,26 @@ export default function PackageManager() {
       </div>
 
       {packages.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          No packages found. Create your first package.
-        </div>
+        <EmptyState
+          icon={<Package className="w-12 h-12" />}
+          title="কোনো প্যাকেজ নেই"
+          description="প্রথম প্যাকেজ তৈরি করে শুরু করুন।"
+        />
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
+        title={deleteTarget ? `"${deleteTarget.name}" ডিলিট করবেন?` : 'ডিলিট করবেন?'}
+        description="এই প্যাকেজ ডিলিট করলে যেসব সাবস্ক্রিপশনে এটি ব্যবহৃত হয়েছে সেগুলোতে সমস্যা হতে পারে। এই কাজটি ফেরানো যাবে না।"
+        confirmLabel="ডিলিট করুন"
+        destructive
+        onConfirm={async () => {
+          if (deleteTarget) await performDelete(deleteTarget);
+          setDeleteTarget(null);
+        }}
+      />
+
 
       {/* Create/Edit Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
