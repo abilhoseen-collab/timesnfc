@@ -64,9 +64,12 @@ const HelpCenter = lazy(() => import("./pages/HelpCenter"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60 * 1000,
-      gcTime: 5 * 60 * 1000,
+      // Rarely-changing data (subscription, roles, settings) reads from cache
+      // instead of re-querying on every mount / route change.
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
       refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
       retry: 1,
     },
   },
