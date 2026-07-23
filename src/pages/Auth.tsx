@@ -7,9 +7,11 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { getUserFriendlyError } from '@/lib/errorHandler';
 import { Mail, Lock, User, ArrowLeft, Eye, EyeOff, Clock, CheckCircle, XCircle, Chrome } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { Separator } from '@/components/ui/separator';
+
 
 const signUpSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
