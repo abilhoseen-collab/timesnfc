@@ -15,6 +15,7 @@ import { Plus, Trash2, Edit2, Copy, Loader2, Tag } from 'lucide-react';
 import { getUserFriendlyError } from '@/lib/errorHandler';
 import { LoadingState } from '@/components/common/LoadingState';
 import { EmptyState } from '@/components/common/EmptyState';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { bnCurrency, bnDate } from '@/lib/formatters';
 
 interface Coupon {
@@ -53,6 +54,7 @@ export default function CouponManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const load = async () => {
@@ -133,14 +135,13 @@ export default function CouponManager() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm('এই কুপনটি ডিলিট করবেন?')) return;
     const { error } = await supabase.from('coupons').delete().eq('id', id);
     if (error) {
       toast({ title: 'ডিলিট ব্যর্থ', description: getUserFriendlyError(error), variant: 'destructive' });
-    } else {
-      toast({ title: 'কুপন ডিলিট হয়েছে' });
-      load();
+      throw error;
     }
+    toast({ title: 'কুপন ডিলিট হয়েছে' });
+    load();
   };
 
   const copyCode = (code: string) => {
