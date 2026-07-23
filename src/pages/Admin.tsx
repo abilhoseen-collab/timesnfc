@@ -51,6 +51,8 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import logo from '@/assets/logo.png';
+import { LoadingState } from '@/components/common/LoadingState';
+import { bnCurrency, bnDate } from '@/lib/formatters';
 
 interface Subscription {
   id: string;
@@ -858,11 +860,7 @@ export default function Admin() {
   const loading = activeTab === 'subscriptions' ? subsLoading : nfcLoading;
 
   if (authLoading || adminLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <LoadingState variant="page" label="অ্যাডমিন প্যানেল লোড হচ্ছে..." />;
   }
 
   if (!isAdmin) {

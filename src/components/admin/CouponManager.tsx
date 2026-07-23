@@ -13,6 +13,9 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit2, Copy, Loader2, Tag } from 'lucide-react';
 import { getUserFriendlyError } from '@/lib/errorHandler';
+import { LoadingState } from '@/components/common/LoadingState';
+import { EmptyState } from '@/components/common/EmptyState';
+import { bnCurrency, bnDate } from '@/lib/formatters';
 
 interface Coupon {
   id: string;
@@ -262,11 +265,13 @@ export default function CouponManager() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12"><Loader2 className="animate-spin" /></div>
+        <LoadingState variant="card" rows={3} label="কুপন লোড হচ্ছে..." />
       ) : coupons.length === 0 ? (
-        <Card><CardContent className="py-12 text-center text-muted-foreground">
-          কোনো কুপন নেই। উপরের বোতাম থেকে তৈরি করুন।
-        </CardContent></Card>
+        <EmptyState
+          icon={<Tag size={40} />}
+          title="কোনো কুপন নেই"
+          description="উপরের বোতাম থেকে নতুন কুপন তৈরি করুন।"
+        />
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {coupons.map((c) => (
@@ -282,14 +287,14 @@ export default function CouponManager() {
                   </Badge>
                 </div>
                 <p className="text-2xl font-bold text-primary">
-                  {c.discount_type === 'percent' ? `${c.discount_value}%` : `৳${c.discount_value}`}
+                  {c.discount_type === 'percent' ? `${c.discount_value}%` : bnCurrency(c.discount_value)}
                   <span className="text-sm font-normal text-muted-foreground ml-2">ডিসকাউন্ট</span>
                 </p>
                 {c.description && <p className="text-sm text-muted-foreground">{c.description}</p>}
                 <div className="text-xs text-muted-foreground space-y-1">
                   <div>ব্যবহার: {c.usage_count}{c.usage_limit ? ` / ${c.usage_limit}` : ' / ∞'}</div>
-                  {c.min_amount > 0 && <div>সর্বনিম্ন: ৳{c.min_amount}</div>}
-                  {c.expires_at && <div>মেয়াদ: {new Date(c.expires_at).toLocaleDateString('bn-BD')}</div>}
+                  {c.min_amount > 0 && <div>সর্বনিম্ন: {bnCurrency(c.min_amount)}</div>}
+                  {c.expires_at && <div>মেয়াদ: {bnDate(c.expires_at)}</div>}
                 </div>
                 <div className="flex gap-2 pt-2">
                   <Button size="sm" variant="outline" onClick={() => copyCode(c.code)}>

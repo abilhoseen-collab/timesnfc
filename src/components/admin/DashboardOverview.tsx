@@ -19,6 +19,8 @@ import {
   BarChart3,
   Eye
 } from 'lucide-react';
+import { LoadingState } from '@/components/common/LoadingState';
+import { bnCurrency, bnDate } from '@/lib/formatters';
 import {
   Table,
   TableBody,
@@ -183,11 +185,7 @@ export default function DashboardOverview() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="animate-spin text-primary" size={32} />
-      </div>
-    );
+    return <LoadingState variant="card" rows={4} label="স্ট্যাটিসটিক্স লোড হচ্ছে..." />;
   }
 
   if (!stats) return null;
@@ -418,11 +416,11 @@ export default function DashboardOverview() {
                     </div>
                   </TableCell>
                   <TableCell className="font-medium">
-                    {activity.amount ? `৳${activity.amount}` : '-'}
+                    {activity.amount ? bnCurrency(activity.amount) : '-'}
                   </TableCell>
                   <TableCell>{getStatusBadge(activity.status)}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {new Date(activity.date).toLocaleDateString()}
+                    {bnDate(activity.date)}
                   </TableCell>
                 </TableRow>
               ))}

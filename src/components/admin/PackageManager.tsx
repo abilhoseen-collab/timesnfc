@@ -15,6 +15,9 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Plus, Pencil, Trash2, Loader2, Package, X } from 'lucide-react';
+import { LoadingState } from '@/components/common/LoadingState';
+import { EmptyState } from '@/components/common/EmptyState';
+import { bnCurrency } from '@/lib/formatters';
 
 interface PackageType {
   id: string;
@@ -191,11 +194,7 @@ export default function PackageManager() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <LoadingState variant="card" rows={3} label="প্যাকেজ লোড হচ্ছে..." />;
   }
 
   return (
@@ -230,7 +229,7 @@ export default function PackageManager() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <div className="text-3xl font-bold text-primary">৳{pkg.price}</div>
+                <div className="text-3xl font-bold text-primary">{bnCurrency(pkg.price)}</div>
                 <div className="text-sm text-muted-foreground">{pkg.duration_days} days</div>
               </div>
 
