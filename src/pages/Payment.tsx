@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { z } from 'zod';
 import { getUserFriendlyError } from '@/lib/errorHandler';
+import { LoadingState } from '@/components/common/LoadingState';
+import { bnCurrency } from '@/lib/formatters';
 import logo from '@/assets/logo.png';
 
 interface Package {
@@ -191,11 +193,7 @@ export default function Payment() {
   };
 
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <LoadingState variant="page" label="প্যাকেজ লোড হচ্ছে..." />;
   }
 
   const currentMethod = paymentMethods.find(m => m.id === selectedMethod);
@@ -248,7 +246,7 @@ export default function Payment() {
                   <h3 className="text-xl font-bold text-foreground mt-4">{pkg.name}</h3>
                   <p className="text-sm text-muted-foreground mt-1">{pkg.description}</p>
                   <div className="mt-4">
-                    <span className="text-3xl font-bold text-foreground">৳{pkg.price}</span>
+                    <span className="text-3xl font-bold text-foreground">{bnCurrency(pkg.price)}</span>
                     <span className="text-muted-foreground">/{pkg.duration_days} days</span>
                   </div>
                   <ul className="mt-6 space-y-3">
@@ -275,7 +273,7 @@ export default function Payment() {
                     <p className="text-sm text-muted-foreground">{selectedPackage.description}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-foreground">৳{selectedPackage.price}</p>
+                    <p className="text-2xl font-bold text-foreground">{bnCurrency(selectedPackage.price)}</p>
                     <button 
                       onClick={() => setSelectedPackage(null)}
                       className="text-sm text-primary hover:underline"
@@ -367,7 +365,7 @@ export default function Payment() {
                             {copiedField === 'number' ? <CheckCircle size={20} className="text-primary" /> : <Copy size={20} className="text-muted-foreground" />}
                           </button>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-2">Amount: ৳{selectedPackage.price}</p>
+                        <p className="text-sm text-muted-foreground mt-2">Amount: {bnCurrency(selectedPackage.price)}</p>
                       </div>
                     )}
                     <p className="text-xs text-muted-foreground text-center mt-4">{currentMethod.instructions}</p>

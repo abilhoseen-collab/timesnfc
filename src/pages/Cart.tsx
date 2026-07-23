@@ -20,6 +20,9 @@ import {
   Phone,
   User
 } from 'lucide-react';
+import { LoadingState } from '@/components/common/LoadingState';
+import { EmptyState } from '@/components/common/EmptyState';
+import { bnCurrency } from '@/lib/formatters';
 import logo from '@/assets/logo.png';
 
 export default function Cart() {
@@ -174,24 +177,15 @@ export default function Cart() {
           </h1>
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
+            <LoadingState variant="list" rows={3} label="কার্ট লোড হচ্ছে..." />
           ) : items.length === 0 ? (
-            <motion.div 
-              className="bg-card rounded-2xl p-12 border border-border text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              <ShoppingBag size={48} className="mx-auto text-muted-foreground mb-4" />
-              <h2 className="text-xl font-bold text-foreground mb-2">Your cart is empty</h2>
-              <p className="text-muted-foreground mb-6">
-                Browse our NFC cards and add items to your cart
-              </p>
-              <Button variant="secondary" onClick={() => navigate('/#nfc-store')}>
-                Shop NFC Cards
-              </Button>
-            </motion.div>
+            <EmptyState
+              icon={<ShoppingBag size={48} />}
+              title="আপনার কার্ট খালি"
+              description="আমাদের NFC কার্ড দেখুন এবং কার্টে আইটেম যোগ করুন"
+              action={{ label: 'NFC কার্ড দেখুন', onClick: () => navigate('/#nfc-store') }}
+              className="bg-card rounded-2xl border border-border"
+            />
           ) : !checkoutMode ? (
             <div className="grid lg:grid-cols-3 gap-8">
               {/* Cart Items */}
@@ -211,7 +205,7 @@ export default function Cart() {
                       <div className="flex-1">
                         <h3 className="font-bold text-foreground">{item.product_name}</h3>
                         <p className="text-sm text-muted-foreground capitalize">{item.product_type}</p>
-                        <p className="text-lg font-bold text-primary mt-1">৳{item.price}</p>
+                        <p className="text-lg font-bold text-primary mt-1">{bnCurrency(item.price)}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
@@ -253,7 +247,7 @@ export default function Cart() {
                   <div className="space-y-3 mb-6">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Subtotal</span>
-                      <span className="text-foreground">৳{totalAmount}</span>
+                      <span className="text-foreground">{bnCurrency(totalAmount)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Shipping</span>
@@ -262,7 +256,7 @@ export default function Cart() {
                     <div className="border-t border-border pt-3">
                       <div className="flex justify-between">
                         <span className="font-bold text-foreground">Total</span>
-                        <span className="font-bold text-foreground">৳{totalAmount}</span>
+                        <span className="font-bold text-foreground">{bnCurrency(totalAmount)}</span>
                       </div>
                     </div>
                   </div>
@@ -387,7 +381,7 @@ export default function Cart() {
                         <span className="text-muted-foreground">
                           {item.product_name} x{item.quantity}
                         </span>
-                        <span className="text-foreground">৳{item.price * item.quantity}</span>
+                        <span className="text-foreground">{bnCurrency(item.price * item.quantity)}</span>
                       </div>
                     ))}
                   </div>
@@ -399,7 +393,7 @@ export default function Cart() {
                     </div>
                     <div className="flex justify-between">
                       <span className="font-bold text-foreground">Total</span>
-                      <span className="font-bold text-foreground">৳{totalAmount}</span>
+                      <span className="font-bold text-foreground">{bnCurrency(totalAmount)}</span>
                     </div>
                   </div>
 

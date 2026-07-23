@@ -21,6 +21,9 @@ import {
   RefreshCw
 } from 'lucide-react';
 import OrderTimeline from '@/components/OrderTimeline';
+import { LoadingState } from '@/components/common/LoadingState';
+import { EmptyState } from '@/components/common/EmptyState';
+import { bnCurrency, bnDate } from '@/lib/formatters';
 import logo from '@/assets/logo.png';
 
 interface OrderDetails {
@@ -214,6 +217,7 @@ export default function TrackOrder() {
         </motion.form>
 
         {/* Results */}
+        {loading && <LoadingState variant="list" rows={2} label="অর্ডার খোঁজা হচ্ছে..." />}
         {searched && !loading && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -254,7 +258,7 @@ export default function TrackOrder() {
                         <div>
                           <p className="font-bold text-foreground">অর্ডার #{order.id.slice(0, 8).toUpperCase()}</p>
                           <p className="text-sm text-muted-foreground">
-                            {new Date(order.created_at).toLocaleDateString('bn-BD')}
+                            {bnDate(order.created_at)}
                           </p>
                         </div>
                       </div>
@@ -307,7 +311,7 @@ export default function TrackOrder() {
                             <p className="text-sm text-muted-foreground">পরিমাণ: {order.quantity}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-xl font-bold text-foreground">৳{order.total_amount}</p>
+                            <p className="text-xl font-bold text-foreground">{bnCurrency(order.total_amount)}</p>
                             <p className="text-xs text-muted-foreground capitalize">
                               {order.payment_method === 'bkash' ? 'বিকাশ' : 
                                order.payment_method === 'nagad' ? 'নগদ' :
@@ -357,18 +361,13 @@ export default function TrackOrder() {
                 ))}
               </div>
             ) : (
-              <div className="bg-card rounded-2xl border border-border p-8 text-center">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Package size={32} className="text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-bold text-foreground mb-2">কোনো অর্ডার পাওয়া যায়নি</h3>
-                <p className="text-muted-foreground mb-4">
-                  এই ইমেইল দিয়ে কোনো অর্ডার খুঁজে পাওয়া যায়নি।
-                </p>
-                <Button variant="outline" onClick={() => navigate('/#nfc-store')}>
-                  NFC কার্ড দেখুন
-                </Button>
-              </div>
+              <EmptyState
+                icon={<Package size={32} />}
+                title="কোনো অর্ডার পাওয়া যায়নি"
+                description="এই ইমেইল ও অর্ডার আইডি দিয়ে কোনো অর্ডার খুঁজে পাওয়া যায়নি।"
+                action={{ label: 'NFC কার্ড দেখুন', onClick: () => navigate('/#nfc-store') }}
+                className="bg-card rounded-2xl border border-border"
+              />
             )}
           </motion.div>
         )}
