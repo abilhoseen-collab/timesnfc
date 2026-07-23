@@ -436,7 +436,7 @@ export default function Auth() {
               variant="secondary"
               size="lg"
               className="w-full font-semibold"
-              disabled={loading || (isSignUpDisabled as boolean)}
+              disabled={loading || isSignUpDisabled}
             >
               {loading ? 'Please wait...' : isSignUp ? 'Create Account' : 'Sign In'}
             </Button>
