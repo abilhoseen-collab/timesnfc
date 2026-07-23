@@ -1,19 +1,18 @@
 // Dynamic Open Graph PNG image for vCards (true raster, not SVG).
 // Renders an SVG with @resvg/resvg-wasm into a 1200x630 PNG.
 // Usage: /functions/v1/vcard-og-image?slug=<slug>
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "npm:@supabase/supabase-js@2";
 import { Resvg, initWasm } from "npm:@resvg/resvg-wasm@2.6.2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { HttpError, friendlyError } from "../_shared/errors.ts";
+import { logInfo, logError } from "../_shared/logger.ts";
 
 let wasmReady: Promise<void> | null = null;
 function ensureWasm() {
   if (!wasmReady) {
     wasmReady = (async () => {
       const res = await fetch("https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm");
+      if (!res.ok) throw new Error(`wasm fetch ${res.status}`);
       const buf = await res.arrayBuffer();
       await initWasm(buf);
     })();
@@ -36,23 +35,30 @@ function bufferToBase64(buf: Uint8Array) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const requestId = crypto.randomUUID();
 
   try {
     const url = new URL(req.url);
     const slug = url.searchParams.get("slug");
-    const format = url.searchParams.get("format") || "png"; // png | svg
-    if (!slug) return new Response("Missing slug", { status: 400, headers: corsHeaders });
+    const format = url.searchParams.get("format") || "png";
+    if (!slug || slug.length > 200) {
+      throw new HttpError(400, "VALIDATION_ERROR", "slug প্রয়োজন।");
+    }
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    const { data: vcard } = await supabase
+    const { data: vcard, error: vcardErr } = await supabase
       .from("vcards")
       .select("name, job_title, company, photo_url")
       .eq("slug", slug)
       .eq("is_active", true)
       .maybeSingle();
+    if (vcardErr) {
+      logError("vcard-og-image", "vcard.load", vcardErr, { requestId });
+      throw new HttpError(500, "DB_ERROR", "কার্ড লোড করা যায়নি।");
+    }
 
     const name = escape((vcard?.name ?? "Digital Business Card").slice(0, 40));
     const job = escape((vcard?.job_title ?? "").slice(0, 60));
@@ -68,7 +74,9 @@ Deno.serve(async (req) => {
           const ct = res.headers.get("content-type") ?? "image/jpeg";
           photoDataUri = `data:${ct};base64,${bufferToBase64(buf)}`;
         }
-      } catch (_) { /* ignore */ }
+      } catch (e) {
+        logError("vcard-og-image", "photo.fetch", e, { requestId });
+      }
     }
 
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
@@ -101,16 +109,17 @@ Deno.serve(async (req) => {
 </svg>`;
 
     if (format === "svg") {
+      logInfo("vcard-og-image", "svg.ok", { requestId, slug });
       return new Response(svg, {
         headers: {
           ...corsHeaders,
           "Content-Type": "image/svg+xml; charset=utf-8",
           "Cache-Control": "public, max-age=3600, s-maxage=3600",
+          "X-Request-Id": requestId,
         },
       });
     }
 
-    // Render to PNG via resvg-wasm
     await ensureWasm();
     const resvg = new Resvg(svg, {
       fitTo: { mode: "width", value: 1200 },
@@ -118,17 +127,21 @@ Deno.serve(async (req) => {
     });
     const png = resvg.render().asPng();
 
+    logInfo("vcard-og-image", "png.ok", { requestId, slug, bytes: png.byteLength });
     return new Response(png, {
       headers: {
         ...corsHeaders,
         "Content-Type": "image/png",
         "Cache-Control": "public, max-age=86400, s-maxage=86400",
+        "X-Request-Id": requestId,
       },
     });
   } catch (err) {
-    return new Response(`Error: ${(err as Error).message}`, {
-      status: 500,
-      headers: corsHeaders,
+    logError("vcard-og-image", "request.error", err, { requestId });
+    const { status, body } = friendlyError(err);
+    return new Response(JSON.stringify({ ...body, requestId }), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json", "X-Request-Id": requestId },
     });
   }
 });
