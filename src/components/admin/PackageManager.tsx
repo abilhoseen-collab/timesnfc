@@ -276,7 +276,7 @@ export default function PackageManager() {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => handleDelete(pkg)}
+                  onClick={() => setDeleteTarget(pkg)}
                 >
                   <Trash2 className="h-3 w-3" />
                 </Button>
