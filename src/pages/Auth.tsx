@@ -14,15 +14,27 @@ import { Separator } from '@/components/ui/separator';
 
 
 const signUpSchema = z.object({
-  fullName: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  fullName: z
+    .string()
+    .trim()
+    .min(2, 'নাম কমপক্ষে ২ অক্ষরের হতে হবে')
+    .max(100, 'নাম ১০০ অক্ষরের বেশি হতে পারবে না'),
+  email: z
+    .string()
+    .trim()
+    .email('সঠিক ইমেইল ঠিকানা দিন')
+    .max(255, 'ইমেইল ২৫৫ অক্ষরের বেশি হতে পারবে না'),
+  password: z
+    .string()
+    .min(6, 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে')
+    .max(128, 'পাসওয়ার্ড ১২৮ অক্ষরের বেশি হতে পারবে না'),
 });
 
 const signInSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().trim().email('সঠিক ইমেইল ঠিকানা দিন').max(255),
+  password: z.string().min(1, 'পাসওয়ার্ড লিখুন'),
 });
+
 
 interface NFCOrderStatus {
   status: 'pending' | 'approved' | 'rejected';
